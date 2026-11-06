@@ -73,7 +73,7 @@ export class GardenAudio {
     if (this.game !== game) this.reset(game);
     for (const effect of game.effects) {
       if (effect.id <= this.lastEffectId) continue;
-      if (["hit", "ice", "burst", "splash", "gear"].includes(effect.kind)) this.play(effect.kind, effect.type);
+      if (["hit", "ice", "burst", "splash", "flame", "gear"].includes(effect.kind)) this.play(effect.kind, effect.type);
     }
     this.lastEffectId = game.nextId - 1;
     for (const plant of game.plants) {
@@ -112,6 +112,8 @@ export class GardenAudio {
       this.emit({ frequency: 1000, end: 470, wave: "triangle", duration: .16, volume: .035 });
     } else if (kind === "bite") {
       this.emit({ noise: true, filter: 500, duration: .11, volume: .035 });
+    } else if (kind === "flame") {
+      this.emit({ noise: true, filter: 1600, filterEnd: 400, duration: .28, volume: .035 });
     } else if (kind === "burst" || kind === "splash") {
       this.emit({ noise: true, filter: 350, filterEnd: 80, duration: .32, volume: .055 });
     } else if (kind === "gear") {

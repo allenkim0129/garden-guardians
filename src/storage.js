@@ -27,7 +27,7 @@ export function readSave(storage) {
         notice = "새 식물 해금과 밸런스를 적용했어요. 이전에 심은 식물과 진행 기록은 그대로예요.";
       }
       for (const type of Object.keys(PLANTS)) data.current.cooldowns[type] ??= 0;
-      data.current.rulesVersion = 3;
+      data.current.rulesVersion = 4;
     }
     return { data, error: null, notice };
   } catch (error) {

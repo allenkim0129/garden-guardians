@@ -6,6 +6,7 @@ export const SPRITE_URLS = Object.freeze(Object.fromEntries(
 ));
 export { FALL_DURATION, BURST_DURATION } from "./engine.js";
 const images = new Map();
+const frozenImages = new Map();
 let loading;
 
 export function loadSprites() {
@@ -90,9 +91,22 @@ const umbrellaMasks = [
   [[131, 192], [165, 181], [227, 188], [237, 224], [126, 224]],
 ];
 
-export function drawSprite(context, type, frame, x, y, scale = 1, equipmentDropped = false) {
-  const image = images.get(type);
+export function drawSprite(context, type, frame, x, y, scale = 1, equipmentDropped = false, frozen = false) {
+  let image = images.get(type);
   if (!image) throw new Error(`${type} 그림을 먼저 불러와야 합니다.`);
+  if (frozen && Object.hasOwn(ENEMIES, type)) {
+    if (!frozenImages.has(type)) {
+      const tinted = document.createElement("canvas");
+      tinted.width = image.width; tinted.height = image.height;
+      const brush = tinted.getContext("2d");
+      brush.drawImage(image, 0, 0);
+      brush.globalCompositeOperation = "source-atop";
+      brush.fillStyle = "rgba(60, 135, 255, .6)";
+      brush.fillRect(0, 0, tinted.width, tinted.height);
+      frozenImages.set(type, tinted);
+    }
+    image = frozenImages.get(type);
+  }
   const { width, height, anchorX, anchorY } = SPRITE_CELL;
   const size = SPRITE_CELL.scale * scale;
   context.save();

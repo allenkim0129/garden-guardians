@@ -17,16 +17,16 @@ function fixture() {
 }
 test("피격·장비·폭발 이벤트는 프레임 사이 한 번만 소리로 전달하고 게임을 변경하지 않음", () => {
   const { audio, game, calls } = fixture();
-  for (const kind of ["hit", "ice", "gear", "burst", "splash"]) {
+  for (const kind of ["hit", "ice", "gear", "burst", "splash", "flame"]) {
     game.effects.push({ id: game.nextId++, kind, type: "jelly", age: 0, x: 500, y: 50 });
   }
   const before = structuredClone(game);
   audio.update(game); audio.update(game);
-  assert.deepEqual(calls.map(call => call.kind), ["hit", "ice", "gear", "burst", "splash"]);
+  assert.deepEqual(calls.map(call => call.kind), ["hit", "ice", "gear", "burst", "splash", "flame"]);
   assert.deepEqual(game, before);
   audio.reset(snapshot(game));
   audio.update(audio.game);
-  assert.equal(calls.length, 5);
+  assert.equal(calls.length, 6);
 });
 test("좀비가 많아도 보행음은 전역 간격과 종류별 간격을 지키고 네 종류 모두 들림", () => {
   const { audio, game, calls } = fixture();

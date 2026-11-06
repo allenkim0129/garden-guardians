@@ -9,6 +9,9 @@ export const LOADOUT_LIMIT = 6;
 export const TWIN_GAP = .2;
 export const THORN_HITS = 3;
 export const PUMPKIN_RADIUS = 115;
+export const FIRE_RADIUS = 105;
+export const BURN_DURATION = 3;
+export const BURN_DAMAGE = 6;
 export const PLANTS = Object.freeze({
   sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 5, interval: 8, description: "8초마다 햇빛 25를 만들어요." },
   pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 6, interval: 1.6, damage: 18, description: "앞으로 초록 완두콩을 톡톡 쏘아요." },
@@ -20,6 +23,7 @@ export const PLANTS = Object.freeze({
   pumpkin: { name: "호박포", unlockStage: 7, cost: 225, hp: 130, recharge: 10, interval: 3.8, damage: 55, description: "3.8초마다 호박탄을 던져 착지점 반경 약 한 칸에 피해를 줘요." },
   lantern: { name: "해등나무", unlockStage: 8, cost: 125, hp: 140, recharge: 10, interval: 10, description: "10초마다 햇빛 50을 만들어요. 첫 햇빛도 10초 뒤에 나와요." },
   iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 14, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 14초!" },
+  ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 10, interval: 3.2, damage: 24, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 24 피해, 3초 동안 초당 6 화상 피해를 줘요. 화상은 중첩되지 않아요." },
 });
 export const ENEMIES = Object.freeze({
   sleepy: { name: "잠옷좀비", hp: 110, speed: 17, bite: 22, description: "졸려도 정원 산책은 좋아해요." },
@@ -37,7 +41,7 @@ export const STAGES = [
   { name: "반짝이는 연못", count: 26, gap: 3.4, types: ["umbrella", "roller", "sleepy", "jelly"], startSun: 325, tip: "새 친구 호박포! 도토리벽으로 붙잡으면 착지점에 모인 좀비를 맞히기 좋아요." },
   { name: "꼬불꼬불 덩굴", count: 30, gap: 3.1, types: ["roller", "jelly", "sleepy", "umbrella"], startSun: 325, tip: "새 친구 해등나무! 더 많은 햇빛을 만들지만 첫 수확까지 기다려야 해요." },
   { name: "노을빛 파티", count: 34, gap: 2.8, types: ["jelly", "umbrella", "roller", "sleepy"], startSun: 350, tip: "새 친구 철잎보루! 오래 버티지만 비용과 다시 심는 시간을 생각해요." },
-  { name: "우리들의 정원", count: 40, gap: 2.5, types: ["jelly", "roller", "umbrella", "sleepy", "jelly"], startSun: 350, tip: "마지막 소풍이에요. 함께할 여덟 친구를 골라 정원을 지켜요!" },
+  { name: "우리들의 정원", count: 40, gap: 2.5, types: ["jelly", "roller", "umbrella", "sleepy", "jelly"], startSun: 350, tip: "새 친구 불꽃봉오리! 모인 좀비에게 불씨를 쏴요. 함께할 여덟 친구를 골라 정원을 지켜요!" },
 ].map((stage, i) => Object.freeze({ ...stage, legacyRows: i === 0 ? [2, 1, 3] : stage.rows, legacyCount: stage.count, count: Math.ceil(stage.count * 1.4), id: i + 1 }));
 
 export function isPlantUnlocked(type, stage) {
@@ -47,7 +51,7 @@ export function introducedPlants(stage) {
   return Object.entries(PLANTS).filter(([, plant]) => plant.unlockStage === stage).map(([type]) => type);
 }
 
-export function scheduleFor(stageNumber, pacingVersion = 4) {
+export function scheduleFor(stageNumber, pacingVersion = 5) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   const rows = (pacingVersion < 3 ? stage.legacyRows : stage.rows) ?? [2, 0, 4, 1, 3];
@@ -66,7 +70,7 @@ export function scheduleFor(stageNumber, pacingVersion = 4) {
     const finalAt = Math.max(90, 55 + (second - 1) * middleGap + 12);
     return Array.from({ length: stage.count }, (_, i) => {
       const wave = i < first ? 1 : i < first + second ? 2 : 3;
-      const at = wave === 1 ? 25 + i * 14
+      const at = wave === 1 ? (i === 0 && pacingVersion >= 5 ? 10 : 25 + i * 14)
         : wave === 2 ? 55 + (i - first) * middleGap
           : finalAt + (i - first - second) * stage.gap * .3;
       return { at, row: rows[i % rows.length], type: wave === 1 ? "sleepy" : stage.types[i % stage.types.length], wave };
@@ -108,7 +112,7 @@ export function createGame(stageNumber, loadout) {
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 3, pacingVersion: 4, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 4, pacingVersion: 5, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -157,6 +161,7 @@ function fireShot(game, plant, target, muzzle = 0) {
   const shot = { id: id(game), row: plant.row, x: cellX(plant.col) + 28, damage: info.damage, frost: plant.type === "frost" };
   if (plant.type === "twin") Object.assign(shot, { kind: "twin", muzzle });
   if (plant.type === "thorn") Object.assign(shot, { kind: "thorn", hitIds: [] });
+  if (plant.type === "ember") shot.kind = "ember";
   if (plant.type === "pumpkin") Object.assign(shot, {
     kind: "pumpkin", originX: shot.x, targetX: target.x, age: 0,
     duration: Math.max(.45, Math.min(1.6, Math.abs(target.x - shot.x) / 260)),
@@ -184,12 +189,13 @@ export function sunsAlongPath(game, from, to, radius) {
 export function equipmentThreshold(type) {
   return type === "umbrella" ? ENEMIES.umbrella.hp - 65 : ENEMIES[type].hp * .5;
 }
-function damageEnemy(game, enemy, damage, frost = false) {
+function damageEnemy(game, enemy, damage, frost = false, impact = true) {
   if (enemy.hp <= 0) return;
   enemy.hp -= damage;
-  enemy.hurtAt = game.time;
+  if (enemy.hp > 0 && enemy.hp < 1e-8) enemy.hp = 0;
+  if (impact) enemy.hurtAt = game.time;
   if (frost) enemy.slow = 3;
-  game.effects.push({ id: id(game), kind: frost ? "ice" : "hit", type: enemy.type, x: enemy.x, y: cellY(enemy.row), age: 0 });
+  if (impact) game.effects.push({ id: id(game), kind: frost ? "ice" : "hit", type: enemy.type, x: enemy.x, y: cellY(enemy.row), age: 0 });
   if (!enemy.equipmentDropped && enemy.hp <= equipmentThreshold(enemy.type)) {
     enemy.equipmentDropped = true;
     game.effects.push({ id: id(game), kind: "gear", type: enemy.type, x: enemy.x, y: cellY(enemy.row), age: 0 });
@@ -218,6 +224,12 @@ export function tick(game, dt) {
   for (const sun of [...game.suns]) {
     sun.age += dt;
     if (sun.age >= 8) collectSun(game, sun.id);
+  }
+  for (const enemy of game.enemies) {
+    if (enemy.hp > 0 && enemy.burn > 0) {
+      damageEnemy(game, enemy, BURN_DAMAGE * Math.min(dt, enemy.burn), false, false);
+      enemy.burn = Math.max(0, enemy.burn - dt);
+    }
   }
   for (const plant of game.plants) {
     if (plant.hp <= 0) continue;
@@ -272,7 +284,15 @@ export function tick(game, dt) {
       .filter(e => e.hp > 0 && e.row === shot.row && e.x + 25 >= previousX && e.x - 25 <= shot.x && (shot.kind !== "thorn" || !shot.hitIds.includes(e.id)))
       .sort((a, b) => a.x - b.x);
     for (const target of targets) {
-      damageEnemy(game, target, shot.damage, shot.frost);
+      if (shot.kind === "ember") {
+        for (const enemy of game.enemies) {
+          if (enemy.hp > 0 && Math.hypot(enemy.x - target.x, (enemy.row - target.row) * 100) <= FIRE_RADIUS) {
+            damageEnemy(game, enemy, shot.damage);
+            if (enemy.hp > 0) enemy.burn = BURN_DURATION;
+          }
+        }
+        game.effects.push({ id: id(game), kind: "flame", x: target.x, y: cellY(target.row), age: 0 });
+      } else damageEnemy(game, target, shot.damage, shot.frost);
       if (shot.kind === "thorn") shot.hitIds.push(target.id);
       if (shot.kind !== "thorn" || shot.hitIds.length >= THORN_HITS) { shot.x = 1100; break; }
     }
@@ -327,13 +347,13 @@ const position = p => integer(p.row, 0, 4) && integer(p.col, 0, 8);
 const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
 export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, 10) || g.status !== "playing") return false;
-  if (g.rulesVersion !== undefined && ![2, 3].includes(g.rulesVersion)) return false;
-  if (g.pacingVersion !== undefined && ![1, 2, 3, 4].includes(g.pacingVersion)) return false;
+  if (g.rulesVersion !== undefined && ![2, 3, 4].includes(g.rulesVersion)) return false;
+  if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5].includes(g.pacingVersion)) return false;
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
   if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, 6) || !integer(g.wave, 0, 3)) return false;
   if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, PLANTS[t].recharge)
-    || (g.rulesVersion !== 3 && PLANTS[t].unlockStage >= 5 && g.cooldowns[t] === undefined))) return false;
+    || ((g.rulesVersion ?? 1) < (t === "ember" ? 4 : PLANTS[t].unlockStage >= 5 ? 3 : 1) && g.cooldowns[t] === undefined))) return false;
   if (!object(g.stats) || !["planted", "defeated", "collected"].every(k => integer(g.stats[k], 0, 1000000))) return false;
   const hasId = p => object(p) && integer(p.id, 1, g.nextId - 1);
   const eventTime = value => value === undefined || finite(value, 0, g.time);
@@ -343,13 +363,14 @@ export function validSnapshot(g) {
   if (!g.plants.every(p => p.pendingShotAt === undefined || (p.type === "twin" && finite(p.shotAt, 0, g.time)
     && finite(p.pendingShotAt, g.time, g.time + TWIN_GAP) && Math.abs(p.pendingShotAt - p.shotAt - TWIN_GAP) < 1e-8))) return false;
   if (!list(g.enemies, STAGES[g.stage - 1].count, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4) && finite(e.x, -25, 1000) && finite(e.hp, .000001, ENEMIES[e.type].hp) && finite(e.slow, 0, 3) && finite(e.age, 0, 100000) && typeof e.eating === "boolean")) return false;
-  if (!g.enemies.every(e => eventTime(e.motionAt) && eventTime(e.hurtAt)
+  if (!g.enemies.every(e => eventTime(e.motionAt) && eventTime(e.hurtAt) && (e.burn === undefined || finite(e.burn, 0, BURN_DURATION))
     && (e.equipmentDropped === undefined || (typeof e.equipmentDropped === "boolean"
       && (!e.equipmentDropped || e.hp <= equipmentThreshold(e.type)))))) return false;
   if (!list(g.shots, 500, s => {
     if (!hasId(s) || !integer(s.row, 0, 4) || !finite(s.x, 0, 1000) || typeof s.frost !== "boolean") return false;
     if (s.kind === undefined) return [15, 18, 22].includes(s.damage);
     if (s.frost) return false;
+    if (s.kind === "ember") return s.damage === PLANTS.ember.damage;
     if (s.kind === "twin") return s.damage === PLANTS.twin.damage && integer(s.muzzle, 0, 1);
     if (s.kind === "thorn") return s.damage === PLANTS.thorn.damage && list(s.hitIds, THORN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id)
       && new Set(s.hitIds).size === s.hitIds.length;

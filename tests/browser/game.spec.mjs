@@ -347,16 +347,16 @@ test("1~10 정원의 잠금·해금, 이전 정원 선택·재시작·저장 복
   await page.locator(".stage-button").first().tap();
   await page.getByRole("button", { name: "새로 시작", exact: true }).tap();
   await confirmTeam(page);
-  await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
+  await expect(page.locator(".seed-card:disabled")).toHaveCount(9);
   await expect(page.locator('.seed-card[data-type="sun"]')).toBeEnabled();
   await expect(page.locator('.seed-card[data-type="pea"]')).toBeEnabled();
   await page.locator("#pause-button").tap();
   await page.getByRole("button", { name: "다시 시작", exact: true }).tap();
   await page.getByRole("button", { name: "다시 시작", exact: true }).tap();
   await confirmTeam(page);
-  await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
+  await expect(page.locator(".seed-card:disabled")).toHaveCount(9);
   await page.reload(); await page.locator("#resume-button").tap();
-  await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
+  await expect(page.locator(".seed-card:disabled")).toHaveCount(9);
   await page.locator('.seed-card[data-type="sun"]').tap();
   await page.locator('.plot[data-row="0"][data-col="0"]').tap();
   await page.locator('.seed-card[data-type="pea"]').tap();
@@ -383,7 +383,7 @@ test("구버전 진행 중 식물은 보존하고 새 배치는 해금 규칙을
   await page.locator("#pause-button").tap();
   const saved = await readStored(page);
   expect(saved.unlocked).toBe(7);
-  expect(saved.current.rulesVersion).toBe(3);
+  expect(saved.current.rulesVersion).toBe(4);
   expect(saved.current.plants[0].type).toBe("sun");
 });
 

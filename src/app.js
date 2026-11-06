@@ -121,7 +121,7 @@ modal.addEventListener("cancel", event => { event.preventDefault(); closeModal()
 function showStages() {
   const content = document.createElement("div");
   const message = document.createElement("p");
-  message.textContent = "콩별이와 햇살봉은 처음부터 함께해요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 다시 도전할 때도 해당 정원의 식물로 시작해요. 별은 남은 하트 수예요.";
+  message.textContent = "콩별이와 햇살봉은 처음부터 함께해요. 1~9번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 다시 도전할 때도 해당 정원의 식물로 시작해요. 별은 남은 하트 수예요.";
   content.append(message);
   const replayHint = document.createElement("p");
   replayHint.textContent = "완료한 정원도 다시하기를 눌러 처음부터 도전할 수 있어요. 모은 별과 열린 정원은 지우지 않아요.";
@@ -173,7 +173,7 @@ function helpMarkup() {
     <div class="help-step"><b>2. 식물 배치</b><span>카드를 고르고 빈 땅을 톡! 한 번 심으면 선택이 풀려요. 카드를 다시 눌러도 취소돼요.</span></div>
     <div class="help-step"><b>3. 정원 지키기</b><span>좀비가 왼쪽 끝에 닿으면 하트가 하나 줄어요. 3번의 무리를 막아요!</span></div>
   </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
-  <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
+  <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~9번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
   <p>시작 전에 최대 6종, 10번째 정원에서는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.</p>
   <p>삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하면 자동으로 멈춰요. 세로로 들고 있어도 게임은 가로형 화면으로 표시돼요.</p>
   <details><summary>좀비 친구 알아보기</summary><p>${Object.values(ENEMIES).map(e => `<b>${e.name}</b>: ${e.description}`).join("<br>")}</p></details>`;

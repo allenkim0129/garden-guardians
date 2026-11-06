@@ -84,7 +84,7 @@ test("이전 저장의 별·진행·잠긴 식물은 유지하고 발사체를 �
   assert.match(result.notice, /이전/);
   assert.equal(result.data.unlocked, 7);
   assert.deepEqual(result.data.stars, data.stars);
-  assert.equal(result.data.current.rulesVersion, 3);
+  assert.equal(result.data.current.rulesVersion, 4);
   assert.deepEqual(result.data.current.plants, old.plants);
   assert.equal(result.data.current.shots[0].damage, 18);
   assert.equal(plantAt(result.data.current, "sun", 1, 0).ok, true);
@@ -92,6 +92,24 @@ test("이전 저장의 별·진행·잠긴 식물은 유지하고 발사체를 �
   writeSave(storage, result.data);
   assert.equal(readSave(storage).notice, null);
   assert.ok(validateSave(readSave(storage).data));
+});
+
+test("v16 저장은 불꽃봉오리 쿨다운만 추가하고 팀·25초 시간표·설정을 보존", () => {
+  const game = createGame(10, ["sun", "pea", "wall", "frost", "bomb", "twin"]);
+  game.rulesVersion = 3; game.pacingVersion = 4;
+  delete game.cooldowns.ember;
+  plantAt(game, "pea", 2, 0);
+  const data = { ...freshSave(), current: game, unlocked: 10, language: "en", volume: 65, sound: true, stars: Array(10).fill(3) };
+  assert.ok(validateSave(data));
+  const result = readSave({ getItem: () => JSON.stringify(data) });
+  assert.equal(result.error, null);
+  assert.deepEqual(result.data, {
+    ...data, current: { ...game, rulesVersion: 4, effects: [], cooldowns: { ...game.cooldowns, ember: 0 } },
+  });
+  assert.ok(validateSave(result.data));
+  const current = createGame(10);
+  delete current.cooldowns.ember;
+  assert.equal(validSnapshot(current), false);
 });
 
 test("기존 1단계 저장도 진행 손실 없이 햇살봉·콩별이를 바로 배치 가능", () => {

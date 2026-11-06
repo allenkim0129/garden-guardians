@@ -8,7 +8,7 @@ test("실제 Web Audio 합성: 네 종류별 울음·슉슉·피격 파형과 �
   const report = await page.evaluate(async () => {
     const { GardenAudio, AUDIO_LIMITS } = await import("./src/audio.js");
     const results = [];
-    for (const kind of ["ambient", "hit", "ice", "bite", "burst", "gear"]) {
+    for (const kind of ["ambient", "hit", "ice", "bite", "burst", "gear", "flame"]) {
       for (const type of (["ambient", "hit"].includes(kind) ? ["sleepy", "jelly", "roller", "umbrella"] : ["sleepy"])) {
         const context = new OfflineAudioContext(1, 32000, 24000);
         Object.defineProperty(context, "state", { value: "running" });

@@ -14,8 +14,8 @@ function enemy(game, type, row, x) {
   return e;
 }
 
-test("식물 10종, 좀비 4종, 증가하는 10개의 유효한 스테이지", () => {
-  assert.equal(Object.keys(PLANTS).length, 10);
+test("식물 11종, 좀비 4종, 증가하는 10개의 유효한 스테이지", () => {
+  assert.equal(Object.keys(PLANTS).length, 11);
   assert.equal(Object.keys(ENEMIES).length, 4);
   assert.equal(STAGES.length, 10);
   for (const stage of STAGES) {
@@ -207,7 +207,7 @@ test("v11은 준비 18초·적은 첫 무리·점진 가속·증가한 마지막
 });
 test("v15는 55초 전 1~2명만 천천히, 중반 증가, 최종 무리에 절반 이상 집중", () => {
   for (const stage of STAGES) {
-    const plan = scheduleFor(stage.id);
+    const plan = scheduleFor(stage.id, 4);
     const waves = [1, 2, 3].map(wave => plan.filter(spawn => spawn.wave === wave));
     assert.equal(plan[0].at, 25);
     assert.equal(waves[0].length, stage.id === 1 ? 1 : 2);
@@ -223,13 +223,14 @@ test("v15는 55초 전 1~2명만 천천히, 중반 증가, 최종 무리에 절�
     assert.equal(plan.length, stage.count);
     assert.ok(plan.every((spawn, index) => !index || spawn.at > plan[index - 1].at));
     const game = createGame(stage.id);
+    game.pacingVersion = 4;
     game.time = 24.9; tick(game, .1);
     assert.equal(game.nextSpawn, 1);
     assert.equal(game.enemies[0].type, "sleepy");
   }
 });
 test("진행 바는 저장 버전의 시간표를 따르고 마지막 등장 이후 남은 적과 승리를 구분", () => {
-  for (const pacingVersion of [1, 2, 3, 4]) {
+  for (const pacingVersion of [1, 2, 3, 4, 5]) {
     const game = createGame(10); game.pacingVersion = pacingVersion;
     const plan = scheduleFor(10, pacingVersion);
     assert.ok(validSnapshot(game));
@@ -304,9 +305,9 @@ test("자원·대기 시간 보정 없이 해금된 식물의 혼합 전략으�
   assert.equal(progress.current, null);
 });
 
-test("콩별이·햇살봉은 기본 해금하고 2~9 정원에 한 종씩 추가, 재도전도 동일", () => {
-  const unlocks = { sun: 1, pea: 1, wall: 2, frost: 3, bomb: 4, twin: 5, thorn: 6, pumpkin: 7, lantern: 8, iron: 9 };
-  const introductions = [["sun", "pea"], ["wall"], ["frost"], ["bomb"], ["twin"], ["thorn"], ["pumpkin"], ["lantern"], ["iron"]];
+test("콩별이·햇살봉은 기본 해금하고 2~10 정원에 한 종씩 추가, 재도전도 동일", () => {
+  const unlocks = { sun: 1, pea: 1, wall: 2, frost: 3, bomb: 4, twin: 5, thorn: 6, pumpkin: 7, lantern: 8, iron: 9, ember: 10 };
+  const introductions = [["sun", "pea"], ["wall"], ["frost"], ["bomb"], ["twin"], ["thorn"], ["pumpkin"], ["lantern"], ["iron"], ["ember"]];
   for (let stage = 1; stage <= 10; stage++) {
     assert.deepEqual(engine.introducedPlants(stage), introductions[stage - 1] ?? []);
     for (const [type, unlockStage] of Object.entries(unlocks)) {
@@ -340,4 +341,144 @@ test("v14 등장 규칙에서 콩별이 밸런스 개정의 단일 공격 전략
   }
   assert.ok(mixedHearts >= soloHearts + 3);
   assert.equal(playStrategy(previous, 10, "pea").game.status, "lost");
+});
+
+test("v17은 첫 10초 한 명만 앞당기고 두 번째 39초·55초 중반·최종 무리는 보존", () => {
+  for (const stage of STAGES) {
+    const plan = scheduleFor(stage.id);
+    assert.equal(plan[0].at, 10);
+    assert.equal(plan[0].type, "sleepy");
+    assert.deepEqual(plan.slice(1), scheduleFor(stage.id, 4).slice(1));
+    const game = createGame(stage.id);
+    game.time = 9.8;
+    tick(game, .1);
+    assert.equal(game.nextSpawn, 0);
+    tick(game, .1);
+    assert.equal(game.nextSpawn, 1);
+    game.time = 38.9; tick(game, .1);
+    assert.equal(game.nextSpawn, stage.id === 1 ? 1 : 2);
+  }
+});
+
+function emberHit(game, target) {
+  game.shots.push({ id: game.nextId++, kind: "ember", row: target.row, x: target.x - 30, damage: PLANTS.ember.damage, frost: false });
+  tick(game, .1);
+}
+test("불꽃봉오리의 비용·쿨다운·발사 간격·같은 줄 앞쪽 타깃과 10단계 해금", () => {
+  assert.equal(plantAt(createGame(9), "ember", 0, 0).ok, false);
+  const game = createGame(10, ["sun", "ember"]);
+  assert.ok(plantAt(game, "ember", 2, 0).ok);
+  assert.equal(game.sun, 150);
+  assert.equal(game.cooldowns.ember, 10);
+  assert.equal(game.plants[0].hp, 110);
+  assert.equal(plantAt(game, "ember", 3, 0).ok, false);
+  enemy(game, "jelly", 1, 750);
+  enemy(game, "jelly", 2, 20);
+  advance(game, .2);
+  assert.equal(game.shots.length, 0);
+  enemy(game, "jelly", 2, 750);
+  tick(game, .1);
+  assert.equal(game.shots.length, 1);
+  assert.equal(game.shots[0].kind, "ember");
+  assert.equal(game.shots[0].damage, 24);
+  assert.equal(game.plants[0].timer, 3.2);
+  assert.ok(validSnapshot(snapshot(game)));
+});
+test("불씨는 명중점 반경 105 안의 같은 줄·인접 줄에 한 번만 피해와 화상", () => {
+  const game = createGame(10);
+  const target = enemy(game, "jelly", 2, 500);
+  const inside = [target, enemy(game, "jelly", 2, 605), enemy(game, "jelly", 2, 400), enemy(game, "jelly", 1, 500)];
+  const outside = [enemy(game, "jelly", 2, 605.01), enemy(game, "jelly", 3, 533), enemy(game, "jelly", 4, 500)];
+  emberHit(game, target);
+  for (const e of inside) {
+    assert.equal(e.hp, 316);
+    assert.equal(e.burn, 3);
+  }
+  for (const e of outside) {
+    assert.equal(e.hp, 340);
+    assert.equal(e.burn, undefined);
+  }
+  assert.equal(game.shots.length, 0);
+  assert.equal(game.effects.filter(e => e.kind === "flame").length, 1);
+  advance(game, 3.1);
+  for (const e of inside) {
+    assert.ok(Math.abs(e.hp - 298) < 1e-8);
+    assert.equal(e.burn, 0);
+  }
+  assert.ok(outside.every(e => e.hp === 340));
+});
+test("화상 재명중은 시간만 갱신하고 중첩·전염되지 않으며 냉기를 취소하지 않음", () => {
+  const game = createGame(10);
+  const target = enemy(game, "jelly", 2, 500);
+  target.slow = 3;
+  emberHit(game, target);
+  assert.ok(target.slow > 0);
+  advance(game, 1);
+  const hp = target.hp;
+  emberHit(game, target);
+  assert.ok(Math.abs(target.hp - hp + 24 + .6) < 1e-8);
+  assert.equal(target.burn, 3);
+  const nearby = enemy(game, "jelly", 2, target.x + 10);
+  const after = target.hp;
+  advance(game, 3.1);
+  assert.ok(Math.abs(after - target.hp - 18) < 1e-8);
+  assert.equal(nearby.hp, 340);
+  assert.equal(nearby.burn, undefined);
+});
+test("화상 사망도 탈락·처치를 한 번만 처리하며 죽은 적의 물기·탈출을 막음", () => {
+  for (const x of [185, -24.9]) {
+    const game = createGame(10);
+    plantAt(game, "wall", 2, 1);
+    const target = enemy(game, "sleepy", 2, x);
+    target.hp = .3; target.burn = .1;
+    game.nextSpawn = STAGES[9].count;
+    tick(game, .1);
+    assert.equal(game.status, "won");
+    assert.equal(game.plants[0].hp, 650);
+    assert.equal(game.lives, 3);
+    assert.equal(game.stats.defeated, 1);
+    assert.equal(game.effects.filter(e => e.kind === "fall").length, 1);
+    assert.equal(game.effects.filter(e => e.kind === "gear").length, 1);
+    assert.equal(game.effects.filter(e => e.kind === "hit").length, 0);
+    tick(game, .1);
+    assert.equal(game.stats.defeated, 1);
+  }
+});
+test("불씨·화상·냉기는 저장 복구와 정지 뒤 동일하게 이어지고 잘못된 상태 거부", () => {
+  const game = createGame(10, ["ember", "frost"]);
+  plantAt(game, "ember", 2, 0);
+  const target = enemy(game, "jelly", 2, 700);
+  target.burn = 2; target.slow = 2.5;
+  advance(game, .3);
+  const restored = snapshot(game);
+  assert.ok(validSnapshot(restored));
+  assert.equal(restored.shots[0].kind, "ember");
+  tick(game, 0);
+  assert.deepEqual(snapshot(game), restored);
+  game.effects = [];
+  advance(game, 4); advance(restored, 4);
+  assert.deepEqual(restored, game);
+  for (const value of [-1, 3.01, "3", null, Infinity]) {
+    const bad = snapshot(game); bad.enemies[0].burn = value;
+    assert.equal(validSnapshot(bad), false);
+  }
+  const bad = snapshot(game);
+  bad.shots = [{ id: bad.nextId++, row: 2, x: 200, kind: "ember", damage: 24, frost: true }];
+  assert.equal(validSnapshot(bad), false);
+  bad.shots[0].frost = false; bad.shots[0].damage = 340;
+  assert.equal(validSnapshot(bad), false);
+  delete bad.cooldowns.ember;
+  assert.equal(validSnapshot(bad), false);
+});
+
+test("화상 소수 피해의 오차가 체력 0인 좀비와 유효하지 않은 저장을 남기지 않음", () => {
+  const game = createGame(10);
+  const target = enemy(game, "sleepy", 2, 700);
+  target.hp = 18; target.burn = 3;
+  for (let i = 0; i < 30; i++) {
+    tick(game, .1);
+    assert.ok(validSnapshot(snapshot(game)));
+  }
+  assert.equal(game.enemies.length, 0);
+  assert.equal(game.stats.defeated, 1);
 });

@@ -14,7 +14,7 @@ async function seed(page, game, extra = {}) {
 const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
 
 test("시간표 진행 바·중간/최종 표시·정지·저장 복구는 새 판과 이전 판에 일치", async ({ page }) => {
-  for (const version of [3, 4]) {
+  for (const version of [3, 4, 5]) {
     const game = createGame(10, ["sun", "pea"]); game.pacingVersion = version;
     const plan = scheduleFor(10, version);
     game.time = plan.find(spawn => spawn.wave === 2).at;
@@ -76,7 +76,7 @@ test("완료 정원 다시하기는 확인 후 판만 초기화하고 별·해�
   expect(after.current.time).toBeLessThan(1);
   expect(after.current.sun).toBe(250);
   expect(after.current.nextSpawn).toBe(0);
-  expect(after.current.pacingVersion).toBe(4);
+  expect(after.current.pacingVersion).toBe(5);
 });
 
 test("진행 바와 모든 조작은 작은 가로·회전 화면·태블릿 안에 표시", async ({ page }, testInfo) => {

@@ -1,6 +1,6 @@
 const BASE = new URL("./", self.location.href);
 const CACHE_PREFIX = `garden-guardians-${encodeURIComponent(BASE.pathname)}-`;
-const CACHE = `${CACHE_PREFIX}v16`;
+const CACHE = `${CACHE_PREFIX}v17`;
 const FILES = [
   "./", "./index.html", "./styles.css", "./src/app.js", "./src/engine.js",
   "./src/art.js", "./src/audio.js", "./src/storage.js", "./src/sprites.js", "./src/i18n.js", "./manifest.webmanifest",
@@ -8,6 +8,7 @@ const FILES = [
   "./assets/sprites/sun.png", "./assets/sprites/wall.png", "./assets/sprites/frost.png", "./assets/sprites/bomb.png",
   "./assets/sprites/jelly.png", "./assets/sprites/roller.png", "./assets/sprites/umbrella.png",
   "./assets/sprites/twin.png", "./assets/sprites/thorn.png", "./assets/sprites/pumpkin.png", "./assets/sprites/lantern.png", "./assets/sprites/iron.png",
+  "./assets/sprites/ember.png",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png", "./icons/apple-touch-icon.png",
 ].map(path => new URL(path, BASE).href);
 

@@ -10,8 +10,8 @@ function addEnemy(game, row, x, hp = ENEMIES.sleepy.hp) {
   return enemy;
 }
 
-for (const type of ["pea", "frost"]) test(`${type} 발사 준비 두 프레임 뒤 실제 투사체 생성 시점에 세 번째 프레임`, () => {
-  const game = createGame(4);
+for (const type of ["pea", "frost", "ember"]) test(`${type} 발사 준비 두 프레임 뒤 실제 투사체 생성 시점에 세 번째 프레임`, () => {
+  const game = createGame(type === "ember" ? 10 : 4);
   plantAt(game, type, 2, 1);
   addEnemy(game, 2, 750);
   const plant = game.plants[0];

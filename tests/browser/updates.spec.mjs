@@ -90,14 +90,15 @@ async function installNext(page, server) {
   await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration()).waiting))).toBe(true);
 }
 
-test("두 번째 콩 예약이 있는 저장도 업데이트 후 한 번만 이어 발사", async ({ page }) => {
+test("두 번째 콩 예약·불씨·화상·냉기도 업데이트 후 동일하게 이어짐", async ({ page }) => {
   const server = await releaseServer();
   try {
-    const game = createGame(10, ["sun", "pea", "wall", "frost", "twin", "pumpkin", "lantern", "iron"]);
+    const game = createGame(10, ["sun", "pea", "wall", "frost", "twin", "ember", "lantern", "iron"]);
     plantAt(game, "twin", 2, 0);
     game.enemies.push({ id: game.nextId++, type: "jelly", row: 2, x: 900, hp: ENEMIES.jelly.hp, age: 0, slow: 0, eating: false });
-    game.enemies.push({ id: game.nextId++, type: "umbrella", row: 4, x: 800, hp: 100, age: 1, slow: 0, eating: false, equipmentDropped: true });
+    game.enemies.push({ id: game.nextId++, type: "umbrella", row: 4, x: 800, hp: 100, age: 1, slow: 2, burn: 2, eating: false, equipmentDropped: true });
     tick(game, .1); tick(game, .1);
+    game.shots.push({ id: game.nextId++, kind: "ember", row: 1, x: 300, damage: 24, frost: false });
     game.effects = [];
     const data = { ...freshSave(), unlocked: 10, language: "en", volume: 80, tutorialSeen: true, current: game };
     await page.goto(`${server.url}manifest.webmanifest`);
@@ -113,7 +114,11 @@ test("두 번째 콩 예약이 있는 저장도 업데이트 후 한 번만 이�
     await page.locator("#pause-button").tap();
     const restored = await saved(page);
     expect(restored.current.plants[0].pendingShotAt).toBeUndefined();
-    expect(restored.current.shots.map(s => s.muzzle)).toEqual([0, 1]);
+    expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.muzzle)).toEqual([0, 1]);
+    expect(restored.current.shots.filter(s => s.kind === "ember")).toHaveLength(1);
+    expect(restored.current.enemies[1].burn).toBeLessThan(game.enemies[1].burn);
+    expect(restored.current.enemies[1].slow).toBeLessThan(game.enemies[1].slow);
+    expect(restored.current.enemies[1].hp).toBeLessThan(game.enemies[1].hp);
     expect(restored.current.plants[0].shotAt).toBe(game.plants[0].shotAt);
     expect(restored.language).toBe("en");
   } finally { await server.stop(); }

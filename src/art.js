@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, PUMPKIN_RADIUS, GEAR_DURATION } from "./engine.js";
+import { PLANTS, ENEMIES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION } from "./engine.js";
 import { drawSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION } from "./sprites.js";
 
 const ink = "#304b3d";
@@ -49,7 +49,7 @@ export function drawPlant(c, type, x, y, scale = 1, time = 0, frame = { row: 0, 
 }
 export function drawEnemy(c, type, x, y, scale = 1, age = 0, slow = false, eating = false, frame = { row: 0, col: 0 }, equipmentDropped = false) {
   c.save(); c.translate(x, y); c.scale(scale, scale); groundShadow(c, type === "sleepy" ? 25 : 32); c.restore();
-  drawSprite(c, type, frame, x, y, scale, equipmentDropped);
+  drawSprite(c, type, frame, x, y, scale, equipmentDropped, slow);
   if (slow) {
     star(c, x + 23 * scale, y - 35 * scale, 7 * scale, 2 * scale, "#d8f8ff", 6);
     if (type !== "sleepy") star(c, x - 29 * scale, y + 14 * scale, 9 * scale, 3 * scale, "#d8f8ff", 6);
@@ -83,6 +83,14 @@ export function drawDroppedGear(c, effect) {
   c.restore();
 }
 
+function drawFlame(c, x, y, scale, time) {
+  c.save(); c.translate(x, y); c.scale(scale, scale);
+  c.rotate(Math.sin(time * 9) * .1);
+  shape(c, "M0 10 C-17 8 -18 -3 -12 -15 L-5 -7 Q3 -20 0 -29 Q21 -14 15 0 Q12 11 0 10Z", "#f67b32", "#a74727", 1.5);
+  shape(c, "M0 7 Q-9 5 -5 -7 L0 -2 L5 -15 Q14 3 0 7Z", "#ffe795", null);
+  c.restore();
+}
+
 // Visual muzzle alignment only; the engine's shot coordinates and collision rules stay unchanged.
 export function projectilePosition(shot) {
   if (shot.kind === "pumpkin") {
@@ -91,12 +99,16 @@ export function projectilePosition(shot) {
   }
   if (shot.kind === "twin") return { x: shot.x + 2, y: shot.row * 100 + (shot.muzzle === 0 ? 22 : 41) };
   if (shot.kind === "thorn") return { x: shot.x + 12, y: shot.row * 100 + 34 };
+  if (shot.kind === "ember") return { x: shot.x, y: shot.row * 100 + 44 };
   return { x: shot.x + (shot.frost ? 7 : 0), y: shot.row * 100 + (shot.frost ? 26 : 42) };
 }
 export function drawProjectile(c, shot) {
   const { x, y } = projectilePosition(shot);
   c.save(); c.translate(x, y);
-  if (shot.kind === "pumpkin") {
+  if (shot.kind === "ember") {
+    c.rotate(Math.PI / 2);
+    drawFlame(c, 0, 0, .65, shot.x / 100);
+  } else if (shot.kind === "pumpkin") {
     c.rotate(shot.age * 3);
     ellipse(c, 0, 0, 12, 10, volume(c, 0, 0, 14, "#ffe8a6", "#ed9e39", "#ac5528"), "#704d2a", 1.6);
     line(c, [[-3, -8], [-5, 0], [-3, 8]], "#c87a31", 1.4);
@@ -190,6 +202,9 @@ export function drawBoard(c, game, selected, shovel) {
     }
     for (const enemy of game.enemies.filter(e => e.row === row).sort((a, b) => b.x - a.x)) {
       drawEnemy(c, enemy.type, enemy.x, row * 100 + 54, .87, enemy.age, enemy.slow > 0, enemy.eating, enemyFrame(enemy, game.time), enemy.equipmentDropped);
+      if (enemy.burn > 0) {
+        for (let i = 0; i < 3; i++) drawFlame(c, enemy.x + (i - 1) * 18, row * 100 + 65 + i % 2 * 6, .65 + Math.sin(game.time * 8 + i) * .1, game.time + i);
+      }
       if (enemy.hp < ENEMIES[enemy.type].hp) healthBar(c, enemy.x, row * 100 + 91, enemy.hp / ENEMIES[enemy.type].hp, "#b97c68");
     }
   }
@@ -207,12 +222,15 @@ export function drawBoard(c, game, selected, shovel) {
       ellipse(c, effect.x, effect.y, Math.min(175, effect.age * 500), Math.min(175, effect.age * 500), "#ffba5124", "#e79a42", 2);
       c.globalAlpha = Math.min(1, Math.max(0, (BURST_DURATION - effect.age) / .2));
       drawSprite(c, "bomb", burstFrame(effect.age), effect.x, effect.y + 3, .9);
-    } else if (effect.kind === "splash") {
-      const radius = PUMPKIN_RADIUS * Math.min(1, effect.age * 7);
+    } else if (effect.kind === "splash" || effect.kind === "flame") {
+      const fire = effect.kind === "flame";
+      const radius = (fire ? FIRE_RADIUS : PUMPKIN_RADIUS) * Math.min(1, effect.age * 7);
       ellipse(c, effect.x, effect.y, radius, radius, "#f5b65230", "#d08a38", 2);
       for (let i = 0; i < 6; i++) {
         const angle = i * Math.PI / 3;
-        ellipse(c, effect.x + Math.cos(angle) * radius * .7, effect.y + Math.sin(angle) * radius * .7, 5, 3, i % 2 ? "#839843" : "#ffd79a");
+        const x = effect.x + Math.cos(angle) * radius * .7, y = effect.y + Math.sin(angle) * radius * .7;
+        if (fire) drawFlame(c, x, y, .5, effect.age + i);
+        else ellipse(c, x, y, 5, 3, i % 2 ? "#839843" : "#ffd79a");
       }
     } else if (effect.kind === "heart") {
       c.fillStyle = "#ce7067"; c.font = "40px sans-serif"; c.fillText("♥", effect.x - 15, effect.y - effect.age * 40);
