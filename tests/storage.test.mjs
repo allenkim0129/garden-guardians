@@ -84,7 +84,7 @@ test("이전 저장의 별·진행·잠긴 식물은 유지하고 발사체를 �
   assert.match(result.notice, /이전/);
   assert.equal(result.data.unlocked, 7);
   assert.deepEqual(result.data.stars, data.stars);
-  assert.equal(result.data.current.rulesVersion, 4);
+  assert.equal(result.data.current.rulesVersion, 5);
   assert.deepEqual(result.data.current.plants, old.plants);
   assert.equal(result.data.current.shots[0].damage, 18);
   assert.equal(plantAt(result.data.current, "sun", 1, 0).ok, true);
@@ -104,12 +104,49 @@ test("v16 저장은 불꽃봉오리 쿨다운만 추가하고 팀·25초 시간�
   const result = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(result.error, null);
   assert.deepEqual(result.data, {
-    ...data, current: { ...game, rulesVersion: 4, effects: [], cooldowns: { ...game.cooldowns, ember: 0 } },
+    ...data, current: { ...game, rulesVersion: 5, effects: [], cooldowns: { ...game.cooldowns, ember: 0 } },
   });
   assert.ok(validateSave(result.data));
   const current = createGame(10);
   delete current.cooldowns.ember;
   assert.equal(validSnapshot(current), false);
+});
+
+test("v17의 긴 대기도 저장을 거부하지 않고 새 상한으로 한 번만 줄임", () => {
+  const old = createGame(10, ["sun", "pea", "lantern", "ember"]);
+  old.rulesVersion = 4;
+  old.cooldowns = { sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 };
+  old.skyTimer = 6;
+  old.time = 20;
+  for (const [type, timer, hp, col] of [["sun", 7.5, 100, 0], ["lantern", 9.5, 140, 1], ["pea", 1.2, 120, 2]]) {
+    old.plants.push({ id: old.nextId++, type, row: 0, col, hp, timer, age: 12 });
+  }
+  const data = { ...freshSave(), current: old, unlocked: 10, stars: Array(10).fill(3), sound: true, volume: 65, language: "en" };
+  assert.ok(validateSave(data));
+  const expected = {
+    ...data, current: { ...old, rulesVersion: 5, skyTimer: 5,
+      cooldowns: { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9 },
+      plants: old.plants.map(p => ({ ...p, timer: p.type === "sun" ? 6 : p.type === "lantern" ? 8 : p.timer })),
+    },
+  };
+  const result = readSave({ getItem: () => JSON.stringify(data) });
+  assert.equal(result.error, null);
+  assert.deepEqual(result.data, expected);
+  assert.ok(validateSave(result.data));
+  assert.deepEqual(readSave({ getItem: () => JSON.stringify(result.data) }).data, expected);
+  const short = structuredClone(data);
+  short.current.cooldowns.bomb = .2; short.current.skyTimer = .1; short.current.plants[0].timer = .3;
+  const kept = readSave({ getItem: () => JSON.stringify(short) }).data.current;
+  assert.equal(kept.cooldowns.bomb, .2);
+  assert.equal(kept.skyTimer, .1);
+  assert.equal(kept.plants[0].timer, .3);
+  old.cooldowns.bomb = 16.1;
+  assert.equal(validateSave(data), false);
+  const corrupt = structuredClone(expected);
+  corrupt.current.cooldowns.bomb = 14.1;
+  assert.equal(validateSave(corrupt), false);
+  corrupt.current.cooldowns.bomb = 14; corrupt.current.skyTimer = 5.1;
+  assert.equal(validateSave(corrupt), false);
 });
 
 test("기존 1단계 저장도 진행 손실 없이 햇살봉·콩별이를 바로 배치 가능", () => {

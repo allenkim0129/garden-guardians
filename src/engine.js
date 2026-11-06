@@ -12,19 +12,21 @@ export const PUMPKIN_RADIUS = 115;
 export const FIRE_RADIUS = 105;
 export const BURN_DURATION = 3;
 export const BURN_DAMAGE = 6;
+export const SKY_SUN_INTERVAL = 5;
 export const PLANTS = Object.freeze({
-  sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 5, interval: 8, description: "8초마다 햇빛 25를 만들어요." },
-  pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 6, interval: 1.6, damage: 18, description: "앞으로 초록 완두콩을 톡톡 쏘아요." },
-  wall: { name: "도토리벽", unlockStage: 2, cost: 75, hp: 650, recharge: 8, description: "튼튼한 몸으로 좀비를 막아요." },
-  frost: { name: "서리초", unlockStage: 3, cost: 125, hp: 100, recharge: 5, interval: 1.6, damage: 15, description: "얼음 결정을 쏴 좀비를 3초 동안 느리게 해요." },
-  bomb: { name: "방울폭탄", unlockStage: 4, cost: 125, hp: 150, recharge: 16, description: "1초 뒤 주변 좀비에게 큰 피해!" },
-  twin: { name: "쌍콩이", unlockStage: 5, cost: 225, hp: 120, recharge: 9, interval: 2, damage: 18, description: "2초마다 위아래 꼬투리에서 콩을 0.2초 간격으로 두 번 쏴요." },
-  thorn: { name: "가시풀", unlockStage: 6, cost: 200, hp: 100, recharge: 9, interval: 2.8, damage: 26, description: "2.8초마다 같은 줄의 좀비를 최대 3명 관통하는 가시를 쏴요." },
-  pumpkin: { name: "호박포", unlockStage: 7, cost: 225, hp: 130, recharge: 10, interval: 3.8, damage: 55, description: "3.8초마다 호박탄을 던져 착지점 반경 약 한 칸에 피해를 줘요." },
-  lantern: { name: "해등나무", unlockStage: 8, cost: 125, hp: 140, recharge: 10, interval: 10, description: "10초마다 햇빛 50을 만들어요. 첫 햇빛도 10초 뒤에 나와요." },
-  iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 14, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 14초!" },
-  ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 10, interval: 3.2, damage: 24, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 24 피해, 3초 동안 초당 6 화상 피해를 줘요. 화상은 중첩되지 않아요." },
+  sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 4, firstHarvest: 5, interval: 6, description: "첫 햇빛은 5초 뒤, 이후 6초마다 햇빛 25를 만들어요." },
+  pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 5, interval: 1.6, damage: 18, description: "앞으로 초록 완두콩을 톡톡 쏘아요." },
+  wall: { name: "도토리벽", unlockStage: 2, cost: 75, hp: 650, recharge: 7, description: "튼튼한 몸으로 좀비를 막아요." },
+  frost: { name: "서리초", unlockStage: 3, cost: 125, hp: 100, recharge: 4, interval: 1.6, damage: 15, description: "얼음 결정을 쏴 좀비를 3초 동안 느리게 해요." },
+  bomb: { name: "방울폭탄", unlockStage: 4, cost: 125, hp: 150, recharge: 14, description: "1초 뒤 주변 좀비에게 큰 피해!" },
+  twin: { name: "쌍콩이", unlockStage: 5, cost: 225, hp: 120, recharge: 8, interval: 2, damage: 18, description: "2초마다 위아래 꼬투리에서 콩을 0.2초 간격으로 두 번 쏴요." },
+  thorn: { name: "가시풀", unlockStage: 6, cost: 200, hp: 100, recharge: 8, interval: 2.8, damage: 26, description: "2.8초마다 같은 줄의 좀비를 최대 3명 관통하는 가시를 쏴요." },
+  pumpkin: { name: "호박포", unlockStage: 7, cost: 225, hp: 130, recharge: 9, interval: 3.8, damage: 55, description: "3.8초마다 호박탄을 던져 착지점 반경 약 한 칸에 피해를 줘요." },
+  lantern: { name: "해등나무", unlockStage: 8, cost: 125, hp: 140, recharge: 9, firstHarvest: 8, interval: 8, description: "8초마다 햇빛 50을 만들어요. 첫 햇빛도 8초 뒤에 나와요." },
+  iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 12, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 12초!" },
+  ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 24, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 24 피해, 3초 동안 초당 6 화상 피해를 줘요. 화상은 중첩되지 않아요." },
 });
+const LEGACY_RECHARGES = Object.freeze({ sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 });
 export const ENEMIES = Object.freeze({
   sleepy: { name: "잠옷좀비", hp: 110, speed: 17, bite: 22, description: "졸려도 정원 산책은 좋아해요." },
   jelly: { name: "젤리좀비", hp: 340, speed: 13, bite: 25, description: "느리지만 아주 튼튼해요." },
@@ -112,7 +114,7 @@ export function createGame(stageNumber, loadout) {
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 4, pacingVersion: 5, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 5, pacingVersion: 5, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -137,7 +139,7 @@ export function plantAt(game, type, row, col) {
   if (game.cooldowns[type] > 0) return { ok: false, reason: "친구가 준비 중이에요. 조금만 기다려 주세요." };
   game.sun -= info.cost;
   game.cooldowns[type] = info.recharge;
-  game.plants.push({ id: id(game), type, row, col, hp: info.hp, timer: type === "sun" ? 6 : type === "lantern" ? 10 : .2, age: 0 });
+  game.plants.push({ id: id(game), type, row, col, hp: info.hp, timer: info.firstHarvest ?? .2, age: 0 });
   game.stats.planted++;
   game.effects.push({ id: id(game), kind: "plant", x: cellX(col), y: cellY(row), age: 0 });
   return { ok: true };
@@ -217,9 +219,9 @@ export function tick(game, dt) {
   }
   game.skyTimer -= dt;
   if (game.skyTimer <= 0) {
-    const n = Math.floor(game.time / 6);
+    const n = Math.floor(game.time / SKY_SUN_INTERVAL);
     dropSun(game, 90 + ((n * 173) % 720), 60 + ((n * 97) % 380));
-    game.skyTimer += 6;
+    game.skyTimer += SKY_SUN_INTERVAL;
   }
   for (const sun of [...game.suns]) {
     sun.age += dt;
@@ -347,12 +349,12 @@ const position = p => integer(p.row, 0, 4) && integer(p.col, 0, 8);
 const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
 export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, 10) || g.status !== "playing") return false;
-  if (g.rulesVersion !== undefined && ![2, 3, 4].includes(g.rulesVersion)) return false;
+  if (g.rulesVersion !== undefined && ![2, 3, 4, 5].includes(g.rulesVersion)) return false;
   if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5].includes(g.pacingVersion)) return false;
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
-  if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, 6) || !integer(g.wave, 0, 3)) return false;
-  if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, PLANTS[t].recharge)
+  if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, (g.rulesVersion ?? 1) < 5 ? 6 : SKY_SUN_INTERVAL) || !integer(g.wave, 0, 3)) return false;
+  if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, (g.rulesVersion ?? 1) < 5 ? LEGACY_RECHARGES[t] : PLANTS[t].recharge)
     || ((g.rulesVersion ?? 1) < (t === "ember" ? 4 : PLANTS[t].unlockStage >= 5 ? 3 : 1) && g.cooldowns[t] === undefined))) return false;
   if (!object(g.stats) || !["planted", "defeated", "collected"].every(k => integer(g.stats[k], 0, 1000000))) return false;
   const hasId = p => object(p) && integer(p.id, 1, g.nextId - 1);

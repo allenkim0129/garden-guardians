@@ -124,6 +124,57 @@ test("두 번째 콩 예약·불씨·화상·냉기도 업데이트 후 동일�
   } finally { await server.stop(); }
 });
 
+test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오프라인에서 v18 대기로 재배치", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(10, ["sun", "pea", "lantern", "ember"]);
+    game.rulesVersion = 4;
+    game.cooldowns = { sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 };
+    game.skyTimer = 6;
+    game.time = 20;
+    game.plants.push({ id: game.nextId++, type: "sun", row: 0, col: 0, hp: 100, timer: 7.5, age: 12 });
+    game.plants.push({ id: game.nextId++, type: "lantern", row: 0, col: 1, hp: 140, timer: 9.5, age: 12 });
+    const data = { ...freshSave(), unlocked: 10, stars: Array(10).fill(3), language: "en", volume: 65, tutorialSeen: true, current: game };
+    const expected = structuredClone(data);
+    expected.current.rulesVersion = 5;
+    expected.current.cooldowns = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9 };
+    expected.current.skyTimer = 5;
+    expected.current.plants[0].timer = 6;
+    expected.current.plants[1].timer = 8;
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await expect(page.locator("#resume-button")).toBeVisible();
+    await installNext(page, server);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await server.stop();
+    await page.reload();
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    expect(await saved(page)).toEqual(data);
+    await page.locator("#resume-button").tap();
+    expect(await saved(page)).toEqual(expected);
+    const sun = page.locator('.seed-card[data-type="sun"]');
+    await expect(sun).toHaveAttribute("aria-label", /First harvest after 5s, then 25 sunlight every 6s/);
+    await expect(page.locator('.seed-card[data-type="lantern"]')).toHaveAttribute("aria-label", /50 sunlight every 8s/);
+    await expect(sun.locator(".cooldown")).toHaveText("4s");
+    await expect(sun.locator(".cooldown")).toBeHidden({ timeout: 6000 });
+    await sun.tap();
+    await page.locator('.plot[data-row="1"][data-col="0"]').tap();
+    await expect(sun.locator(".cooldown")).toHaveText("4s");
+    await page.locator("#pause-button").tap();
+    const after = await saved(page);
+    expect(after.current.rulesVersion).toBe(5);
+    expect(after.current.cooldowns.sun).toBeGreaterThan(0);
+    expect(after.current.cooldowns.sun).toBeLessThanOrEqual(4);
+    expect(after.current.plants.at(-1).timer).toBeLessThanOrEqual(5);
+    expect(after.stars).toEqual(data.stars);
+    expect(after.volume).toBe(65);
+  } finally { await server.stop(); }
+});
+
 test("v10의 진행 중 판은 업데이트 후에도 이전 웨이브로 이어짐", async ({ page }) => {
   const server = await releaseServer();
   try {

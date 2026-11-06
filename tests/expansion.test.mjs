@@ -136,12 +136,12 @@ test("포물선 비행·착지 피해는 저장 복구 후 동일하고 그리�
   advance(game, 2); advance(saved, 2);
   assert.deepEqual(saved, game);
 });
-test("해등나무는 첫 10초와 이후 10초마다 50, 수집은 한 번·자동수집 8초", () => {
+test("해등나무는 첫 8초와 이후 8초마다 50, 수집은 한 번·자동수집 8초", () => {
   const game = createGame(8);
   plantAt(game, "lantern", 0, 0);
   const plant = game.plants[0];
   const ownSuns = () => game.suns.filter(s => s.value === 50);
-  advance(game, 9.9);
+  advance(game, 7.9);
   assert.equal(ownSuns().length, 0);
   advance(game, .2);
   assert.equal(ownSuns().length, 1);
@@ -149,7 +149,7 @@ test("해등나무는 첫 10초와 이후 10초마다 50, 수집은 한 번·자
   const token = ownSuns()[0];
   assert.equal(engine.collectSun(game, token.id), true);
   assert.equal(engine.collectSun(game, token.id), false);
-  advance(game, 9.8);
+  advance(game, 7.8);
   assert.equal(ownSuns().length, 0);
   advance(game, .2);
   const second = ownSuns()[0];
@@ -163,7 +163,7 @@ test("해등나무는 첫 10초와 이후 10초마다 50, 수집은 한 번·자
 test("철잎보루 내구도·준비시간·손상 프레임, 새 공격 없음", () => {
   const game = duel("iron");
   assert.equal(game.plants[0].hp, 1500);
-  assert.equal(game.cooldowns.iron, 14);
+  assert.equal(game.cooldowns.iron, 12);
   game.enemies[0].x = 85;
   advance(game, 1);
   assert.ok(Math.abs(game.plants[0].hp - 1475) < 1e-7);

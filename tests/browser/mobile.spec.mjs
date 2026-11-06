@@ -160,7 +160,7 @@ test("안전 여백으로 좁아진 화면의 6종 카드 스크롤·44px·방�
 for (const portrait of [false, true]) test(`빠른 햇빛 쓸기·오배치 방지·화면 고정 (${portrait ? "세로 기기의 가로형 화면" : "가로"})`, async ({ page, context, browserName }) => {
   await page.setViewportSize(portrait ? { width: 320, height: 568 } : { width: 568, height: 320 });
   const game = createGame(10, team);
-  game.skyTimer = 6;
+  game.skyTimer = 5;
   for (const [x, value] of [[200, 25], [400, 50], [600, 25]]) game.suns.push({ id: game.nextId++, x, y: 250, value, age: 0 });
   await seed(page, game);
   await page.locator("#resume-button").tap();
@@ -253,7 +253,7 @@ test("선택은 최소 1종, 잠긴 식물 금지, 재시작 선택 취소는 �
 
 test("햇빛 위에서 시작한 쓸기·키보드 수집·취소와 다중 포인터는 오배치하지 않음", async ({ page, context, browserName }) => {
   const game = createGame(10, team);
-  game.skyTimer = 6;
+  game.skyTimer = 5;
   for (const x of [200, 400, 700]) game.suns.push({ id: game.nextId++, x, y: 250, value: 25, age: 0 });
   await seed(page, game);
   await page.locator("#resume-button").tap();

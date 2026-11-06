@@ -327,7 +327,7 @@ test("콩별이·햇살봉은 기본 해금하고 2~10 정원에 한 종씩 추�
 });
 test("v14 등장 규칙에서 콩별이 밸런스 개정의 단일 공격 전략 제한을 보존", t => {
   assert.equal(PLANTS.pea.cost, 125);
-  assert.equal(PLANTS.pea.recharge, 6);
+  assert.equal(PLANTS.pea.recharge, 5);
   assert.equal(PLANTS.pea.damage / PLANTS.pea.interval, 11.25);
   assert.ok(PLANTS.pea.damage / PLANTS.pea.interval < (22 / 1.25) * .65);
   const previous = { ...engine, createGame: stage => ({ ...createGame(stage), pacingVersion: 3 }) };
@@ -369,7 +369,7 @@ test("불꽃봉오리의 비용·쿨다운·발사 간격·같은 줄 앞쪽 타
   const game = createGame(10, ["sun", "ember"]);
   assert.ok(plantAt(game, "ember", 2, 0).ok);
   assert.equal(game.sun, 150);
-  assert.equal(game.cooldowns.ember, 10);
+  assert.equal(game.cooldowns.ember, 9);
   assert.equal(game.plants[0].hp, 110);
   assert.equal(plantAt(game, "ember", 3, 0).ok, false);
   enemy(game, "jelly", 1, 750);
@@ -481,4 +481,45 @@ test("화상 소수 피해의 오차가 체력 0인 좀비와 유효하지 않�
   }
   assert.equal(game.enemies.length, 0);
   assert.equal(game.stats.defeated, 1);
+});
+
+test("v18 모든 식물의 배치 대기가 1~2초 줄고 실제 재배치 경계도 일치", () => {
+  const expected = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9 };
+  assert.deepEqual(Object.keys(expected), Object.keys(PLANTS));
+  for (const [type, recharge] of Object.entries(expected)) {
+    const game = createGame(10);
+    game.sun = 10000;
+    assert.ok(plantAt(game, type, 0, 0).ok);
+    assert.equal(game.cooldowns[type], recharge);
+    advance(game, recharge - .1);
+    assert.equal(plantAt(game, type, 0, 1).ok, false, type);
+    advance(game, .2);
+    assert.ok(plantAt(game, type, 0, 1).ok, type);
+    assert.ok(validSnapshot(snapshot(game)), type);
+  }
+});
+test("v18 햇살봉은 첫 5초·이후 6초, 하늘 햇빛은 첫 4초·이후 5초", () => {
+  const game = createGame(1);
+  plantAt(game, "sun", 0, 0);
+  const own = () => game.suns.filter(s => s.x === 72 && s.y === 50);
+  advance(game, 3.9);
+  assert.equal(game.suns.length, 0);
+  advance(game, .2);
+  assert.equal(game.suns.length, 1);
+  assert.equal(own().length, 0);
+  advance(game, .8);
+  assert.equal(own().length, 0);
+  advance(game, .2);
+  assert.equal(own().length, 1);
+  const first = own()[0];
+  assert.equal(collectSun(game, first.id), true);
+  advance(game, 3.8);
+  assert.equal(game.suns.length, 1);
+  advance(game, .2);
+  assert.equal(game.suns.length, 2);
+  advance(game, 1.8);
+  assert.equal(own().length, 0);
+  advance(game, .2);
+  assert.equal(own().length, 1);
+  assert.equal(own()[0].value, 25);
 });

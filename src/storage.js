@@ -1,4 +1,4 @@
-import { validSnapshot, snapshot, PLANTS } from "./engine.js";
+import { validSnapshot, snapshot, PLANTS, SKY_SUN_INTERVAL } from "./engine.js";
 
 export const SAVE_KEY = "garden-guardians-save-v1";
 export const freshSave = () => ({ version: 1, unlocked: 1, stars: Array(10).fill(0), sound: false, volume: 45, tutorialSeen: false, language: "ko", current: null });
@@ -27,7 +27,14 @@ export function readSave(storage) {
         notice = "새 식물 해금과 밸런스를 적용했어요. 이전에 심은 식물과 진행 기록은 그대로예요.";
       }
       for (const type of Object.keys(PLANTS)) data.current.cooldowns[type] ??= 0;
-      data.current.rulesVersion = 4;
+      if ((data.current.rulesVersion ?? 1) < 5) {
+        for (const type of Object.keys(PLANTS)) data.current.cooldowns[type] = Math.min(data.current.cooldowns[type], PLANTS[type].recharge);
+        for (const plant of data.current.plants) {
+          if (PLANTS[plant.type].firstHarvest !== undefined) plant.timer = Math.min(plant.timer, PLANTS[plant.type].interval);
+        }
+        data.current.skyTimer = Math.min(data.current.skyTimer, SKY_SUN_INTERVAL);
+      }
+      data.current.rulesVersion = 5;
     }
     return { data, error: null, notice };
   } catch (error) {
