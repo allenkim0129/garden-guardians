@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node scripts/server.mjs",
     "build": "node scripts/build.mjs",
-    "test": "node --test tests/engine.test.mjs tests/storage.test.mjs tests/sprites.test.mjs tests/i18n.test.mjs tests/expansion.test.mjs",
+    "test": "node --test tests/engine.test.mjs tests/storage.test.mjs tests/sprites.test.mjs tests/i18n.test.mjs tests/expansion.test.mjs tests/audio.test.mjs",
     "test:browser": "playwright test",
     "icons": "node scripts/icons.mjs"
   },

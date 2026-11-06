@@ -183,6 +183,7 @@ function startStage(stageNumber, resume = false) {
   text($("#stage-title"), `${game.stage}. ${STAGES[game.stage - 1].name}`);
   text($("#selection-hint"), STAGES[game.stage - 1].tip);
   $("#sun-layer").replaceChildren();
+  audio.reset(game);
   audio.unlock();
   persist(); render();
   if (resume && game.plants.some(p => !isPlantUnlocked(p.type, game.stage))) {
@@ -226,6 +227,7 @@ function endGame() {
   const previouslyUnlocked = save.unlocked;
   paused = true; persist();
   const won = game.status === "won";
+  audio.stopVoices();
   audio.play(won ? "win" : "lose");
   const finalStage = game.stage === 10;
   const title = won ? (finalStage ? "모든 정원을 지켰어요!" : "정원을 지켰어요!") : "괜찮아요, 한 번 더!";
@@ -424,16 +426,21 @@ function frame(now) {
   accumulator += Math.max(0, delta);
   while (accumulator >= 1 / 30 && game.status === "playing") {
     tick(game, 1 / 30);
+    audio.update(game);
     accumulator -= 1 / 30;
   }
   render();
   if (game.status !== "playing") { endGame(); return; }
   if (game.time - lastSaveAt >= 3) { persist(); lastSaveAt = game.time; }
 }
-document.addEventListener("visibilitychange", () => { if (document.hidden) pauseGame("다른 화면에 다녀오는 동안 정원을 멈춰 두었어요."); });
-window.addEventListener("pagehide", () => { if (game) persist(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { audio.suspend(); pauseGame("다른 화면에 다녀오는 동안 정원을 멈춰 두었어요."); }
+});
+window.addEventListener("pagehide", () => { audio.suspend(); if (game) persist(); });
 window.addEventListener("pageshow", event => { if (event.persisted) pauseGame("돌아왔네요! 준비가 되면 계속해요."); });
-window.matchMedia("(orientation: portrait)").addEventListener("change", event => { if (event.matches) pauseGame("화면을 가로로 돌린 뒤 계속해요."); });
+window.matchMedia("(orientation: portrait)").addEventListener("change", event => {
+  if (event.matches) { audio.suspend(); pauseGame("화면을 가로로 돌린 뒤 계속해요."); }
+});
 document.addEventListener("keydown", event => {
   if (event.code === "Space" && game && !modal.open && !["BUTTON", "INPUT"].includes(document.activeElement.tagName)) {
     event.preventDefault(); pauseGame();
