@@ -394,7 +394,7 @@ test("구버전 진행 중 식물은 보존하고 새 배치는 해금 규칙을
   expect(saved.current.plants[0].type).toBe("sun");
 });
 
-test("새 오프라인 캐시 v8이 이전 v5를 정리하고 기본 해금과 9종 프레임 저장", async ({ page }) => {
+test("새 오프라인 캐시 v9가 이전 v5를 정리하고 기본 해금과 9종 프레임 저장", async ({ page }) => {
   await page.goto("/manifest.webmanifest");
   await page.evaluate(async () => {
     const old = await caches.open("garden-guardians-%2F-v5");
@@ -403,7 +403,7 @@ test("새 오프라인 캐시 v8이 이전 v5를 정리하고 기본 해금과 9
   await homeReady(page);
   const cached = await page.evaluate(async () => {
     const keys = await caches.keys();
-    const active = await caches.open("garden-guardians-%2F-v8");
+    const active = await caches.open("garden-guardians-%2F-v9");
     const sprites = await Promise.all(["pea", "sun", "wall", "frost", "bomb", "sleepy", "jelly", "roller", "umbrella"].map(async type => {
       const response = await active.match(new URL(`./assets/sprites/${type}.png`, location.href));
       return response?.ok && (await response.blob()).size > 10000;
@@ -411,7 +411,7 @@ test("새 오프라인 캐시 v8이 이전 v5를 정리하고 기본 해금과 9
     return { keys, sprites, app: await (await active.match(new URL("./src/app.js", location.href))).text(),
       engine: await (await active.match(new URL("./src/engine.js", location.href))).text() };
   });
-  expect(cached.keys).toContain("garden-guardians-%2F-v8");
+  expect(cached.keys).toContain("garden-guardians-%2F-v9");
   expect(cached.keys).not.toContain("garden-guardians-%2F-v5");
   expect(cached.sprites).toEqual(Array(9).fill(true));
   expect(cached.app).toContain("let selected = null");

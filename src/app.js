@@ -88,21 +88,23 @@ function refreshHome() {
 }
 function openModal(title, content, actions, onClose = null) {
   closeAction = onClose;
+  delete modal.dataset.kind;
   $("#modal-title").textContent = title;
   $("#modal-body").replaceChildren();
   if (typeof content === "string") $("#modal-body").innerHTML = content;
   else $("#modal-body").append(content);
   $("#modal-actions").replaceChildren();
-  for (const { label, action, primary = false } of actions) {
-    const button = document.createElement("button");
-    button.className = `button ${primary ? "primary" : "light"}`;
-    button.textContent = label;
-    button.onclick = () => { closeModal(false); action(); };
-    $("#modal-actions").append(button);
-  }
+  for (const action of actions) addModalAction(action);
   localize(modal);
   if (!modal.open) modal.showModal();
   modal.scrollTop = 0;
+}
+function addModalAction({ label, action, primary = false }) {
+  const button = document.createElement("button");
+  button.className = `button ${primary ? "primary" : "light"}`;
+  text(button, label);
+  button.onclick = () => { closeModal(false); action(); };
+  $("#modal-actions").append(button);
 }
 function closeModal(invokeAction = true) {
   const action = closeAction;
@@ -211,6 +213,7 @@ function pauseGame(message = "잠깐 쉬어 가요. 정원은 안전하게 기�
     { label: "계속하기", primary: true, action: resumeGame },
     ...(updateAvailable ? [{ label: "저장하고 업데이트", action: applyUpdate }] : []),
   ], resumeGame);
+  modal.dataset.kind = "pause";
 }
 function confirmRestart() {
   openModal("이 정원을 다시 시작할까요?", "<p>이번 판은 처음부터 시작해요. 이미 모은 별과 열린 정원은 그대로예요.</p>", [
@@ -442,6 +445,9 @@ function announceUpdate() {
   const firstNotice = !updateAvailable;
   updateAvailable = true;
   $("#update-button").hidden = false;
+  if (firstNotice && modal.open && modal.dataset.kind === "pause") {
+    addModalAction({ label: "저장하고 업데이트", action: applyUpdate });
+  }
   if (firstNotice) notify("새 버전이 준비됐어요. 처음 화면이나 일시 정지에서 '저장하고 업데이트'를 눌러요.", 9000);
 }
 function watchUpdates(registration) {
@@ -452,7 +458,7 @@ function watchUpdates(registration) {
     const worker = registration.installing;
     if (!worker) return;
     worker.addEventListener("statechange", () => {
-      if (worker.state === "installed" && registration.waiting && navigator.serviceWorker.controller) announceUpdate();
+      if (worker.state === "installed" && navigator.serviceWorker.controller) announceUpdate();
       if (worker.state === "redundant" && !registration.waiting) {
         notify("새 버전을 저장하지 못했어요. 기존 게임은 유지돼요. 온라인에서 다시 열어 주세요.", 9000);
       }
@@ -489,7 +495,7 @@ async function applyUpdate() {
 }
 async function checkForUpdate() {
   if (!workerRegistration || !navigator.onLine || updateApplying) return;
-  try { await workerRegistration.update(); }
+  try { await workerRegistration.update(); watchUpdates(workerRegistration); }
   catch (error) { notify(`업데이트 확인 실패 · ${error.message} 기존 저장된 게임은 계속할 수 있어요.`, 7000); }
 }
 async function checkCache(repair = false) {

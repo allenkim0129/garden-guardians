@@ -126,14 +126,14 @@ test("진행 중 새 버전은 기다리고 저장 후 명시적 적용: 다른 
     await page.locator("#resume-button").tap();
     await page.locator('.seed-card[data-type="sun"]').tap();
     await page.locator('.plot[data-row="0"][data-col="0"]').tap();
+    await page.locator("#pause-button").tap();
+    await page.locator("#modal [data-language]").tap();
     await installNext(page, server);
     await expect(second.locator("#update-button")).toBeVisible();
     await second.locator("#update-button").scrollIntoViewIfNeeded();
     const buttonBounds = await second.locator("#update-button").boundingBox();
     expect(buttonBounds.y).toBeGreaterThanOrEqual(0);
     expect(buttonBounds.y + buttonBounds.height).toBeLessThanOrEqual(320);
-    await page.locator("#pause-button").tap();
-    await page.locator("#modal [data-language]").tap();
     const before = await saved(page);
     await expect(page.locator("#app-version")).toHaveText(`Version ${server.current}`);
     await expect(page.getByRole("button", { name: "Save and update", exact: true })).toBeVisible();

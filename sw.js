@@ -1,6 +1,6 @@
 const BASE = new URL("./", self.location.href);
 const CACHE_PREFIX = `garden-guardians-${encodeURIComponent(BASE.pathname)}-`;
-const CACHE = `${CACHE_PREFIX}v8`;
+const CACHE = `${CACHE_PREFIX}v9`;
 const FILES = [
   "./", "./index.html", "./styles.css", "./src/app.js", "./src/engine.js",
   "./src/art.js", "./src/audio.js", "./src/storage.js", "./src/sprites.js", "./src/i18n.js", "./manifest.webmanifest",
