@@ -1,4 +1,4 @@
-export const AUDIO_LIMITS = Object.freeze({ voices: 6, master: .45, impactGap: .12, ambientGap: 1.4 });
+export const AUDIO_LIMITS = Object.freeze({ voices: 6, master: 1, impactGap: .12, ambientGap: 1.4 });
 const tunes = { plant: [392, 523], sun: [659, 880], win: [523, 659, 784, 1047], lose: [330, 294, 220] };
 const voices = {
   sleepy: { frequency: 105, end: 68, duration: .85, filter: 480, wave: "sawtooth", flutter: true },
@@ -16,6 +16,7 @@ const impacts = {
 export class GardenAudio {
   constructor(onError) {
     this.enabled = false;
+    this.volume = .45;
     this.active = false;
     this.context = null;
     this.master = null;
@@ -43,15 +44,21 @@ export class GardenAudio {
       }
       if (this.context.state !== "running") await this.context.resume();
       if (generation === this.generation && this.enabled && this.active) {
-        this.master.gain.setValueAtTime(AUDIO_LIMITS.master, this.context.currentTime);
+        this.master.gain.value = AUDIO_LIMITS.master * this.volume;
       } else if (!this.active || !this.enabled) {
-        this.master.gain.setValueAtTime(0, this.context.currentTime);
+        this.master.gain.value = 0;
         if (this.context.state === "running") await this.context.suspend();
       }
     } catch (error) {
       this.active = false;
       this.onError(`소리를 켜지 못했어요. 소리 버튼을 다시 눌러 주세요. (${error.message})`);
     }
+  }
+  setVolume(volume) {
+    if (!Number.isFinite(volume) || volume < 0 || volume > 1) throw new RangeError("Invalid sound volume");
+    this.volume = volume;
+    if (volume === 0) this.stopVoices();
+    if (this.master) this.master.gain.value = this.enabled && this.active ? AUDIO_LIMITS.master * volume : 0;
   }
   reset(game) {
     this.stopVoices();
@@ -85,7 +92,7 @@ export class GardenAudio {
     this.nextAmbientAt = game.time + AUDIO_LIMITS.ambientGap;
   }
   play(kind, type = "sleepy") {
-    if (!this.enabled || !this.active || !this.master || this.context?.state !== "running") return false;
+    if (!this.enabled || this.volume === 0 || !this.active || !this.master || this.context?.state !== "running") return false;
     const now = this.context.currentTime;
     const impact = kind === "hit" || kind === "ice" || kind === "bite";
     const category = impact ? "impact" : kind;
@@ -174,7 +181,7 @@ export class GardenAudio {
     this.active = false;
     this.generation++;
     this.stopVoices();
-    if (this.master) this.master.gain.setValueAtTime(0, this.context.currentTime);
+    if (this.master) this.master.gain.value = 0;
     if (this.context?.state === "running") {
       this.context.suspend().catch(error => this.onError(`소리 일시 정지 실패: ${error.message}`));
     }

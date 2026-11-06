@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, STAGES, LOADOUT_LIMIT, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, scheduleFor } from "./engine.js";
+import { PLANTS, ENEMIES, STAGES, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress } from "./engine.js";
 import { drawTitle, drawBoard, plantIcon, drawSunToken } from "./art.js";
 import { loadSprites } from "./sprites.js";
 import { GardenAudio } from "./audio.js";
@@ -66,6 +66,7 @@ let pendingResult = null;
 const boardPointers = new Map();
 const audio = new GardenAudio(message => notify(message));
 audio.enabled = save.sound;
+audio.setVolume(save.volume / 100);
 
 function notify(message, duration = 3600) {
   text($("#toast"), message);
@@ -86,7 +87,7 @@ function refreshHome() {
   text($("#resume-button"), save.current ? `${save.current.stage}번째 정원 이어서 하기` : "이어서 하기");
   text($("#sound-button"), save.sound ? "소리 켜짐" : "소리 꺼짐");
   $("#sound-button").setAttribute("aria-pressed", String(save.sound));
-  text($("#play-button").firstChild, save.unlocked > 1 ? "정원 선택하기 " : "정원으로 출발 ");
+  text($("#play-button").firstChild, save.unlocked > 1 ? "정원 선택 · 다시하기 " : "정원으로 출발 ");
 }
 function openModal(title, content, actions, onClose = null) {
   closeAction = onClose;
@@ -122,6 +123,9 @@ function showStages() {
   const message = document.createElement("p");
   message.textContent = "콩별이와 햇살봉은 처음부터 함께해요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 다시 도전할 때도 해당 정원의 식물로 시작해요. 별은 남은 하트 수예요.";
   content.append(message);
+  const replayHint = document.createElement("p");
+  replayHint.textContent = "완료한 정원도 다시하기를 눌러 처음부터 도전할 수 있어요. 모은 별과 열린 정원은 지우지 않아요.";
+  content.append(replayHint);
   const grid = document.createElement("div");
   grid.className = "stage-grid";
   for (const stage of STAGES) {
@@ -140,6 +144,12 @@ function showStages() {
       reward.className = "stage-reward";
       reward.textContent = `${stage.id === 1 ? "기본 ·" : "사용 ·"} ${PLANTS[type].name}`;
       button.append(reward);
+    }
+    if (save.stars[stage.id - 1] > 0) {
+      const replay = document.createElement("span");
+      replay.className = "stage-replay";
+      replay.textContent = "다시하기";
+      button.append(replay);
     }
     button.onclick = () => {
       if (save.current) {
@@ -164,7 +174,7 @@ function helpMarkup() {
     <div class="help-step"><b>3. 정원 지키기</b><span>좀비가 왼쪽 끝에 닿으면 하트가 하나 줄어요. 3번의 무리를 막아요!</span></div>
   </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
   <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
-  <p>시작 전에 최대 6종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 키보드에서는 Tab으로 카드를 이동해요.</p>
+  <p>시작 전에 최대 6종, 10번째 정원에서는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.</p>
   <p>삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하면 자동으로 멈춰요. 세로로 들고 있어도 게임은 가로형 화면으로 표시돼요.</p>
   <details><summary>좀비 친구 알아보기</summary><p>${Object.values(ENEMIES).map(e => `<b>${e.name}</b>: ${e.description}`).join("<br>")}</p></details>`;
 }
@@ -177,11 +187,12 @@ function prepareStage(stageNumber) {
   } else showLoadout(stageNumber);
 }
 function showLoadout(stageNumber) {
+  const limit = loadoutLimit(stageNumber);
   const available = Object.keys(PLANTS).filter(type => isPlantUnlocked(type, stageNumber));
-  const previous = game?.loadout?.filter(type => available.includes(type));
-  const picked = new Set(previous?.length ? previous : available.slice(0, LOADOUT_LIMIT));
+  const previous = game?.loadout?.filter(type => available.includes(type)).slice(0, limit);
+  const picked = new Set(previous?.length ? previous : available.slice(0, limit));
   const content = document.createElement("div");
-  content.innerHTML = `<p>함께할 식물을 최대 6종 골라 주세요. 선택한 카드를 다시 누르면 뺄 수 있어요.</p>
+  content.innerHTML = `<p>함께할 식물을 최대 ${limit}종 골라 주세요. 선택한 카드를 다시 누르면 뺄 수 있어요.</p>
     <strong id="loadout-count" role="status"></strong><div class="loadout-slots"></div><div class="loadout-grid"></div>`;
   const grid = content.querySelector(".loadout-grid");
   for (const [type, plant] of Object.entries(PLANTS)) {
@@ -195,7 +206,7 @@ function showLoadout(stageNumber) {
     }
     button.onclick = () => {
       if (picked.has(type)) picked.delete(type);
-      else if (picked.size < LOADOUT_LIMIT) picked.add(type);
+      else if (picked.size < limit) picked.add(type);
       updateChoices();
     };
     grid.append(button);
@@ -210,15 +221,16 @@ function showLoadout(stageNumber) {
   ], back);
   modal.dataset.kind = "loadout";
   function updateChoices() {
-    text(content.querySelector("#loadout-count"), `선택한 식물 ${picked.size} / ${LOADOUT_LIMIT}종`);
+    text(content.querySelector("#loadout-count"), `선택한 식물 ${picked.size} / ${limit}종`);
     for (const button of grid.children) {
       const chosen = picked.has(button.dataset.type);
       button.setAttribute("aria-pressed", String(chosen));
-      button.disabled = !available.includes(button.dataset.type) || (!chosen && picked.size === LOADOUT_LIMIT);
+      button.disabled = !available.includes(button.dataset.type) || (!chosen && picked.size === limit);
     }
     const slots = content.querySelector(".loadout-slots");
+    slots.style.gridTemplateColumns = `repeat(${limit}, 1fr)`;
     slots.replaceChildren();
-    for (let i = 0; i < LOADOUT_LIMIT; i++) {
+    for (let i = 0; i < limit; i++) {
       const type = [...picked][i];
       const slot = document.createElement(type ? "button" : "span");
       slot.className = "loadout-slot";
@@ -242,8 +254,10 @@ function startStage(stageNumber, resume = false, loadout) {
   home.hidden = true; gameScreen.hidden = false;
   document.body.classList.add("game-active");
   seedCards.classList.toggle("legacy", game.loadout === undefined);
-  setLabel(seedCards, game.loadout === undefined ? "식물 카드 목록 · 위아래로 스크롤" : "선택한 식물 카드");
-  $(".seed-scroll-hint").hidden = game.loadout !== undefined;
+  seedCards.classList.toggle("extended", (game.loadout?.length ?? 0) > 6);
+  const scrollCards = game.loadout === undefined || game.loadout.length > 6;
+  setLabel(seedCards, scrollCards ? "식물 카드 목록 · 위아래로 스크롤" : "선택한 식물 카드");
+  $(".seed-scroll-hint").hidden = !scrollCards;
   text($("#stage-title"), `${game.stage}. ${STAGES[game.stage - 1].name}`);
   text($("#selection-hint"), STAGES[game.stage - 1].tip);
   $("#sun-layer").replaceChildren();
@@ -436,12 +450,59 @@ $("#home-button").onclick = () => {
 $("#play-button").onclick = showStages;
 $("#resume-button").onclick = () => startStage(save.current.stage, true);
 $("#help-button").onclick = () => openModal("정원 수비대 놀이 안내", helpMarkup(), [{ label: "알겠어요", primary: true, action: () => {} }]);
-$("#sound-button").onclick = async () => {
-  save.sound = !save.sound; audio.enabled = save.sound;
-  if (save.sound) { await audio.unlock(); audio.play("sun"); }
-  else audio.suspend();
+async function setSound(enabled) {
+  save.sound = enabled;
+  if (enabled && save.volume === 0) save.volume = 45;
+  audio.enabled = enabled;
+  audio.setVolume(save.volume / 100);
   persist();
-};
+  if (enabled) { await audio.unlock(); audio.play("sun"); }
+  else audio.suspend();
+}
+$("#sound-button").onclick = () => setSound(!save.sound);
+function showSoundSettings() {
+  const inGame = game?.status === "playing";
+  if (inGame) {
+    paused = true; boardPointers.clear(); sunGesture = true; persist();
+  }
+  audio.suspend();
+  const finish = () => {
+    audio.suspend();
+    if (inGame) pauseGame();
+  };
+  openModal("소리 설정", `<p>효과음은 처음에는 꺼져 있어요. 소리를 켜거나 음량을 올린 뒤 미리 듣기로 확인해 주세요.</p>
+    <div class="sound-controls"><button id="sound-toggle" class="button light"></button>
+      <label for="sound-volume">효과음 음량</label><output id="sound-volume-value" for="sound-volume"></output>
+      <input id="sound-volume" type="range" min="0" max="100" step="1">
+      <button id="sound-preview" class="button light">미리 듣기</button></div>
+    <p>들리지 않으면 기기의 미디어 음량과 무음 모드, Bluetooth 출력도 확인해 주세요.</p>`,
+  [{ label: "완료", primary: true, action: finish }], finish);
+  modal.dataset.kind = "sound";
+  function refresh() {
+    text($("#sound-toggle"), save.sound ? "소리 끄기" : "소리 켜기");
+    $("#sound-toggle").setAttribute("aria-pressed", String(save.sound));
+    $("#sound-volume").value = String(save.volume);
+    $("#sound-volume-value").textContent = `${save.volume}%`;
+    $("#sound-preview").disabled = !save.sound || save.volume === 0;
+  }
+  $("#sound-toggle").onclick = () => { setSound(!save.sound); refresh(); };
+  $("#sound-volume").oninput = event => {
+    save.volume = Number(event.target.value);
+    save.sound = save.volume > 0;
+    audio.enabled = save.sound;
+    audio.setVolume(save.volume / 100);
+    if (save.sound) audio.unlock();
+    else audio.suspend();
+    persist(); refresh();
+  };
+  $("#sound-preview").onclick = async () => {
+    if (document.hidden) return;
+    await audio.unlock();
+    audio.play("sun");
+  };
+  refresh();
+}
+for (const button of document.querySelectorAll("[data-sound-settings]")) button.onclick = showSoundSettings;
 $("#install-button").onclick = () => openModal("언제 어디서나, 우리 정원", `<ol class="install-list">
   <li>아이폰·아이패드의 <b>Safari</b>로 이 게임의 HTTPS 주소를 열어요.</li>
   <li>아래에 <b>‘오프라인 준비 완료’</b>가 나타날 때까지 기다려요.</li>
@@ -461,8 +522,22 @@ function render() {
   $("#hearts").textContent = "♥ ".repeat(game.lives) + "♡ ".repeat(3 - game.lives);
   setLabel($("#hearts"), `남은 하트 ${game.lives}개`);
   text($("#wave-label"), game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간");
-  text($("#enemy-count"), `막아낸 좀비 ${game.stats.defeated} / ${scheduleFor(game.stage, game.pacingVersion ?? 1).length}`);
+  const progress = waveProgress(game);
+  text($("#enemy-count"), `막아낸 좀비 ${game.stats.defeated} / ${progress.total}`);
+  $("#wave-fill").style.width = `${progress.percent}%`;
+  $("#wave-track").setAttribute("aria-valuenow", String(Math.round(progress.percent)));
+  $("#wave-track").setAttribute("aria-valuetext", t(`등장 진행 ${Math.round(progress.percent)}% · 남은 좀비 ${progress.remaining}명`));
+  for (const marker of progress.markers) {
+    const node = $(`#wave-marker-${marker.wave}`);
+    node.style.left = `${marker.percent}%`;
+    node.classList.toggle("reached", progress.percent >= marker.percent);
+  }
+  text($("#wave-status"), game.status === "won" ? "정원을 지켰어요!"
+    : game.nextSpawn === progress.total ? "등장 완료 · 남은 좀비를 막아요!"
+      : game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간");
+  text($("#wave-remaining"), `남은 좀비 ${progress.remaining}명`);
   $("#pause-button").disabled = game.status !== "playing";
+  gameScreen.querySelector("[data-sound-settings]").disabled = game.status !== "playing";
   $("#shovel-button").setAttribute("aria-pressed", String(shovel));
   for (const card of cards) {
     const type = card.dataset.type;
@@ -513,7 +588,7 @@ function render() {
     drawSunToken(button.firstChild.getContext("2d"), game.time + sun.id * .37);
   }
   const banner = $("#board-banner");
-  if (game.status === "won") text(banner, "정원을 지켰어요! 잠시 마지막 장면을 감상해요.");
+  if (game.status === "won") text(banner, "");
   else if (game.time < 8) {
     const newcomers = introducedPlants(game.stage);
     text(banner, newcomers.length ? `새 식물: ${newcomers.map(type => PLANTS[type].name).join(", ")} · 카드를 골라 심어요!` : "식물을 배치해 방어선을 준비하세요!");
@@ -534,7 +609,7 @@ function frame(now) {
       if (game.effects.length) { advanceEffects(game, delta); render(); }
       if (pendingResult) {
         pendingResult.elapsed += Math.max(0, delta);
-        if (pendingResult.elapsed >= 2) {
+        if (pendingResult.elapsed >= 3) {
           const previous = pendingResult.previouslyUnlocked;
           pendingResult = null;
           endGame(previous);

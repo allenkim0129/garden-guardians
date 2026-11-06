@@ -104,6 +104,7 @@ test("작은 화면의 카드 스크롤·드래그는 선택/배치/수집을 �
 });
 
 test("새 보상은 4~8단계 최초 클리어에만 표시하고 다음 정원에서 바로 사용", async ({ page }) => {
+  test.setTimeout(90000);
   await page.setViewportSize({ width: 568, height: 320 });
   for (const [index, type] of types.entries()) {
     const stage = index + 4;

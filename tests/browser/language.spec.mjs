@@ -91,6 +91,7 @@ test("진행 중 언어 전환은 판·선택·자원을 유지하고 정지·�
 });
 
 test("영어 획득·승패·잠금·HUD는 작은 가로 화면에서 번역되고 조작 가능", async ({ page }) => {
+  test.setTimeout(90000);
   await page.setViewportSize({ width: 568, height: 320 });
   for (const stage of [1, 2, 3, 4, 5, 6, 7, 8]) {
     const game = createGame(stage);

@@ -87,7 +87,7 @@ const messages = {
   "새 친구 호박포! 도토리벽으로 붙잡으면 착지점에 모인 좀비를 맞히기 좋아요.": "Meet Pumpkin Lobber! Use Acorn Guard to hold a crowd at the landing spot.",
   "새 친구 해등나무! 더 많은 햇빛을 만들지만 첫 수확까지 기다려야 해요.": "Meet Sunlantern Tree! More sunlight per harvest, but a slower start.",
   "새 친구 철잎보루! 오래 버티지만 비용과 다시 심는 시간을 생각해요.": "Meet Ironleaf Fort! Lasts longer, but costs more and replants slowly.",
-  "마지막 소풍이에요. 함께할 여섯 친구를 골라 정원을 지켜요!": "The final picnic! Pick up to six teammates to defend your garden.",
+  "마지막 소풍이에요. 함께할 여덟 친구를 골라 정원을 지켜요!": "The final picnic! Pick up to eight teammates to defend your garden.",
   "콩별이와 햇살봉은 처음부터 함께해요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 다시 도전할 때도 해당 정원의 식물로 시작해요. 별은 남은 하트 수예요.": "Start with Peabud and Sunbell. First wins in gardens 1–8 unlock a plant for the next garden. Replays use that garden's plant lineup. Stars equal your remaining hearts.",
   "잠김": "Locked",
   "새로 시작할까요?": "Start a new game?",
@@ -183,6 +183,10 @@ const messages = {
 };
 
 const patterns = [
+  [/^함께할 식물을 최대 (\d+)종 골라 주세요\. 선택한 카드를 다시 누르면 뺄 수 있어요\.$/, (_, count) => `Choose up to ${count} plants. Tap a selected card again to remove it.`],
+  [/^함께할 식물을 1~(\d+)종 골라 주세요\.$/, (_, count) => `Choose 1 to ${count} plants for your team.`],
+  [/^등장 진행 (\d+)% · 남은 좀비 (\d+)명$/, (_, percent, count) => `Spawning ${percent}% · Zombies left: ${count}`],
+  [/^남은 좀비 (\d+)명$/, (_, count) => `Zombies left: ${count}`],
   [/^선택한 식물 (\d+) \/ (\d+)종$/, (_, count, max) => `Selected plants: ${count} / ${max}`],
   [/^화면 (v\d+)$/, (_, v) => `Version ${v}`],
   [/^(\d+)번째 정원 이어서 하기$/, (_, n) => `Continue garden ${n}`],
@@ -226,15 +230,28 @@ const patterns = [
 ];
 messages["소리 일시 정지 실패"] = "Could not pause sound";
 Object.assign(messages, {
+  "소리 설정": "Sound settings",
+  "소리 켜기": "Turn sound on",
+  "소리 끄기": "Turn sound off",
+  "효과음 음량": "Effects volume",
+  "미리 듣기": "Preview sound",
+  "완료": "Done",
+  "효과음은 처음에는 꺼져 있어요. 소리를 켜거나 음량을 올린 뒤 미리 듣기로 확인해 주세요.": "Sound starts off. Turn it on or raise the volume, then use Preview sound to check.",
+  "들리지 않으면 기기의 미디어 음량과 무음 모드, Bluetooth 출력도 확인해 주세요.": "If you hear nothing, check your device's media volume, silent mode, and Bluetooth output.",
+  "정원 선택 · 다시하기": "Choose / replay",
+  "다시하기": "Replay",
+  "완료한 정원도 다시하기를 눌러 처음부터 도전할 수 있어요. 모은 별과 열린 정원은 지우지 않아요.": "Tap Replay on a completed garden to start it over. Your stars and unlocked gardens stay.",
+  "좀비 웨이브 진행": "Zombie wave progress",
+  "시작": "Start",
+  "중간": "Middle",
+  "최종": "Final",
+  "등장 완료 · 남은 좀비를 막아요!": "All spawned · Stop the remaining zombies!",
   "함께할 식물 고르기": "Choose your team",
-  "함께할 식물을 최대 6종 골라 주세요. 선택한 카드를 다시 누르면 뺄 수 있어요.": "Choose up to 6 plants. Tap a selected card again to remove it.",
   "이 식물로 시작": "Start with this team",
   "선택 취소": "Remove selection",
-  "함께할 식물을 1~6종 골라 주세요.": "Choose 1 to 6 plants for your team.",
   "이번 정원에 고른 식물이 아니에요.": "This plant is not in your team for this garden.",
   "햇빛을 누르거나 손가락으로 쓸어 모아요. 놓쳐도 8초 뒤 자동으로 모여요.": "Tap sunlight or sweep your finger across it. Missed sunlight is collected after 8 seconds.",
-  "시작 전에 최대 6종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 키보드에서는 Tab으로 카드를 이동해요.": "Choose up to 6 plants before starting. Only your team appears on large battle cards. Use Tab to move between cards.",
-  "정원을 지켰어요! 잠시 마지막 장면을 감상해요.": "Garden protected! Enjoy the final scene.",
+  "시작 전에 최대 6종, 10번째 정원에서는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.": "Choose up to 6 plants, or 8 in garden 10. Only your team appears on large battle cards. Scroll the list for more cards, or use Tab with a keyboard.",
 });
 messages["오프라인 확인 실패"] = "Offline check failed";
 

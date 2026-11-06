@@ -49,6 +49,73 @@ test("실제 Web Audio 합성: 네 종류별 울음·슉슉·피격 파형과 �
     ambient.find(sound => sound.type === "sleepy").roughness * 2);
 });
 
+test("음량 0·25·45·100%는 실제 파형 출력에 적용되고 최대 출력도 제한", async ({ page }) => {
+  await page.goto("/");
+  const samples = await page.evaluate(async () => {
+    const { GardenAudio } = await import("./src/audio.js");
+    const results = [];
+    for (const volume of [0, .25, .45, 1]) {
+      const context = new OfflineAudioContext(1, 12000, 24000);
+      Object.defineProperty(context, "state", { value: "running" });
+      const audio = new GardenAudio(message => { throw new Error(message); });
+      audio.context = context; audio.enabled = true; audio.setVolume(volume);
+      await audio.unlock(); audio.play("sun");
+      const output = (await context.startRendering()).getChannelData(0);
+      results.push({ rms: Math.sqrt(output.reduce((sum, value) => sum + value * value, 0) / output.length), peak: Math.max(...output.map(Math.abs)) });
+    }
+    return results;
+  });
+  expect(samples[0].peak).toBe(0);
+  expect(samples[1].rms).toBeGreaterThan(.001);
+  expect(samples[2].rms).toBeGreaterThan(samples[1].rms);
+  expect(samples[3].rms).toBeGreaterThan(samples[2].rms * 1.8);
+  expect(samples[3].peak).toBeLessThan(.2);
+});
+
+test("게임 중 소리 설정에서 켜기·볼륨·미리 듣기·음소거·저장 및 재개", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/manifest.webmanifest");
+  await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), {
+    key: SAVE_KEY, data: { ...freshSave(), current: createGame(1, ["sun", "pea"]), tutorialSeen: true },
+  });
+  await page.goto("/");
+  await page.locator("#resume-button").tap();
+  await page.evaluate(async () => {
+    const { GardenAudio } = await import("./src/audio.js");
+    const unlock = GardenAudio.prototype.unlock, play = GardenAudio.prototype.play;
+    window.previews = 0;
+    GardenAudio.prototype.unlock = function(...args) { window.volumeAudio = this; return unlock.apply(this, args); };
+    GardenAudio.prototype.play = function(...args) { const result = play.apply(this, args); if (result) window.previews++; return result; };
+  });
+  await page.locator("#game [data-sound-settings]").tap();
+  await expect(page.locator("#sound-toggle")).toHaveText("소리 켜기");
+  await expect(page.locator("#sound-preview")).toBeDisabled();
+  const before = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).current, SAVE_KEY);
+  await page.locator("#sound-volume").fill("80");
+  await page.locator("#sound-preview").tap();
+  await expect.poll(() => page.evaluate(() => window.previews)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.volumeAudio.master.gain.value)).toBeCloseTo(.8);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).current, SAVE_KEY)).toEqual(before);
+  await page.locator("#sound-volume").fill("0");
+  await expect.poll(() => page.evaluate(() => window.volumeAudio.context.state)).toBe("suspended");
+  expect(await page.evaluate(() => window.volumeAudio.voices.size)).toBe(0);
+  await expect(page.locator("#sound-preview")).toBeDisabled();
+  await page.locator("#sound-volume").fill("65");
+  await page.locator("#modal [data-language]").tap();
+  await expect(page.locator("#modal-title")).toHaveText("Sound settings");
+  await expect(page.getByLabel("Effects volume")).toHaveValue("65");
+  await page.getByRole("button", { name: "Done", exact: true }).tap();
+  await expect(page.locator("#modal-title")).toHaveText("Paused");
+  await page.getByRole("button", { name: "Continue", exact: true }).tap();
+  await expect.poll(() => page.evaluate(() => window.volumeAudio.context.state)).toBe("running");
+  expect(await page.evaluate(() => window.volumeAudio.master.gain.value)).toBeCloseTo(.65);
+  await page.reload();
+  await page.locator("#home [data-sound-settings]").tap();
+  await expect(page.getByLabel("Effects volume")).toHaveValue("65");
+  await expect(page.locator("#sound-toggle")).toHaveText("Turn sound off");
+});
+
 test("실제 전투 소리·정지·회전·음소거·재접속 및 음원 중첩 제한", async ({ page }) => {
   const game = createGame(10);
   for (const [row, type] of Object.keys(ENEMIES).entries()) {
@@ -132,7 +199,7 @@ test("서버 종료 후 오프라인 재접속에서도 소리·언어·장비 �
     game.enemies.push({ id: game.nextId++, type: "umbrella", row: 2, x: 700, hp: 100, slow: 0, age: 1, eating: false, equipmentDropped: true });
     await page.goto(`${server.url}manifest.webmanifest`);
     await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), {
-      key: SAVE_KEY, data: { ...freshSave(), unlocked: 5, sound: true, language: "en", tutorialSeen: true, current: game },
+      key: SAVE_KEY, data: { ...freshSave(), unlocked: 5, sound: true, volume: 73, language: "en", tutorialSeen: true, current: game },
     });
     await page.goto(server.url);
     await expect(page.locator("#offline-status")).toContainText("Offline ready");
@@ -150,6 +217,7 @@ test("서버 종료 후 오프라인 재접속에서도 소리·언어·장비 �
     await page.locator("#pause-button").tap();
     const data = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
     expect(data.sound).toBe(true);
+    expect(data.volume).toBe(73);
     expect(data.language).toBe("en");
     expect(data.current.enemies[0].equipmentDropped).toBe(true);
   } finally { await server.stop(); }

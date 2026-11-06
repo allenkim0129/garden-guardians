@@ -16,6 +16,18 @@ test("첫 방문, 저장, 재접속, 효과음과 안내 설정 복원", () => {
   assert.equal(writeSave(storage, data), null);
   assert.deepEqual(readSave(storage).data, data);
 });
+test("음량 없는 이전 저장은 기존 출력 유지, 0~100 음량 저장과 잘못된 값 거부", () => {
+  const legacy = { ...freshSave(), sound: true, unlocked: 10, language: "en", stars: Array(10).fill(3), current: createGame(10) };
+  delete legacy.volume;
+  const restored = readSave({ getItem: () => JSON.stringify(legacy) });
+  assert.equal(restored.error, null);
+  assert.deepEqual(restored.data, { ...legacy, volume: 45 });
+  for (const volume of [0, 25, 100]) {
+    const data = { ...restored.data, volume };
+    assert.deepEqual(readSave({ getItem: () => JSON.stringify(data) }).data, data);
+  }
+  for (const volume of [-1, 101, .5, null, "50"]) assert.equal(validateSave({ ...restored.data, volume }), false);
+});
 test("승리 시 별은 최고 기록 보존, 마지막 단계 경계, 패배 시 이어하기 제거", () => {
   const data = freshSave();
   const game = createGame(1);

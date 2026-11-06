@@ -37,7 +37,7 @@ export const STAGES = [
   { name: "반짝이는 연못", count: 26, gap: 3.4, types: ["umbrella", "roller", "sleepy", "jelly"], startSun: 325, tip: "새 친구 호박포! 도토리벽으로 붙잡으면 착지점에 모인 좀비를 맞히기 좋아요." },
   { name: "꼬불꼬불 덩굴", count: 30, gap: 3.1, types: ["roller", "jelly", "sleepy", "umbrella"], startSun: 325, tip: "새 친구 해등나무! 더 많은 햇빛을 만들지만 첫 수확까지 기다려야 해요." },
   { name: "노을빛 파티", count: 34, gap: 2.8, types: ["jelly", "umbrella", "roller", "sleepy"], startSun: 350, tip: "새 친구 철잎보루! 오래 버티지만 비용과 다시 심는 시간을 생각해요." },
-  { name: "우리들의 정원", count: 40, gap: 2.5, types: ["jelly", "roller", "umbrella", "sleepy", "jelly"], startSun: 350, tip: "마지막 소풍이에요. 함께할 여섯 친구를 골라 정원을 지켜요!" },
+  { name: "우리들의 정원", count: 40, gap: 2.5, types: ["jelly", "roller", "umbrella", "sleepy", "jelly"], startSun: 350, tip: "마지막 소풍이에요. 함께할 여덟 친구를 골라 정원을 지켜요!" },
 ].map((stage, i) => Object.freeze({ ...stage, legacyRows: i === 0 ? [2, 1, 3] : stage.rows, legacyCount: stage.count, count: Math.ceil(stage.count * 1.4), id: i + 1 }));
 
 export function isPlantUnlocked(type, stage) {
@@ -47,7 +47,7 @@ export function introducedPlants(stage) {
   return Object.entries(PLANTS).filter(([, plant]) => plant.unlockStage === stage).map(([type]) => type);
 }
 
-export function scheduleFor(stageNumber, pacingVersion = 3) {
+export function scheduleFor(stageNumber, pacingVersion = 4) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   const rows = (pacingVersion < 3 ? stage.legacyRows : stage.rows) ?? [2, 0, 4, 1, 3];
@@ -59,6 +59,19 @@ export function scheduleFor(stageNumber, pacingVersion = 3) {
       wave: Math.min(3, Math.floor(i / Math.ceil(stage.legacyCount / 3)) + 1),
     }));
   }
+  if (pacingVersion >= 4) {
+    const first = stageNumber === 1 ? 1 : 2;
+    const second = Math.ceil(stage.count * .25);
+    const middleGap = Math.max(3, stage.gap * .9);
+    const finalAt = Math.max(90, 55 + (second - 1) * middleGap + 12);
+    return Array.from({ length: stage.count }, (_, i) => {
+      const wave = i < first ? 1 : i < first + second ? 2 : 3;
+      const at = wave === 1 ? 25 + i * 14
+        : wave === 2 ? 55 + (i - first) * middleGap
+          : finalAt + (i - first - second) * stage.gap * .3;
+      return { at, row: rows[i % rows.length], type: wave === 1 ? "sleepy" : stage.types[i % stage.types.length], wave };
+    });
+  }
   const first = Math.ceil(stage.legacyCount * .2);
   const second = Math.ceil(stage.legacyCount * .3);
   let at = 18;
@@ -69,8 +82,22 @@ export function scheduleFor(stageNumber, pacingVersion = 3) {
   });
 }
 
+export function waveProgress(game) {
+  const schedule = scheduleFor(game.stage, game.pacingVersion ?? 1);
+  const end = schedule.at(-1).at;
+  return {
+    percent: game.status === "won" ? 100 : Math.min(100, game.time / end * 100),
+    total: schedule.length,
+    remaining: schedule.length - game.nextSpawn + game.enemies.length,
+    markers: [2, 3].map(wave => ({ wave, percent: schedule.find(spawn => spawn.wave === wave).at / end * 100 })),
+  };
+}
+
+export function loadoutLimit(stage) {
+  return stage >= 10 ? 8 : LOADOUT_LIMIT;
+}
 export function validLoadout(loadout, stage) {
-  return Array.isArray(loadout) && loadout.length >= 1 && loadout.length <= LOADOUT_LIMIT
+  return Array.isArray(loadout) && loadout.length >= 1 && loadout.length <= loadoutLimit(stage)
     && new Set(loadout).size === loadout.length && loadout.every(type => isPlantUnlocked(type, stage));
 }
 export function isPlantAvailable(game, type) {
@@ -79,9 +106,9 @@ export function isPlantAvailable(game, type) {
 export function createGame(stageNumber, loadout) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
-  if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError("함께할 식물을 1~6종 골라 주세요.");
+  if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 3, pacingVersion: 3, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 3, pacingVersion: 4, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -301,7 +328,7 @@ const object = value => value !== null && typeof value === "object" && !Array.is
 export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, 10) || g.status !== "playing") return false;
   if (g.rulesVersion !== undefined && ![2, 3].includes(g.rulesVersion)) return false;
-  if (g.pacingVersion !== undefined && ![1, 2, 3].includes(g.pacingVersion)) return false;
+  if (g.pacingVersion !== undefined && ![1, 2, 3, 4].includes(g.pacingVersion)) return false;
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
   if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, 6) || !integer(g.wave, 0, 3)) return false;

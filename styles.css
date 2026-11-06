@@ -66,8 +66,8 @@ h1 i { position: absolute; font-style: normal; font-size: .5em; color: #dcaa44; 
 .seed-scroll-hint { flex-shrink: 0; text-align: center; font-size: 10px; color: #637257; }
 .seed-card { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 9px; width: 100%; min-height: 88px; padding: 5px 9px; background: #fffdf2; border: 2px solid #dce3cb; border-radius: 14px; text-align: left; overflow: hidden; touch-action: pan-y; }
 .seed-card img { width: 72px; height: 72px; flex-shrink: 0; pointer-events: none; -webkit-user-drag: none; }
-.seed-cards:not(.legacy), .seed-cards:not(.legacy) .seed-card { touch-action: none; }
-.seed-cards:not(.legacy) { overflow: hidden; }
+.seed-cards:not(.legacy):not(.extended), .seed-cards:not(.legacy):not(.extended) .seed-card { touch-action: none; }
+.seed-cards:not(.legacy):not(.extended) { overflow: hidden; }
 .seed-card strong { display: block; font-size: 14px; white-space: nowrap; }
 .seed-card .cost { font-size: 12px; color: #887037; }
 .seed-card[aria-pressed="true"] { background: #f0f3cb; border-color: #4b7748; box-shadow: 0 0 0 2px #4b774824; }
@@ -94,6 +94,16 @@ h1 i { position: absolute; font-style: normal; font-size: .5em; color: #dcaa44; 
 .board-banner { pointer-events: none; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); border-radius: 14px; background: #fffae8ee; color: #345038; font-size: 14px; font-weight: 800; padding: 9px 18px; text-align: center; white-space: nowrap; }
 .board-banner:empty { display: none; }
 .garden-caption { display: flex; width: 100%; justify-content: space-between; gap: 8px; margin-top: 18px; font-size: 12px; color: #637257; min-height: 16px; }
+.wave-progress { width: 100%; flex-shrink: 0; margin-top: 8px; }
+.wave-track { position: relative; height: 10px; margin-top: 12px; border: 1px solid #6c8553; border-radius: 6px; background: #e3e8cd; }
+.wave-fill { height: 100%; width: 0; border-radius: inherit; background: #548641; }
+.wave-marker { position: absolute; bottom: 11px; transform: translateX(-50%); font-size: 10px; line-height: 11px; font-weight: 800; color: #526444; white-space: nowrap; }
+.wave-marker::after { content: ""; position: absolute; top: 12px; left: 50%; width: 2px; height: 10px; background: #8e6335; }
+.wave-marker.reached { color: #285d29; }
+.wave-start { left: 0; transform: none; }
+.wave-start::after { display: none; }
+.wave-summary { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; line-height: 12px; margin-top: 2px; }
+.stage-replay { font-size: 11px; color: #214f3b; background: #d7e5bb; padding: 3px 8px; border-radius: 8px; }
 dialog { padding: 24px 28px; border: 1px solid #d9dfc6; border-radius: 24px; background: #fcfaee; color: #233e32; max-width: min(600px, calc(var(--view-width) * .9)); width: 560px; max-height: calc(var(--view-height) * .9); overflow-y: auto; box-shadow: 0 20px 100px #12281f44; }
 dialog::backdrop { background: #173c3280; backdrop-filter: blur(5px); }
 .modal-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -103,6 +113,10 @@ dialog p { font-size: 14px; line-height: 1.8; color: #64715b; }
 .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
 .modal-actions .button { flex: 1; white-space: nowrap; }
 .modal-actions .button:disabled { opacity: .5; }
+.sound-controls { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.sound-controls button, .sound-controls input { grid-column: 1 / -1; }
+.sound-controls input { width: 100%; min-height: 44px; margin: 0; accent-color: #214f3b; }
+.sound-controls label, .sound-controls output { font-weight: 800; font-size: 14px; }
 dialog[data-kind="loadout"] { width: 840px; max-width: calc(var(--view-width) * .95); height: min(720px, calc(var(--view-height) * .94)); overflow: hidden; }
 dialog[data-kind="loadout"][open] { display: flex; flex-direction: column; }
 dialog[data-kind="loadout"] #modal-body { overflow-y: auto; min-height: 0; flex: 1; overscroll-behavior: contain; touch-action: pan-y; }
@@ -165,7 +179,7 @@ dialog[data-kind="loadout"] .modal-top, dialog[data-kind="loadout"] h2, dialog[d
   .stage-heading span { font-size: 10px; }
   .sun-counter { min-width: 72px; font-size: 17px; padding: 6px 10px; }
   .hearts { font-size: 17px; }
-  .game-layout { height: calc(100% - 48px); padding: 8px 10px; gap: 12px; }
+  .game-layout { height: calc(100% - 48px); padding: 6px 10px; gap: 12px; }
   .seed-bank { flex-basis: 154px; gap: 5px; }
   .seed-label, .seed-hint { display: none; }
   .seed-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 80px; gap: 4px; }
@@ -178,8 +192,9 @@ dialog[data-kind="loadout"] .modal-top, dialog[data-kind="loadout"] h2, dialog[d
   dialog[data-kind="loadout"] p { font-size: 12px; margin: 6px 0; }
   dialog[data-kind="loadout"] .modal-actions { margin-top: 6px; }
   .loadout-choice img { width: 64px; height: 64px; }
-  .board { width: min(100%, calc((var(--view-height) - 85px - var(--safe-top) - var(--safe-bottom)) * 1.8)); border-radius: 12px; box-shadow: 0 5px 0 #d9debd; }
-  .garden-caption { margin-top: 8px; font-size: 10px; min-height: 12px; }
+  .board { width: min(100%, calc((var(--view-height) - 100px - var(--safe-top) - var(--safe-bottom)) * 1.8)); border-radius: 12px; box-shadow: 0 5px 0 #d9debd; }
+  .garden-caption { display: none; }
+  .wave-progress { margin-top: 4px; }
   .board-banner { font-size: 12px; top: 7px; padding: 7px 12px; }
   dialog { padding: 14px 22px; border-radius: 18px; max-height: calc(var(--view-height) * .94); }
   dialog h2 { font-size: 24px; margin: 0 0 10px; }
@@ -202,7 +217,7 @@ dialog[data-kind="loadout"] .modal-top, dialog[data-kind="loadout"] h2, dialog[d
   .stage-heading strong { font-size: 11px; }
   .hearts { font-size: 13px; letter-spacing: -1px; }
   .shovel { padding: 8px 12px; }
-  .board { width: min(100%, calc((var(--view-height) - 74px) * 1.8)); }
+  .board { width: min(100%, calc((var(--view-height) - 98px - var(--safe-top) - var(--safe-bottom)) * 1.8)); }
   .garden-caption { font-size: 9px; }
   .garden-caption > span:last-child { display: none; }
   .home-footer { flex-wrap: wrap; }
@@ -212,6 +227,7 @@ dialog[data-kind="loadout"] .modal-top, dialog[data-kind="loadout"] h2, dialog[d
 @media (orientation: portrait) {
   :root { --view-width: 100dvh; --view-height: 100dvw; --safe-top: env(safe-area-inset-right); --safe-right: env(safe-area-inset-bottom); --safe-bottom: env(safe-area-inset-left); --safe-left: env(safe-area-inset-top); overflow: hidden; }
   body, body.game-active { position: fixed; inset: auto; left: 50%; top: 50%; width: var(--view-width); height: var(--view-height); min-height: 0; transform: translate(-50%, -50%) rotate(90deg); transform-origin: center; overflow: hidden; }
+  .seed-cards.legacy, .seed-cards.extended, .seed-cards.legacy .seed-card, .seed-cards.extended .seed-card, dialog[data-kind="loadout"] #modal-body { touch-action: auto; }
   dialog { inset: auto; left: 50%; top: 50%; margin: 0; transform: translate(-50%, -50%) rotate(90deg); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }

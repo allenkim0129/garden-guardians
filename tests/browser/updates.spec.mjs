@@ -93,13 +93,13 @@ async function installNext(page, server) {
 test("두 번째 콩 예약이 있는 저장도 업데이트 후 한 번만 이어 발사", async ({ page }) => {
   const server = await releaseServer();
   try {
-    const game = createGame(10, ["sun", "pea", "twin", "pumpkin", "lantern", "iron"]);
+    const game = createGame(10, ["sun", "pea", "wall", "frost", "twin", "pumpkin", "lantern", "iron"]);
     plantAt(game, "twin", 2, 0);
     game.enemies.push({ id: game.nextId++, type: "jelly", row: 2, x: 900, hp: ENEMIES.jelly.hp, age: 0, slow: 0, eating: false });
     game.enemies.push({ id: game.nextId++, type: "umbrella", row: 4, x: 800, hp: 100, age: 1, slow: 0, eating: false, equipmentDropped: true });
     tick(game, .1); tick(game, .1);
     game.effects = [];
-    const data = { ...freshSave(), unlocked: 10, language: "en", tutorialSeen: true, current: game };
+    const data = { ...freshSave(), unlocked: 10, language: "en", volume: 80, tutorialSeen: true, current: game };
     await page.goto(`${server.url}manifest.webmanifest`);
     await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
     await page.goto(server.url);

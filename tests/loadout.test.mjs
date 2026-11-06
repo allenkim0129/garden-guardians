@@ -11,13 +11,21 @@ test("1단계 새 판은 5줄에 골고루 등장하고 v10~v13의 진행 중 �
     const game = engine.createGame(1); game.pacingVersion = version;
     assert.ok(engine.validSnapshot(game));
   }
-  assert.deepEqual(engine.scheduleFor(1).map(s => s.at), engine.scheduleFor(1, 2).map(s => s.at));
+  assert.deepEqual(engine.scheduleFor(1, 3).map(s => s.at), engine.scheduleFor(1, 2).map(s => s.at));
 });
-test("식물 선택은 1~6종·중복 없음·정원 해금 규칙을 지키고 선택 밖 배치를 거부", () => {
+test("식물 선택은 1~6종·10단계 8종·중복 없음·해금 규칙을 지키고 선택 밖 배치를 거부", () => {
   for (const invalid of [[], ["pea", "pea"], ["iron"], ["__proto__"], "pea"]) {
     assert.throws(() => engine.createGame(1, invalid), RangeError);
   }
-  assert.throws(() => engine.createGame(10, Object.keys(engine.PLANTS).slice(0, 7)), RangeError);
+  assert.throws(() => engine.createGame(9, Object.keys(engine.PLANTS).slice(0, 7)), RangeError);
+  assert.throws(() => engine.createGame(10, Object.keys(engine.PLANTS).slice(0, 9)), RangeError);
+  for (let stage = 1; stage <= 9; stage++) assert.equal(engine.loadoutLimit(stage), 6);
+  assert.equal(engine.loadoutLimit(10), 8);
+  const eight = engine.createGame(10, Object.keys(engine.PLANTS).slice(0, 8));
+  assert.ok(engine.validSnapshot(eight));
+  assert.deepEqual(engine.snapshot(eight).loadout, eight.loadout);
+  const eightSave = { ...freshSave(), unlocked: 10, current: eight };
+  assert.deepEqual(readSave({ getItem: () => JSON.stringify(eightSave) }).data, eightSave);
   const team = ["sun", "pea"];
   const game = engine.createGame(10, team);
   team.push("wall");

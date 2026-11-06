@@ -34,13 +34,15 @@ test("최대 6종 사전 선택·큰 카드·언어 전환·재접속·최소 �
   await seed(page, null);
   await page.locator("#play-button").tap();
   await page.locator(".stage-button").last().tap();
-  await expect(page.locator('.loadout-choice[aria-pressed="true"]')).toHaveCount(6);
+  await expect(page.locator('.loadout-choice[aria-pressed="true"]')).toHaveCount(8);
   await expect(page.locator('.loadout-choice[data-type="iron"]')).toBeDisabled();
   await page.locator('.loadout-choice[data-type="wall"]').tap();
   await page.locator('.loadout-choice[data-type="iron"]').tap();
+  await page.locator('.loadout-choice[data-type="thorn"]').tap();
+  await page.locator('.loadout-choice[data-type="pumpkin"]').tap();
   await page.locator("#modal [data-language]").tap();
   await expect(page.locator("#modal-title")).toHaveText("Choose your team");
-  await expect(page.locator("#loadout-count")).toHaveText("Selected plants: 6 / 6");
+  await expect(page.locator("#loadout-count")).toHaveText("Selected plants: 6 / 8");
   await page.locator("#modal").screenshot({ path: testInfo.outputPath("choose-team.png") });
   await confirmTeam(page);
   await expect(page.locator(".seed-card:visible")).toHaveCount(6);
@@ -74,6 +76,43 @@ test("최대 6종 사전 선택·큰 카드·언어 전환·재접속·최소 �
   expect((await stored(page)).language).toBe("en");
 });
 
+for (const portrait of [false, true]) test(`10단계 8종 선택·큰 카드 목록 스크롤·저장 (${portrait ? "세로" : "가로"})`, async ({ page, context, browserName }) => {
+  await page.setViewportSize(portrait ? { width: 320, height: 568 } : { width: 568, height: 320 });
+  await seed(page, null, { language: "en" });
+  await page.locator("#play-button").tap();
+  await page.locator(".stage-button").last().tap();
+  await expect(page.locator("#loadout-count")).toHaveText("Selected plants: 8 / 8");
+  await expect(page.locator(".loadout-slot")).toHaveCount(8);
+  await expect(page.locator('.loadout-choice[data-type="iron"]')).toBeDisabled();
+  await page.locator('.loadout-choice[data-type="bomb"]').tap();
+  await page.locator('.loadout-choice[data-type="iron"]').tap();
+  await confirmTeam(page);
+  await expect(page.locator(".seed-card:visible")).toHaveCount(8);
+  await expect(page.locator("#seed-cards")).toHaveClass(/extended/);
+  const board = await page.locator("#board").boundingBox();
+  const bank = await page.locator("#seed-cards").boundingBox();
+  if (browserName === "chromium") {
+    const from = portrait ? { x: bank.x + 20, y: bank.y + bank.height / 2 } : { x: bank.x + bank.width / 2, y: bank.y + bank.height - 20 };
+    const to = portrait ? { x: bank.x + bank.width - 20, y: from.y } : { x: from.x, y: bank.y + 20 };
+    await swipe(page, context, browserName, from, to);
+    await expect.poll(() => page.locator("#seed-cards").evaluate(node => node.scrollTop)).toBeGreaterThan(20);
+  } else await page.locator("#seed-cards").evaluate(node => node.scrollTop = node.scrollHeight);
+  await expect(page.locator('.seed-card[aria-pressed="true"]')).toHaveCount(0);
+  const iron = page.locator('.seed-card[data-type="iron"]');
+  await iron.tap();
+  await expect(iron).toHaveAttribute("aria-pressed", "true");
+  await expect(iron).toBeInViewport();
+  expect(await iron.locator("img").evaluate(node => node.getBoundingClientRect().width)).toBe(56);
+  expect(await page.locator("#board").boundingBox()).toEqual(board);
+  expect(await page.evaluate(() => [scrollX, scrollY])).toEqual([0, 0]);
+  await page.locator("#pause-button").tap();
+  const before = (await stored(page)).current.loadout;
+  expect(before).toHaveLength(8);
+  await page.reload(); await page.locator("#resume-button").tap();
+  expect((await stored(page)).current.loadout).toEqual(before);
+  await expect(page.locator(".seed-card:visible")).toHaveCount(8);
+});
+
 for (const portrait of [false, true]) test(`빠른 햇빛 쓸기·오배치 방지·화면 고정 (${portrait ? "세로 기기의 가로형 화면" : "가로"})`, async ({ page, context, browserName }) => {
   await page.setViewportSize(portrait ? { width: 320, height: 568 } : { width: 568, height: 320 });
   const game = createGame(10, team);
@@ -103,14 +142,15 @@ for (const portrait of [false, true]) test(`빠른 햇빛 쓸기·오배치 방�
   expect(modal.y + modal.height).toBeLessThanOrEqual(portrait ? 568 : 320);
 });
 
-test("승리 결과는 즉시 저장하되 마지막 장면은 2초, 백그라운드 시간은 제외", async ({ page }) => {
+test("승리 결과는 즉시 저장하되 안내 문구 없이 3초, 백그라운드 시간은 제외", async ({ page }) => {
   const game = createGame(1, ["sun", "pea"]);
   game.nextSpawn = STAGES[0].count; game.time = 100;
   game.enemies.push({ id: game.nextId++, type: "sleepy", row: 2, x: 500, hp: 18, slow: 0, age: 0, eating: false });
   game.shots.push({ id: game.nextId++, row: 2, x: 470, damage: 18, frost: false });
   await seed(page, game, { unlocked: 1 });
   await page.locator("#resume-button").tap();
-  await expect(page.locator("#board-banner")).toContainText("마지막 장면");
+  await expect.poll(async () => (await stored(page)).stars[0]).toBe(3);
+  await expect(page.locator("#board-banner")).toHaveText("");
   expect((await stored(page)).stars[0]).toBe(3);
   expect((await stored(page)).current).toBeNull();
   await expect(page.locator("#modal")).not.toBeVisible();
@@ -122,7 +162,7 @@ test("승리 결과는 즉시 저장하되 마지막 장면은 2초, 백그라�
   await page.waitForTimeout(2000);
   await expect(page.locator("#modal")).not.toBeVisible();
   await page.evaluate(() => { delete document.hidden; });
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(1700);
   await expect(page.locator("#modal")).not.toBeVisible();
   await expect(page.locator("#modal-title")).toHaveText("정원을 지켰어요!");
   await expect(page.locator(".unlock-card")).toHaveAttribute("data-type", "wall");

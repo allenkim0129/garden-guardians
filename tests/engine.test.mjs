@@ -193,7 +193,7 @@ test("하트가 0이면 패배, 모든 무리를 막으면 승리; 종료 후 �
 });
 test("v11은 준비 18초·적은 첫 무리·점진 가속·증가한 마지막 무리를 제공", () => {
   for (const stage of STAGES) {
-    const plan = scheduleFor(stage.id);
+    const plan = scheduleFor(stage.id, 2);
     const old = scheduleFor(stage.id, 1);
     const waves = [1, 2, 3].map(wave => plan.filter(p => p.wave === wave));
     assert.equal(plan[0].at, 18);
@@ -203,6 +203,51 @@ test("v11은 준비 18초·적은 첫 무리·점진 가속·증가한 마지막
     const gaps = waves.map(wave => wave[1].at - wave[0].at);
     assert.ok(gaps[0] > gaps[1] && gaps[1] > gaps[2]);
     assert.equal(plan.length, Math.ceil(old.length * 1.4));
+  }
+});
+test("v15는 55초 전 1~2명만 천천히, 중반 증가, 최종 무리에 절반 이상 집중", () => {
+  for (const stage of STAGES) {
+    const plan = scheduleFor(stage.id);
+    const waves = [1, 2, 3].map(wave => plan.filter(spawn => spawn.wave === wave));
+    assert.equal(plan[0].at, 25);
+    assert.equal(waves[0].length, stage.id === 1 ? 1 : 2);
+    assert.ok(waves[0].every(spawn => spawn.type === "sleepy"));
+    if (waves[0].length === 2) assert.equal(waves[0][1].at - waves[0][0].at, 14);
+    assert.equal(plan.filter(spawn => spawn.at < 55).length, waves[0].length);
+    assert.equal(waves[1][0].at, 55);
+    assert.ok(waves[1].length > waves[0].length);
+    assert.ok(waves[2][0].at >= 90);
+    assert.ok(waves[2].length > waves[1].length);
+    assert.ok(waves[2].length > plan.length / 2);
+    assert.ok(waves[1][1].at - waves[1][0].at > waves[2][1].at - waves[2][0].at);
+    assert.equal(plan.length, stage.count);
+    assert.ok(plan.every((spawn, index) => !index || spawn.at > plan[index - 1].at));
+    const game = createGame(stage.id);
+    game.time = 24.9; tick(game, .1);
+    assert.equal(game.nextSpawn, 1);
+    assert.equal(game.enemies[0].type, "sleepy");
+  }
+});
+test("진행 바는 저장 버전의 시간표를 따르고 마지막 등장 이후 남은 적과 승리를 구분", () => {
+  for (const pacingVersion of [1, 2, 3, 4]) {
+    const game = createGame(10); game.pacingVersion = pacingVersion;
+    const plan = scheduleFor(10, pacingVersion);
+    assert.ok(validSnapshot(game));
+    assert.equal(engine.waveProgress(game).percent, 0);
+    for (const wave of [2, 3]) {
+      game.time = plan.find(spawn => spawn.wave === wave).at;
+      const progress = engine.waveProgress(game);
+      assert.equal(progress.percent, progress.markers.find(marker => marker.wave === wave).percent);
+    }
+    game.time = plan.at(-1).at; game.nextSpawn = plan.length;
+    enemy(game, "sleepy", 2, 700);
+    assert.equal(engine.waveProgress(game).percent, 100);
+    assert.equal(engine.waveProgress(game).remaining, 1);
+    const restored = snapshot(game);
+    assert.deepEqual(engine.waveProgress(restored), engine.waveProgress(game));
+    game.enemies = []; tick(game, .1);
+    assert.equal(game.status, "won");
+    assert.equal(engine.waveProgress(game).remaining, 0);
   }
 });
 test("v10 진행 중 판은 저장·재접속 후에도 기존 등장 시점·남은 수를 유지", () => {
@@ -279,19 +324,20 @@ test("콩별이·햇살봉은 기본 해금하고 2~9 정원에 한 종씩 추�
   advance(game, 6.1);
   assert.ok(game.suns.some(sun => sun.x === 72 && sun.y === 50));
 });
-test("콩별이 발사 성능·비용·쿨다운을 낮추고 후반 단일 공격 전략의 우세를 줄임", t => {
+test("v14 등장 규칙에서 콩별이 밸런스 개정의 단일 공격 전략 제한을 보존", t => {
   assert.equal(PLANTS.pea.cost, 125);
   assert.equal(PLANTS.pea.recharge, 6);
   assert.equal(PLANTS.pea.damage / PLANTS.pea.interval, 11.25);
   assert.ok(PLANTS.pea.damage / PLANTS.pea.interval < (22 / 1.25) * .65);
+  const previous = { ...engine, createGame: stage => ({ ...createGame(stage), pacingVersion: 3 }) };
   let soloHearts = 0, mixedHearts = 0;
   for (const stage of [8, 9, 10]) {
-    const solo = playStrategy(engine, stage, "pea");
-    const mixed = playStrategy(engine, stage, "mixed");
+    const solo = playStrategy(previous, stage, "pea");
+    const mixed = playStrategy(previous, stage, "mixed");
     soloHearts += solo.game.lives; mixedHearts += mixed.game.lives;
     assert.equal(mixed.game.status, "won");
     t.diagnostic(`${stage}단계: 콩별이 중심 ${solo.game.status}/하트${solo.game.lives}, 혼합 ${mixed.game.status}/하트${mixed.game.lives}`);
   }
   assert.ok(mixedHearts >= soloHearts + 3);
-  assert.equal(playStrategy(engine, 10, "pea").game.status, "lost");
+  assert.equal(playStrategy(previous, 10, "pea").game.status, "lost");
 });

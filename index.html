@@ -18,7 +18,7 @@
     <main id="home" class="home">
       <header class="home-header">
         <a class="brand" href="./" aria-label="정원 수비대 처음 화면"><span class="brand-mark">✿</span> LITTLE GARDEN CLUB</a>
-        <div class="header-actions"><button data-language class="button language-button" aria-label="한국어 / English">한국어 / English</button><button id="help-button" class="button subtle">놀이 안내</button></div>
+        <div class="header-actions"><button data-language class="button language-button" aria-label="한국어 / English">한국어 / English</button><button data-sound-settings class="icon-button" aria-label="소리 설정">⚙</button><button id="help-button" class="button subtle">놀이 안내</button></div>
       </header>
       <div class="home-content">
         <section class="hero">
@@ -34,7 +34,7 @@
         <div class="hero-art"><canvas id="title-art" width="1000" height="760" role="img" aria-label="햇살봉, 콩별이와 우스꽝스러운 좀비들이 있는 작은 정원"></canvas><span class="art-label">오늘도, 정원을 부탁해!</span></div>
       </div>
       <footer class="home-footer">
-        <div><div id="offline-status" role="status" class="offline-status">캐릭터 그림을 준비하는 중…</div><small id="app-version">화면 v14</small></div>
+        <div><div id="offline-status" role="status" class="offline-status">캐릭터 그림을 준비하는 중…</div><small id="app-version">화면 v15</small></div>
         <div class="footer-actions">
           <button id="cache-retry" class="text-button" hidden>다시 저장</button>
           <button id="update-button" class="text-button" hidden>저장하고 업데이트</button>
@@ -52,6 +52,7 @@
         <div id="hearts" class="hearts" aria-label="남은 하트 3개">♥ ♥ ♥</div>
         <button id="shovel-button" class="button shovel" aria-pressed="false">삽</button>
         <button id="pause-button" class="icon-button" aria-label="일시 정지">Ⅱ</button>
+        <button data-sound-settings class="icon-button" aria-label="소리 설정">⚙</button>
         <button data-language class="button language-button" aria-label="한국어 / English">한국어 / English</button>
       </header>
       <div class="game-layout">
@@ -67,6 +68,15 @@
             <div id="board-grid" class="board-grid" role="group" aria-label="5줄 9칸 정원"></div>
             <div id="sun-layer" class="sun-layer" aria-label="모을 수 있는 햇빛"></div>
             <div id="board-banner" class="board-banner" aria-live="polite"></div>
+          </div>
+          <div class="wave-progress">
+            <div id="wave-track" class="wave-track" role="progressbar" aria-label="좀비 웨이브 진행" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="wave-fill" class="wave-fill"></div>
+              <span class="wave-marker wave-start">시작</span>
+              <span id="wave-marker-2" class="wave-marker">중간</span>
+              <span id="wave-marker-3" class="wave-marker">최종</span>
+            </div>
+            <div class="wave-summary"><span id="wave-status"></span><span id="wave-remaining"></span></div>
           </div>
           <div class="garden-caption"><span id="selection-hint">식물 카드를 고른 뒤 빈 땅을 눌러 주세요.</span><span id="enemy-count"></span></div>
         </section>
