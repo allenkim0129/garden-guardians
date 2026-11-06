@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGame, plantAt, tick, snapshot, validSnapshot, advanceEffects, PLANTS, ENEMIES } from "../src/engine.js";
+import { createGame, plantAt, tick, snapshot, validSnapshot, advanceEffects, PLANTS, ENEMIES, STAGES } from "../src/engine.js";
 import { plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION } from "../src/sprites.js";
 import { projectilePosition } from "../src/art.js";
 
@@ -78,7 +78,7 @@ test("걷기·공격은 네 프레임을 사용하고 상태 전환 때 처음�
 });
 for (const type of Object.keys(ENEMIES)) test(`${type} 사망은 즉시 전투에서 제거하고 승리와 독립적으로 쓰러짐 재생`, () => {
   const game = createGame(1);
-  game.nextSpawn = 8;
+  game.nextSpawn = STAGES[0].count;
   plantAt(game, "pea", 0, 1);
   const plant = game.plants[0];
   plant.timer = 1.6;

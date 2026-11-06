@@ -118,6 +118,31 @@ test("두 번째 콩 예약이 있는 저장도 업데이트 후 한 번만 이�
   } finally { await server.stop(); }
 });
 
+test("v10의 진행 중 판은 업데이트 후에도 이전 웨이브로 이어짐", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(1);
+    delete game.pacingVersion;
+    game.time = 11;
+    const data = { ...freshSave(), language: "en", tutorialSeen: true, current: game };
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await installNext(page, server);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await page.locator("#resume-button").tap();
+    await page.waitForTimeout(1400);
+    await page.locator("#pause-button").tap();
+    const restored = await saved(page);
+    expect(restored.current.nextSpawn).toBe(1);
+    expect(restored.current.pacingVersion).toBeUndefined();
+    expect(restored.language).toBe("en");
+  } finally { await server.stop(); }
+});
+
 test("기존 v5 탭은 새로고침해도 구버전: 모든 탭 종료 후 저장 보존하여 최신 전환", async ({ page, context }) => {
   const server = await releaseServer(true);
   try {

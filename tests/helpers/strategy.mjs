@@ -12,6 +12,7 @@ export function playStrategy(api, stage, mode = "mixed") {
   }
   const rows = api.STAGES[stage - 1].rows ?? [2, 0, 4, 1, 3];
   if (mode === "expanded" && stage === 5) attempt("twin", rows[0], 2);
+  if (mode === "expanded" && stage === 7) attempt("pumpkin", rows[0], 3);
   for (let step = 0; step < 4000 && game.status === "playing"; step++) {
     if (step % 10 === 0 && (step > 0 || !actions.length)) {
       for (const sun of [...game.suns]) collectSun(game, sun.id);

@@ -71,7 +71,7 @@ test("실제 터치: 심기, 비용, 햇빛, 삽, 정지, 재접속 복원", asy
 
 test("승리·다음 정원·패배·재도전과 최고 별 저장", async ({ page }) => {
   await homeReady(page);
-  const win = createGame(1); win.nextSpawn = 8; win.time = 80;
+  const win = createGame(1); win.nextSpawn = STAGES[0].count; win.time = 80;
   await loadFixture(page, win);
   await expect(page.locator("#modal-title")).toHaveText("정원을 지켰어요!");
   await expect(page.locator("#modal-body")).toContainText("새 식물 해금: 도토리벽");
@@ -101,7 +101,7 @@ test("승리·다음 정원·패배·재도전과 최고 별 저장", async ({ p
 
 test("마지막 정원 완료 후 11단계 없이 재도전·정원 선택", async ({ page }) => {
   await homeReady(page);
-  const game = createGame(10); game.nextSpawn = 40; game.time = 150;
+  const game = createGame(10); game.nextSpawn = STAGES[9].count; game.time = 150;
   await loadFixture(page, game, { stars: [...Array(9).fill(3), 0] });
   await expect(page.locator("#modal-title")).toHaveText("모든 정원을 지켰어요!");
   expect((await readStored(page)).unlocked).toBe(10);
@@ -379,7 +379,7 @@ test("구버전 진행 중 식물은 보존하고 새 배치는 해금 규칙을
   expect(saved.current.plants[0].type).toBe("sun");
 });
 
-test("새 오프라인 캐시 v10이 이전 v5를 정리하고 기본 해금과 14종 프레임 저장", async ({ page }) => {
+test("새 오프라인 캐시가 이전 v5를 정리하고 기본 해금과 14종 프레임 저장", async ({ page }) => {
   await page.goto("/manifest.webmanifest");
   await page.evaluate(async () => {
     const old = await caches.open("garden-guardians-%2F-v5");
@@ -388,7 +388,8 @@ test("새 오프라인 캐시 v10이 이전 v5를 정리하고 기본 해금과 
   await homeReady(page);
   const cached = await page.evaluate(async () => {
     const keys = await caches.keys();
-    const active = await caches.open("garden-guardians-%2F-v10");
+    const version = document.querySelector("#app-version").textContent.match(/v\d+/)[0];
+    const active = await caches.open(`garden-guardians-%2F-${version}`);
     const sprites = await Promise.all(["pea", "sun", "wall", "frost", "bomb", "twin", "thorn", "pumpkin", "lantern", "iron", "sleepy", "jelly", "roller", "umbrella"].map(async type => {
       const response = await active.match(new URL(`./assets/sprites/${type}.png`, location.href));
       return response?.ok && (await response.blob()).size > 10000;
@@ -396,7 +397,8 @@ test("새 오프라인 캐시 v10이 이전 v5를 정리하고 기본 해금과 
     return { keys, sprites, app: await (await active.match(new URL("./src/app.js", location.href))).text(),
       engine: await (await active.match(new URL("./src/engine.js", location.href))).text() };
   });
-  expect(cached.keys).toContain("garden-guardians-%2F-v10");
+  const version = (await page.locator("#app-version").textContent()).match(/v\d+/)[0];
+  expect(cached.keys).toContain(`garden-guardians-%2F-${version}`);
   expect(cached.keys).not.toContain("garden-guardians-%2F-v5");
   expect(cached.sprites).toEqual(Array(14).fill(true));
   expect(cached.app).toContain("let selected = null");

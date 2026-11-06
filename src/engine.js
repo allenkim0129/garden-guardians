@@ -36,7 +36,7 @@ export const STAGES = [
   { name: "꼬불꼬불 덩굴", count: 30, gap: 3.1, types: ["roller", "jelly", "sleepy", "umbrella"], startSun: 325, tip: "새 친구 해등나무! 더 많은 햇빛을 만들지만 첫 수확까지 기다려야 해요." },
   { name: "노을빛 파티", count: 34, gap: 2.8, types: ["jelly", "umbrella", "roller", "sleepy"], startSun: 350, tip: "새 친구 철잎보루! 오래 버티지만 비용과 다시 심는 시간을 생각해요." },
   { name: "우리들의 정원", count: 40, gap: 2.5, types: ["jelly", "roller", "umbrella", "sleepy", "jelly"], startSun: 350, tip: "마지막 소풍이에요. 열 친구의 능력을 조합해 정원을 지켜요!" },
-].map((stage, i) => Object.freeze({ ...stage, id: i + 1 }));
+].map((stage, i) => Object.freeze({ ...stage, legacyCount: stage.count, count: Math.ceil(stage.count * 1.4), id: i + 1 }));
 
 export function isPlantUnlocked(type, stage) {
   return Object.hasOwn(PLANTS, type) && Number.isInteger(stage) && stage >= PLANTS[type].unlockStage && stage <= STAGES.length;
@@ -45,23 +45,33 @@ export function introducedPlants(stage) {
   return Object.entries(PLANTS).filter(([, plant]) => plant.unlockStage === stage).map(([type]) => type);
 }
 
-export function scheduleFor(stageNumber) {
+export function scheduleFor(stageNumber, pacingVersion = 2) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   const rows = stage.rows ?? [2, 0, 4, 1, 3];
-  return Array.from({ length: stage.count }, (_, i) => ({
-    at: 12 + i * stage.gap + Math.floor(i / Math.ceil(stage.count / 3)) * 7,
-    row: rows[i % rows.length],
-    type: stage.types[i % stage.types.length],
-    wave: Math.min(3, Math.floor(i / Math.ceil(stage.count / 3)) + 1),
-  }));
+  if (pacingVersion === 1) {
+    return Array.from({ length: stage.legacyCount }, (_, i) => ({
+      at: 12 + i * stage.gap + Math.floor(i / Math.ceil(stage.legacyCount / 3)) * 7,
+      row: rows[i % rows.length],
+      type: stage.types[i % stage.types.length],
+      wave: Math.min(3, Math.floor(i / Math.ceil(stage.legacyCount / 3)) + 1),
+    }));
+  }
+  const first = Math.ceil(stage.legacyCount * .2);
+  const second = Math.ceil(stage.legacyCount * .3);
+  let at = 18;
+  return Array.from({ length: stage.count }, (_, i) => {
+    const wave = i < first ? 1 : i < first + second ? 2 : 3;
+    if (i > 0) at += stage.gap * [1.2, .75, .3][wave - 1] + (i === first || i === first + second ? 7 : 0);
+    return { at, row: rows[i % rows.length], type: stage.types[i % stage.types.length], wave };
+  });
 }
 
 export function createGame(stageNumber) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   return {
-    version: 1, rulesVersion: 3, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 3, pacingVersion: 2, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
     cooldowns: Object.fromEntries(Object.keys(PLANTS).map(type => [type, 0])),
@@ -129,7 +139,7 @@ export function tick(game, dt) {
   dt = Math.min(dt, .1);
   game.time += dt;
   for (const type of Object.keys(PLANTS)) game.cooldowns[type] = Math.max(0, game.cooldowns[type] - dt);
-  const schedule = scheduleFor(game.stage);
+  const schedule = scheduleFor(game.stage, game.pacingVersion ?? 1);
   while (game.nextSpawn < schedule.length && game.time >= schedule[game.nextSpawn].at) {
     const spawn = schedule[game.nextSpawn++];
     const info = ENEMIES[spawn.type];
@@ -256,8 +266,9 @@ const object = value => value !== null && typeof value === "object" && !Array.is
 export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, 10) || g.status !== "playing") return false;
   if (g.rulesVersion !== undefined && ![2, 3].includes(g.rulesVersion)) return false;
+  if (g.pacingVersion !== undefined && ![1, 2].includes(g.pacingVersion)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
-  if (!integer(g.nextSpawn, 0, STAGES[g.stage - 1].count) || !finite(g.skyTimer, -1, 6) || !integer(g.wave, 0, 3)) return false;
+  if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, 6) || !integer(g.wave, 0, 3)) return false;
   if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, PLANTS[t].recharge)
     || (g.rulesVersion !== 3 && PLANTS[t].unlockStage >= 5 && g.cooldowns[t] === undefined))) return false;
   if (!object(g.stats) || !["planted", "defeated", "collected"].every(k => integer(g.stats[k], 0, 1000000))) return false;
@@ -268,7 +279,7 @@ export function validSnapshot(g) {
   if (!g.plants.every(p => eventTime(p.shotAt) && eventTime(p.hurtAt) && eventTime(p.producedAt))) return false;
   if (!g.plants.every(p => p.pendingShotAt === undefined || (p.type === "twin" && finite(p.shotAt, 0, g.time)
     && finite(p.pendingShotAt, g.time, g.time + TWIN_GAP) && Math.abs(p.pendingShotAt - p.shotAt - TWIN_GAP) < 1e-8))) return false;
-  if (!list(g.enemies, 40, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4) && finite(e.x, -25, 1000) && finite(e.hp, .000001, ENEMIES[e.type].hp) && finite(e.slow, 0, 3) && finite(e.age, 0, 100000) && typeof e.eating === "boolean")) return false;
+  if (!list(g.enemies, STAGES[g.stage - 1].count, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4) && finite(e.x, -25, 1000) && finite(e.hp, .000001, ENEMIES[e.type].hp) && finite(e.slow, 0, 3) && finite(e.age, 0, 100000) && typeof e.eating === "boolean")) return false;
   if (!g.enemies.every(e => eventTime(e.motionAt))) return false;
   if (!list(g.shots, 500, s => {
     if (!hasId(s) || !integer(s.row, 0, 4) || !finite(s.x, 0, 1000) || typeof s.frost !== "boolean") return false;

@@ -119,8 +119,42 @@ test("하트가 0이면 패배, 모든 무리를 막으면 승리; 종료 후 �
   const end = structuredClone(game);
   tick(game, .1);
   assert.deepEqual(game, end);
-  const win = createGame(1); win.nextSpawn = 8; tick(win, .1);
+  const win = createGame(1); win.nextSpawn = STAGES[0].count; tick(win, .1);
   assert.equal(win.status, "won");
+});
+test("v11은 준비 18초·적은 첫 무리·점진 가속·증가한 마지막 무리를 제공", () => {
+  for (const stage of STAGES) {
+    const plan = scheduleFor(stage.id);
+    const old = scheduleFor(stage.id, 1);
+    const waves = [1, 2, 3].map(wave => plan.filter(p => p.wave === wave));
+    assert.equal(plan[0].at, 18);
+    assert.ok(waves[0].length < old.filter(p => p.wave === 1).length);
+    assert.ok(waves[2].length > old.filter(p => p.wave === 3).length);
+    assert.ok(waves[2].length >= plan.length / 2);
+    const gaps = waves.map(wave => wave[1].at - wave[0].at);
+    assert.ok(gaps[0] > gaps[1] && gaps[1] > gaps[2]);
+    assert.equal(plan.length, Math.ceil(old.length * 1.4));
+  }
+});
+test("v10 진행 중 판은 저장·재접속 후에도 기존 등장 시점·남은 수를 유지", () => {
+  for (const stage of STAGES) {
+    const game = createGame(stage.id);
+    delete game.pacingVersion;
+    game.time = 60;
+    const plan = scheduleFor(stage.id, 1);
+    game.nextSpawn = plan.filter(p => p.at <= game.time).length;
+    game.wave = plan[game.nextSpawn - 1].wave;
+    const restored = snapshot(game);
+    assert.ok(validSnapshot(restored));
+    tick(game, .1); tick(restored, .1);
+    assert.deepEqual(restored, game);
+    game.time = plan.at(-1).at;
+    tick(game, .1);
+    assert.equal(game.nextSpawn, stage.legacyCount);
+    game.enemies = [];
+    tick(game, .1);
+    assert.equal(game.status, "won");
+  }
 });
 test("저장 복구는 타이머·공격·햇빛·무리를 동일하게 이어 감", () => {
   const game = createGame(5);
