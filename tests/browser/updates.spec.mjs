@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createServer } from "node:http";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { createGame, plantAt } from "../../src/engine.js";
+import { createGame, plantAt, tick, ENEMIES } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
 
 // The old shell reproduces v5/v6's register/ready policy without an update UI.
@@ -89,6 +89,34 @@ async function installNext(page, server) {
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration()).update(); });
   await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration()).waiting))).toBe(true);
 }
+
+test("두 번째 콩 예약이 있는 저장도 업데이트 후 한 번만 이어 발사", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(10);
+    plantAt(game, "twin", 2, 0);
+    game.enemies.push({ id: game.nextId++, type: "jelly", row: 2, x: 900, hp: ENEMIES.jelly.hp, age: 0, slow: 0, eating: false });
+    tick(game, .1); tick(game, .1);
+    game.effects = [];
+    const data = { ...freshSave(), unlocked: 10, language: "en", tutorialSeen: true, current: game };
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await installNext(page, server);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await page.locator("#resume-button").tap();
+    await page.waitForTimeout(300);
+    await page.locator("#pause-button").tap();
+    const restored = await saved(page);
+    expect(restored.current.plants[0].pendingShotAt).toBeUndefined();
+    expect(restored.current.shots.map(s => s.muzzle)).toEqual([0, 1]);
+    expect(restored.current.plants[0].shotAt).toBe(game.plants[0].shotAt);
+    expect(restored.language).toBe("en");
+  } finally { await server.stop(); }
+});
 
 test("기존 v5 탭은 새로고침해도 구버전: 모든 탭 종료 후 저장 보존하여 최신 전환", async ({ page, context }) => {
   const server = await releaseServer(true);

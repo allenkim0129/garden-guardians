@@ -21,10 +21,11 @@ export function readSave(storage) {
     if (data.current) {
       data.current.effects = [];
       if (data.current.rulesVersion === undefined) {
-        data.current.rulesVersion = 2;
         for (const shot of data.current.shots) shot.damage = PLANTS[shot.frost ? "frost" : "pea"].damage;
         notice = "새 식물 해금과 밸런스를 적용했어요. 이전에 심은 식물과 진행 기록은 그대로예요.";
       }
+      for (const type of Object.keys(PLANTS)) data.current.cooldowns[type] ??= 0;
+      data.current.rulesVersion = 3;
     }
     return { data, error: null, notice };
   } catch (error) {

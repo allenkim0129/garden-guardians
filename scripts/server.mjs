@@ -13,7 +13,7 @@ const mime = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=u
 const allowed = new Set(["index.html", "styles.css", "sw.js", "manifest.webmanifest", "src/app.js", "src/engine.js", "src/art.js", "src/storage.js", "src/audio.js", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"]);
 allowed.add("src/sprites.js");
 allowed.add("src/i18n.js");
-for (const type of ["pea", "sun", "wall", "frost", "bomb", "sleepy", "jelly", "roller", "umbrella"]) allowed.add(`assets/sprites/${type}.png`);
+for (const type of ["pea", "sun", "wall", "frost", "bomb", "twin", "thorn", "pumpkin", "lantern", "iron", "sleepy", "jelly", "roller", "umbrella"]) allowed.add(`assets/sprites/${type}.png`);
 
 const server = createServer(async (req, res) => {
   try {

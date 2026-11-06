@@ -72,7 +72,7 @@ test("이전 저장의 별·진행·잠긴 식물은 유지하고 발사체를 �
   assert.match(result.notice, /이전/);
   assert.equal(result.data.unlocked, 7);
   assert.deepEqual(result.data.stars, data.stars);
-  assert.equal(result.data.current.rulesVersion, 2);
+  assert.equal(result.data.current.rulesVersion, 3);
   assert.deepEqual(result.data.current.plants, old.plants);
   assert.equal(result.data.current.shots[0].damage, 18);
   assert.equal(plantAt(result.data.current, "sun", 1, 0).ok, true);

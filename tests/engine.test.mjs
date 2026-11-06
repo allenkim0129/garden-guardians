@@ -14,8 +14,8 @@ function enemy(game, type, row, x) {
   return e;
 }
 
-test("식물 5종, 좀비 4종, 증가하는 10개의 유효한 스테이지", () => {
-  assert.equal(Object.keys(PLANTS).length, 5);
+test("식물 10종, 좀비 4종, 증가하는 10개의 유효한 스테이지", () => {
+  assert.equal(Object.keys(PLANTS).length, 10);
   assert.equal(Object.keys(ENEMIES).length, 4);
   assert.equal(STAGES.length, 10);
   for (const stage of STAGES) {
@@ -156,9 +156,9 @@ test("자원·대기 시간 보정 없이 해금된 식물의 혼합 전략으�
   assert.equal(progress.current, null);
 });
 
-test("콩별이·햇살봉은 기본 해금하고 2~4 정원에 새 식물 추가, 재도전도 동일", () => {
-  const unlocks = { sun: 1, pea: 1, wall: 2, frost: 3, bomb: 4 };
-  const introductions = [["sun", "pea"], ["wall"], ["frost"], ["bomb"]];
+test("콩별이·햇살봉은 기본 해금하고 2~9 정원에 한 종씩 추가, 재도전도 동일", () => {
+  const unlocks = { sun: 1, pea: 1, wall: 2, frost: 3, bomb: 4, twin: 5, thorn: 6, pumpkin: 7, lantern: 8, iron: 9 };
+  const introductions = [["sun", "pea"], ["wall"], ["frost"], ["bomb"], ["twin"], ["thorn"], ["pumpkin"], ["lantern"], ["iron"]];
   for (let stage = 1; stage <= 10; stage++) {
     assert.deepEqual(engine.introducedPlants(stage), introductions[stage - 1] ?? []);
     for (const [type, unlockStage] of Object.entries(unlocks)) {

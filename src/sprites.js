@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES } from "./engine.js";
+import { PLANTS, ENEMIES, TWIN_GAP } from "./engine.js";
 
 export const SPRITE_CELL = Object.freeze({ width: 320, height: 224, anchorX: 192, anchorY: 210, scale: .48 });
 export const SPRITE_URLS = Object.freeze(Object.fromEntries(
@@ -38,20 +38,24 @@ export function plantFrame(plant, game) {
       ? { state: "idle", row: 0, col: Math.min(3, Math.floor(plant.age * 10)) }
       : { state: "prime", row: 1, col: Math.min(3, Math.floor((plant.age - .4) / .15)) };
   }
-  if (plant.type === "wall" && plant.hp <= PLANTS.wall.hp * .35) {
+  const defender = plant.type === "wall" || plant.type === "iron";
+  if (defender && plant.hp <= PLANTS[plant.type].hp * .35) {
     return { state: "cracked", row: 2, col: Math.floor(plant.age * 4) % 4 };
   }
-  if (plant.type === "pea" || plant.type === "frost") {
+  if (plant.type === "twin") {
+    const elapsed = game.time - (plant.shotAt ?? -100);
+    if (elapsed >= 0 && elapsed < TWIN_GAP * 2) return { state: "fire", row: 1, col: Math.min(3, Math.floor((elapsed + 1e-9) / (TWIN_GAP / 2))) };
+  } else if (PLANTS[plant.type].damage) {
     const targetAhead = game.enemies.some(enemy => enemy.hp > 0 && enemy.row === plant.row && enemy.x >= plant.col * 100 + 40);
     const frame = actionFrame(game.time, plant.shotAt, targetAhead ? plant.timer : 0, "fire");
     if (frame) return frame;
-  } else if (plant.type === "sun") {
+  } else if (plant.type === "sun" || plant.type === "lantern") {
     const frame = actionFrame(game.time, plant.producedAt, plant.timer, "produce");
     if (frame) return frame;
   }
   const sinceHurt = game.time - (plant.hurtAt ?? -100);
   if (sinceHurt >= 0 && sinceHurt < .48) {
-    return { state: plant.type === "wall" ? "guard" : "hurt", row: plant.type === "wall" ? 1 : 2, col: Math.min(3, Math.floor(sinceHurt / .12)) };
+    return { state: defender ? "guard" : "hurt", row: defender ? 1 : 2, col: Math.min(3, Math.floor(sinceHurt / .12)) };
   }
   return { state: "idle", row: 0, col: Math.floor(plant.age * 4) % 4 };
 }

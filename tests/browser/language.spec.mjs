@@ -89,7 +89,7 @@ test("진행 중 언어 전환은 판·선택·자원을 유지하고 정지·�
 
 test("영어 획득·승패·잠금·HUD는 작은 가로 화면에서 번역되고 조작 가능", async ({ page }) => {
   await page.setViewportSize({ width: 568, height: 320 });
-  for (const stage of [1, 2, 3]) {
+  for (const stage of [1, 2, 3, 4, 5, 6, 7, 8]) {
     const game = createGame(stage);
     game.nextSpawn = STAGES[stage - 1].count;
     await fixture(page, game);
@@ -108,6 +108,7 @@ test("영어 획득·승패·잠금·HUD는 작은 가로 화면에서 번역되
     await noKoreanUI(page);
     for (const card of await page.locator(".seed-card").all()) {
       expect(await card.locator("strong").evaluate(n => n.scrollWidth <= n.clientWidth)).toBe(true);
+      expect(await card.locator(".cost").evaluate(n => n.getBoundingClientRect().bottom <= n.closest("button").getBoundingClientRect().bottom - 1)).toBe(true);
     }
   }
   const lost = createGame(4); lost.lives = 1;

@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES } from "./engine.js";
+import { PLANTS, ENEMIES, PUMPKIN_RADIUS } from "./engine.js";
 import { drawSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION } from "./sprites.js";
 
 const ink = "#304b3d";
@@ -58,12 +58,29 @@ export function drawEnemy(c, type, x, y, scale = 1, age = 0, slow = false, eatin
 
 // Visual muzzle alignment only; the engine's shot coordinates and collision rules stay unchanged.
 export function projectilePosition(shot) {
+  if (shot.kind === "pumpkin") {
+    const progress = Math.min(1, shot.age / shot.duration);
+    return { x: shot.x, y: shot.row * 100 + 50 - (1 - progress) * 35 - Math.sin(progress * Math.PI) * 70 };
+  }
+  if (shot.kind === "twin") return { x: shot.x + 2, y: shot.row * 100 + (shot.muzzle === 0 ? 22 : 41) };
+  if (shot.kind === "thorn") return { x: shot.x + 12, y: shot.row * 100 + 34 };
   return { x: shot.x + (shot.frost ? 7 : 0), y: shot.row * 100 + (shot.frost ? 26 : 42) };
 }
 export function drawProjectile(c, shot) {
   const { x, y } = projectilePosition(shot);
   c.save(); c.translate(x, y);
-  if (shot.frost) {
+  if (shot.kind === "pumpkin") {
+    c.rotate(shot.age * 3);
+    ellipse(c, 0, 0, 12, 10, volume(c, 0, 0, 14, "#ffe8a6", "#ed9e39", "#ac5528"), "#704d2a", 1.6);
+    line(c, [[-3, -8], [-5, 0], [-3, 8]], "#c87a31", 1.4);
+    line(c, [[3, -8], [5, 0], [3, 8]], "#c87a31", 1.4);
+    shape(c, "M-1 -8 Q-1 -14 5 -12 L3 -7Z", "#719743", "#435c2e", 1.2);
+    shape(c, "M-7 -4 Q-5 -7 -2 -5", null, "#fff0b8", 1.8);
+  } else if (shot.kind === "thorn") {
+    shape(c, "M-15 -4 L-6 -5 L16 0 L-7 5 L-15 3 L-9 0Z", "#955878", "#4b304c", 1.5);
+    shape(c, "M-9 -3 L14 0 L-6 0Z", "#e5aec7", null);
+    shape(c, "M-15 -4 L-7 0 L-15 3 L-11 0Z", "#80984c", null);
+  } else if (shot.frost) {
     shape(c, "M-11 -1 L-4 -5 L-1 -9 L5 -4 L12 0 L5 4 L0 8 L-4 3Z", "#a9e3ee", "#397e96", 1.5);
     shape(c, "M-11 -1 L-1 -9 L2 -1 L12 0 L0 1Z", "#edffff", null);
     shape(c, "M0 1 L5 4 L0 8 L-4 3Z", "#69b2d2", null);
@@ -160,6 +177,13 @@ export function drawBoard(c, game, selected, shovel) {
       ellipse(c, effect.x, effect.y, Math.min(175, effect.age * 500), Math.min(175, effect.age * 500), "#ffba5124", "#e79a42", 2);
       c.globalAlpha = Math.min(1, Math.max(0, (BURST_DURATION - effect.age) / .2));
       drawSprite(c, "bomb", burstFrame(effect.age), effect.x, effect.y + 3, .9);
+    } else if (effect.kind === "splash") {
+      const radius = PUMPKIN_RADIUS * Math.min(1, effect.age * 7);
+      ellipse(c, effect.x, effect.y, radius, radius, "#f5b65230", "#d08a38", 2);
+      for (let i = 0; i < 6; i++) {
+        const angle = i * Math.PI / 3;
+        ellipse(c, effect.x + Math.cos(angle) * radius * .7, effect.y + Math.sin(angle) * radius * .7, 5, 3, i % 2 ? "#839843" : "#ffd79a");
+      }
     } else if (effect.kind === "heart") {
       c.fillStyle = "#ce7067"; c.font = "40px sans-serif"; c.fillText("♥", effect.x - 15, effect.y - effect.age * 40);
     } else {

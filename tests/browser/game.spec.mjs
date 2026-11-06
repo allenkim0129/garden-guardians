@@ -1,11 +1,10 @@
 import { test, expect, chromium } from "@playwright/test";
-import { spawn } from "node:child_process";
-import { once } from "node:events";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createGame, ENEMIES, STAGES, PLANTS } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
+import { isolatedServer } from "../helpers/server.mjs";
 
 async function homeReady(page, url = "/") {
   await page.goto(url);
@@ -34,28 +33,6 @@ async function loadFixture(page, game, extra = {}) {
   await page.locator("#resume-button").tap();
 }
 const readStored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
-
-async function isolatedServer(base = "/") {
-  const child = spawn(process.execPath, ["scripts/server.mjs", "--port", "0", "--base", base], { stdio: ["ignore", "pipe", "pipe"] });
-  const url = await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { child.kill(); reject(new Error("검증용 서버 시작 시간 초과")); }, 10000);
-    child.stdout.on("data", data => {
-      const match = String(data).match(/http:\/\/[^\s]+/);
-      if (match) { clearTimeout(timer); resolve(match[0]); }
-    });
-    child.once("error", error => { clearTimeout(timer); reject(error); });
-    child.stderr.on("data", data => { clearTimeout(timer); reject(new Error(String(data))); });
-  });
-  return {
-    url,
-    async stop() {
-      if (child.exitCode !== null || child.signalCode !== null) return;
-      const exited = once(child, "exit");
-      child.kill();
-      await exited;
-    },
-  };
-}
 
 test("실제 터치: 심기, 비용, 햇빛, 삽, 정지, 재접속 복원", async ({ page }) => {
   const errors = [];
@@ -159,7 +136,7 @@ test("작은 아이폰부터 아이패드까지 터치 타깃 44px와 화면 범
   for (const [width, height] of [[568, 320], [667, 320], [667, 375], [844, 390], [1024, 768], [1180, 820]]) {
     await page.setViewportSize({ width, height });
     const geometry = await page.evaluate(() => {
-      const nodes = [...document.querySelectorAll(".plot, .seed-card, .game-header button")];
+      const nodes = [...document.querySelectorAll(".plot, .game-header button")];
       return nodes.map(node => {
         const r = node.getBoundingClientRect();
         return { label: node.getAttribute("aria-label") ?? node.textContent, width: r.width, height: r.height, x: r.x, y: r.y, right: r.right, bottom: r.bottom };
@@ -170,6 +147,14 @@ test("작은 아이폰부터 아이패드까지 터치 타깃 44px와 화면 범
       expect(r.height, `${width}x${height}: ${r.label} 높이`).toBeGreaterThanOrEqual(44);
       expect(r.x).toBeGreaterThanOrEqual(0); expect(r.y).toBeGreaterThanOrEqual(0);
       expect(r.right).toBeLessThanOrEqual(width + .1); expect(r.bottom).toBeLessThanOrEqual(height + .1);
+    }
+    for (const card of await page.locator(".seed-card").all()) {
+      await card.scrollIntoViewIfNeeded();
+      const bounds = await card.boundingBox();
+      expect(bounds.width).toBeGreaterThanOrEqual(44);
+      expect(bounds.height).toBeGreaterThanOrEqual(44);
+      expect(bounds.y).toBeGreaterThanOrEqual(0);
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(height);
     }
   }
 });
@@ -355,15 +340,15 @@ test("1~10 정원의 잠금·해금, 이전 정원 선택·재시작·저장 복
   await page.locator("#play-button").tap();
   await page.locator(".stage-button").first().tap();
   await page.getByRole("button", { name: "새로 시작", exact: true }).tap();
-  await expect(page.locator(".seed-card:disabled")).toHaveCount(3);
+  await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
   await expect(page.locator('.seed-card[data-type="sun"]')).toBeEnabled();
   await expect(page.locator('.seed-card[data-type="pea"]')).toBeEnabled();
   await page.locator("#pause-button").tap();
   await page.getByRole("button", { name: "다시 시작", exact: true }).tap();
   await page.getByRole("button", { name: "다시 시작", exact: true }).tap();
-  await expect(page.locator(".seed-card:disabled")).toHaveCount(3);
+  await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
   await page.reload(); await page.locator("#resume-button").tap();
-  await expect(page.locator(".seed-card:disabled")).toHaveCount(3);
+  await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
   await page.locator('.seed-card[data-type="sun"]').tap();
   await page.locator('.plot[data-row="0"][data-col="0"]').tap();
   await page.locator('.seed-card[data-type="pea"]').tap();
@@ -390,11 +375,11 @@ test("구버전 진행 중 식물은 보존하고 새 배치는 해금 규칙을
   await page.locator("#pause-button").tap();
   const saved = await readStored(page);
   expect(saved.unlocked).toBe(7);
-  expect(saved.current.rulesVersion).toBe(2);
+  expect(saved.current.rulesVersion).toBe(3);
   expect(saved.current.plants[0].type).toBe("sun");
 });
 
-test("새 오프라인 캐시 v9가 이전 v5를 정리하고 기본 해금과 9종 프레임 저장", async ({ page }) => {
+test("새 오프라인 캐시 v10이 이전 v5를 정리하고 기본 해금과 14종 프레임 저장", async ({ page }) => {
   await page.goto("/manifest.webmanifest");
   await page.evaluate(async () => {
     const old = await caches.open("garden-guardians-%2F-v5");
@@ -403,17 +388,17 @@ test("새 오프라인 캐시 v9가 이전 v5를 정리하고 기본 해금과 9
   await homeReady(page);
   const cached = await page.evaluate(async () => {
     const keys = await caches.keys();
-    const active = await caches.open("garden-guardians-%2F-v9");
-    const sprites = await Promise.all(["pea", "sun", "wall", "frost", "bomb", "sleepy", "jelly", "roller", "umbrella"].map(async type => {
+    const active = await caches.open("garden-guardians-%2F-v10");
+    const sprites = await Promise.all(["pea", "sun", "wall", "frost", "bomb", "twin", "thorn", "pumpkin", "lantern", "iron", "sleepy", "jelly", "roller", "umbrella"].map(async type => {
       const response = await active.match(new URL(`./assets/sprites/${type}.png`, location.href));
       return response?.ok && (await response.blob()).size > 10000;
     }));
     return { keys, sprites, app: await (await active.match(new URL("./src/app.js", location.href))).text(),
       engine: await (await active.match(new URL("./src/engine.js", location.href))).text() };
   });
-  expect(cached.keys).toContain("garden-guardians-%2F-v9");
+  expect(cached.keys).toContain("garden-guardians-%2F-v10");
   expect(cached.keys).not.toContain("garden-guardians-%2F-v5");
-  expect(cached.sprites).toEqual(Array(9).fill(true));
+  expect(cached.sprites).toEqual(Array(14).fill(true));
   expect(cached.app).toContain("let selected = null");
   expect(cached.app).toContain("isPlantUnlocked");
   expect(cached.engine).toContain('sun: { name: "햇살봉", unlockStage: 1');

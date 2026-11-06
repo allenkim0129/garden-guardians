@@ -118,7 +118,7 @@ modal.addEventListener("cancel", event => { event.preventDefault(); closeModal()
 function showStages() {
   const content = document.createElement("div");
   const message = document.createElement("p");
-  message.textContent = "콩별이와 햇살봉은 처음부터 함께해요. 1~3번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 다시 도전할 때도 해당 정원의 식물로 시작해요. 별은 남은 하트 수예요.";
+  message.textContent = "콩별이와 햇살봉은 처음부터 함께해요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 다시 도전할 때도 해당 정원의 식물로 시작해요. 별은 남은 하트 수예요.";
   content.append(message);
   const grid = document.createElement("div");
   grid.className = "stage-grid";
@@ -161,7 +161,8 @@ function helpMarkup() {
     <div class="help-step"><b>2. 식물 배치</b><span>카드를 고르고 빈 땅을 톡! 한 번 심으면 선택이 풀려요. 카드를 다시 눌러도 취소돼요.</span></div>
     <div class="help-step"><b>3. 정원 지키기</b><span>좀비가 왼쪽 끝에 닿으면 하트가 하나 줄어요. 3번의 무리를 막아요!</span></div>
   </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
-  <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~3번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
+  <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
+  <p>카드 목록을 위아래로 밀어 열 식물을 모두 볼 수 있어요. 키보드에서는 Tab으로 카드를 이동해요.</p>
   <p>삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하거나 화면을 돌리면 자동으로 멈춰요.</p>
   <details><summary>좀비 친구 알아보기</summary><p>${Object.values(ENEMIES).map(e => `<b>${e.name}</b>: ${e.description}`).join("<br>")}</p></details>`;
 }
@@ -264,6 +265,18 @@ for (const [type, plant] of Object.entries(PLANTS).sort((a, b) => a[1].unlockSta
   };
   $("#seed-cards").append(button);
 }
+const seedCards = $("#seed-cards");
+let cardPointer = null;
+let cardDragged = false;
+seedCards.addEventListener("pointerdown", event => { cardPointer = { x: event.clientX, y: event.clientY }; cardDragged = false; });
+seedCards.addEventListener("pointermove", event => {
+  if (cardPointer && Math.hypot(event.clientX - cardPointer.x, event.clientY - cardPointer.y) > 8) cardDragged = true;
+});
+seedCards.addEventListener("pointercancel", () => { cardDragged = true; cardPointer = null; });
+seedCards.addEventListener("click", event => {
+  if (cardDragged && event.detail > 0) { event.preventDefault(); event.stopImmediatePropagation(); }
+  cardPointer = null;
+}, true);
 $("#board").addEventListener("pointerdown", event => { sunGesture = Boolean(event.target.closest(".sun-drop")); }, true);
 $("#board").addEventListener("click", event => {
   // An auto-collected sun can disappear between pointerdown and the synthesized click.
@@ -364,10 +377,15 @@ function render() {
     if (!button) {
       button = document.createElement("button");
       button.className = "sun-drop"; button.dataset.id = sun.id;
-      setLabel(button, "햇빛 25 모으기");
+      setLabel(button, `햇빛 ${sun.value} 모으기`);
       const art = document.createElement("canvas");
       art.width = art.height = 96; art.setAttribute("aria-hidden", "true");
       button.append(art);
+      if (sun.value === 50) {
+        const value = document.createElement("span");
+        value.className = "sun-value"; value.textContent = "50"; value.setAttribute("aria-hidden", "true");
+        button.append(value);
+      }
       button.style.left = `${sun.x / 9}%`; button.style.top = `${sun.y / 5}%`;
       button.onclick = event => {
         event.stopPropagation();
@@ -451,14 +469,15 @@ function announceUpdate() {
   if (firstNotice) notify("새 버전이 준비됐어요. 처음 화면이나 일시 정지에서 '저장하고 업데이트'를 눌러요.", 9000);
 }
 function watchUpdates(registration) {
-  if (registration.waiting && navigator.serviceWorker.controller) announceUpdate();
+  if (registration.waiting && registration.active && registration.waiting !== registration.active) announceUpdate();
   if (watchedRegistration === registration) return;
   watchedRegistration = registration;
   const watchInstalling = () => {
     const worker = registration.installing;
     if (!worker) return;
+    const replacingExistingWorker = Boolean(registration.active && registration.active !== worker);
     worker.addEventListener("statechange", () => {
-      if (worker.state === "installed" && navigator.serviceWorker.controller) announceUpdate();
+      if (worker.state === "installed" && replacingExistingWorker) announceUpdate();
       if (worker.state === "redundant" && !registration.waiting) {
         notify("새 버전을 저장하지 못했어요. 기존 게임은 유지돼요. 온라인에서 다시 열어 주세요.", 9000);
       }

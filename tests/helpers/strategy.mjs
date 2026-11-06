@@ -11,8 +11,9 @@ export function playStrategy(api, stage, mode = "mixed") {
     return true;
   }
   const rows = api.STAGES[stage - 1].rows ?? [2, 0, 4, 1, 3];
+  if (mode === "expanded" && stage === 5) attempt("twin", rows[0], 2);
   for (let step = 0; step < 4000 && game.status === "playing"; step++) {
-    if (step % 10 === 0) {
+    if (step % 10 === 0 && (step > 0 || !actions.length)) {
       for (const sun of [...game.suns]) collectSun(game, sun.id);
       let acted = false;
       const threats = game.enemies.filter(e => e.x < 930).sort((a, b) => a.x - b.x);
@@ -20,16 +21,17 @@ export function playStrategy(api, stage, mode = "mixed") {
       for (const enemy of threats) {
         if (!has("pea", enemy.row) && attempt("pea", enemy.row, 2)) { acted = true; break; }
       }
-      if (!acted && mode === "mixed") {
+      if (!acted && mode !== "pea") {
         for (const enemy of threats) {
           const nearby = threats.filter(e => Math.hypot(e.x - enemy.x, (e.row - enemy.row) * 100) < 150);
           if ((nearby.reduce((sum, e) => sum + e.hp, 0) >= 450 || enemy.x < 330)
             && attempt("bomb", enemy.row, Math.max(0, Math.min(8, Math.floor(enemy.x / 100))))) { acted = true; break; }
         }
       }
-      if (!acted && mode === "mixed") {
+      if (!acted && mode !== "pea") {
         for (const enemy of threats) {
-          if (enemy.x > 550 && enemy.x < 750 && !has("wall", enemy.row, 5) && attempt("wall", enemy.row, 5)) { acted = true; break; }
+          const defender = mode === "expanded" && available("iron") && game.sun >= api.PLANTS.iron.cost ? "iron" : "wall";
+          if (enemy.x > 550 && enemy.x < 750 && !has("wall", enemy.row, 5) && !has("iron", enemy.row, 5) && attempt(defender, enemy.row, 5)) { acted = true; break; }
         }
       }
       if (!acted) {
@@ -38,13 +40,20 @@ export function playStrategy(api, stage, mode = "mixed") {
       if (!acted) {
         for (const row of rows) if (!has("pea", row, 2) && attempt("pea", row, 2)) { acted = true; break; }
       }
-      if (!acted && mode === "mixed") {
-        for (const row of priorityRows) if (!has("frost", row, 3) && attempt("frost", row, 3)) { acted = true; break; }
+      if (!acted && mode === "expanded" && game.time > 35 && !has("lantern", 2, 1)) acted = attempt("lantern", 2, 1);
+      if (!acted && mode !== "pea") {
+        for (const row of priorityRows) {
+          const upgrade = { 0: "twin", 1: "thorn", 3: "pumpkin" }[row];
+          const type = mode === "expanded" && upgrade && available(upgrade) ? upgrade : "frost";
+          if (!game.plants.some(p => p.row === row && p.col === 3) && attempt(type, row, 3)) { acted = true; break; }
+        }
       }
       if (!acted) {
         for (const col of (mode === "pea" ? [3, 4, 1] : [1, 4, 3])) {
           for (const row of rows) {
-            if (!game.plants.some(p => p.row === row && p.col === col) && attempt("pea", row, col)) { acted = true; break; }
+            const upgrade = col === 1 ? "twin" : row % 2 ? "pumpkin" : "thorn";
+            const type = mode === "expanded" && available(upgrade) ? upgrade : "pea";
+            if (!game.plants.some(p => p.row === row && p.col === col) && attempt(type, row, col)) { acted = true; break; }
           }
           if (acted) break;
         }
