@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, STAGES, createGame, plantAt, removePlant, collectSun, tick, isPlantUnlocked, introducedPlants, advanceEffects } from "./engine.js";
+import { PLANTS, ENEMIES, STAGES, LOADOUT_LIMIT, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, scheduleFor } from "./engine.js";
 import { drawTitle, drawBoard, plantIcon, drawSunToken } from "./art.js";
 import { loadSprites } from "./sprites.js";
 import { GardenAudio } from "./audio.js";
@@ -62,6 +62,8 @@ let hadController = Boolean(navigator.serviceWorker?.controller);
 let cacheCheckInFlight = false;
 let lastWave = -1;
 let sunGesture = false;
+let pendingResult = null;
+const boardPointers = new Map();
 const audio = new GardenAudio(message => notify(message));
 audio.enabled = save.sound;
 
@@ -157,29 +159,91 @@ function showStages() {
 }
 function helpMarkup() {
   return `<div class="help-steps">
-    <div class="help-step"><b>1. 햇빛 모으기</b><span>노란 햇빛을 톡! 놓쳐도 8초 뒤 자동으로 모여요.</span></div>
+    <div class="help-step"><b>1. 햇빛 모으기</b><span>햇빛을 누르거나 손가락으로 쓸어 모아요. 놓쳐도 8초 뒤 자동으로 모여요.</span></div>
     <div class="help-step"><b>2. 식물 배치</b><span>카드를 고르고 빈 땅을 톡! 한 번 심으면 선택이 풀려요. 카드를 다시 눌러도 취소돼요.</span></div>
     <div class="help-step"><b>3. 정원 지키기</b><span>좀비가 왼쪽 끝에 닿으면 하트가 하나 줄어요. 3번의 무리를 막아요!</span></div>
   </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
   <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
-  <p>카드 목록을 위아래로 밀어 열 식물을 모두 볼 수 있어요. 키보드에서는 Tab으로 카드를 이동해요.</p>
-  <p>삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하거나 화면을 돌리면 자동으로 멈춰요.</p>
+  <p>시작 전에 최대 6종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 키보드에서는 Tab으로 카드를 이동해요.</p>
+  <p>삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하면 자동으로 멈춰요. 세로로 들고 있어도 게임은 가로형 화면으로 표시돼요.</p>
   <details><summary>좀비 친구 알아보기</summary><p>${Object.values(ENEMIES).map(e => `<b>${e.name}</b>: ${e.description}`).join("<br>")}</p></details>`;
 }
 function prepareStage(stageNumber) {
   if (!save.tutorialSeen) {
     openModal("함께 정원을 지켜요!", helpMarkup(), [{ label: "알겠어요, 출발!", primary: true, action: () => {
       save.tutorialSeen = true;
-      startStage(stageNumber);
+      showLoadout(stageNumber);
     } }]);
-  } else startStage(stageNumber);
+  } else showLoadout(stageNumber);
 }
-function startStage(stageNumber, resume = false) {
-  game = resume ? structuredClone(save.current) : createGame(stageNumber);
+function showLoadout(stageNumber) {
+  const available = Object.keys(PLANTS).filter(type => isPlantUnlocked(type, stageNumber));
+  const previous = game?.loadout?.filter(type => available.includes(type));
+  const picked = new Set(previous?.length ? previous : available.slice(0, LOADOUT_LIMIT));
+  const content = document.createElement("div");
+  content.innerHTML = `<p>함께할 식물을 최대 6종 골라 주세요. 선택한 카드를 다시 누르면 뺄 수 있어요.</p>
+    <strong id="loadout-count" role="status"></strong><div class="loadout-slots"></div><div class="loadout-grid"></div>`;
+  const grid = content.querySelector(".loadout-grid");
+  for (const [type, plant] of Object.entries(PLANTS)) {
+    const button = document.createElement("button");
+    button.className = "loadout-choice"; button.dataset.type = type;
+    setLabel(button, `${plant.name}, 햇빛 ${plant.cost}. ${plant.description}`);
+    button.innerHTML = `<img src="${icons[type]}" alt=""><strong>${plant.name}</strong><span>☀ ${plant.cost}</span><small>${plant.description}</small>`;
+    if (!available.includes(type)) {
+      button.disabled = true;
+      text(button.querySelector("small"), `${plant.unlockStage}정원 해금`);
+    }
+    button.onclick = () => {
+      if (picked.has(type)) picked.delete(type);
+      else if (picked.size < LOADOUT_LIMIT) picked.add(type);
+      updateChoices();
+    };
+    grid.append(button);
+  }
+  const back = () => {
+    if (game?.status === "playing") pauseGame();
+    else { leaveGame(); showStages(); }
+  };
+  openModal("함께할 식물 고르기", content, [
+    { label: "돌아가기", action: back },
+    { label: "이 식물로 시작", primary: true, action: () => startStage(stageNumber, false, [...picked]) },
+  ], back);
+  modal.dataset.kind = "loadout";
+  function updateChoices() {
+    text(content.querySelector("#loadout-count"), `선택한 식물 ${picked.size} / ${LOADOUT_LIMIT}종`);
+    for (const button of grid.children) {
+      const chosen = picked.has(button.dataset.type);
+      button.setAttribute("aria-pressed", String(chosen));
+      button.disabled = !available.includes(button.dataset.type) || (!chosen && picked.size === LOADOUT_LIMIT);
+    }
+    const slots = content.querySelector(".loadout-slots");
+    slots.replaceChildren();
+    for (let i = 0; i < LOADOUT_LIMIT; i++) {
+      const type = [...picked][i];
+      const slot = document.createElement(type ? "button" : "span");
+      slot.className = "loadout-slot";
+      if (type) {
+        setLabel(slot, `${PLANTS[type].name}: 선택 취소`);
+        slot.innerHTML = `<img src="${icons[type]}" alt="">`;
+        slot.onclick = () => { picked.delete(type); updateChoices(); };
+      } else slot.textContent = "+";
+      slots.append(slot);
+    }
+    $("#modal-actions .primary").disabled = picked.size === 0;
+  }
+  updateChoices();
+}
+function startStage(stageNumber, resume = false, loadout) {
+  game = resume ? structuredClone(save.current) : createGame(stageNumber, loadout);
   game.effects = [];
+  pendingResult = null; boardPointers.clear();
   selected = null; shovel = false; paused = false; sunGesture = false;
   lastWave = -1; lastSaveAt = game.time; accumulator = 0; lastFrame = performance.now();
   home.hidden = true; gameScreen.hidden = false;
+  document.body.classList.add("game-active");
+  seedCards.classList.toggle("legacy", game.loadout === undefined);
+  setLabel(seedCards, game.loadout === undefined ? "식물 카드 목록 · 위아래로 스크롤" : "선택한 식물 카드");
+  $(".seed-scroll-hint").hidden = game.loadout !== undefined;
   text($("#stage-title"), `${game.stage}. ${STAGES[game.stage - 1].name}`);
   text($("#selection-hint"), STAGES[game.stage - 1].tip);
   $("#sun-layer").replaceChildren();
@@ -189,25 +253,27 @@ function startStage(stageNumber, resume = false) {
   if (resume && game.plants.some(p => !isPlantUnlocked(p.type, game.stage))) {
     notify("이전 저장에 있던 식물은 유지해요. 새로 심을 때는 이 정원의 해금 규칙을 따라요.", 7000);
   }
-  if (window.matchMedia("(orientation: portrait)").matches) pauseGame("화면을 가로로 돌린 뒤 계속해요.");
 }
 function leaveGame() {
   persist();
   paused = true; game = null;
+  pendingResult = null; boardPointers.clear();
+  document.body.classList.remove("game-active");
   home.hidden = false; gameScreen.hidden = true;
   audio.suspend();
   refreshHome();
 }
 function resumeGame() {
   if (!game || game.status !== "playing") return;
-  if (document.hidden || window.matchMedia("(orientation: portrait)").matches) {
-    pauseGame("화면을 가로로 돌린 뒤 계속해요.");
+  if (document.hidden) {
+    pauseGame("다른 화면에 다녀오는 동안 정원을 멈춰 두었어요.");
     return;
   }
   paused = false; accumulator = 0; lastFrame = performance.now(); audio.unlock();
 }
 function pauseGame(message = "잠깐 쉬어 가요. 정원은 안전하게 기다리고 있어요.") {
   if (!game || game.status !== "playing") return;
+  boardPointers.clear(); sunGesture = true;
   paused = true; persist(); audio.suspend();
   openModal("잠깐 쉬는 중", `<p>${message}</p><p>진행 상황은 이 기기에 자동 저장돼요.</p>`, [
     { label: "저장하고 나가기", action: leaveGame },
@@ -220,11 +286,10 @@ function pauseGame(message = "잠깐 쉬어 가요. 정원은 안전하게 기�
 function confirmRestart() {
   openModal("이 정원을 다시 시작할까요?", "<p>이번 판은 처음부터 시작해요. 이미 모은 별과 열린 정원은 그대로예요.</p>", [
     { label: "돌아가기", action: () => pauseGame() },
-    { label: "다시 시작", primary: true, action: () => startStage(game.stage) },
+    { label: "다시 시작", primary: true, action: () => showLoadout(game.stage) },
   ], () => pauseGame());
 }
-function endGame() {
-  const previouslyUnlocked = save.unlocked;
+function endGame(previouslyUnlocked) {
   paused = true; persist();
   const won = game.status === "won";
   audio.stopVoices();
@@ -243,7 +308,7 @@ function endGame() {
   const resultMessage = newPlants.length ? `${game.stage + 1}번째 정원에서 새 친구와 함께해요.` : message;
   openModal(title, `${won ? `<div class="result-stars" aria-label="별 ${game.lives}개">${"★".repeat(game.lives)}${"☆".repeat(3 - game.lives)}</div>` : ""}<p>${resultMessage}</p>${reward}<p>막아낸 좀비 ${game.stats.defeated}명 · 심은 친구 ${game.stats.planted}개</p>`, [
     { label: "정원 선택", action: () => { leaveGame(); showStages(); } },
-    { label: won && !finalStage ? "다음 정원" : "다시 도전", primary: true, action: () => startStage(won && !finalStage ? game.stage + 1 : game.stage) },
+    { label: won && !finalStage ? "다음 정원" : "다시 도전", primary: true, action: () => showLoadout(won && !finalStage ? game.stage + 1 : game.stage) },
   ], leaveGame);
 }
 
@@ -259,7 +324,7 @@ for (const [type, plant] of Object.entries(PLANTS).sort((a, b) => a[1].unlockSta
   setLabel(button, `${plant.name}, 햇빛 ${plant.cost}. ${plant.description}`);
   button.innerHTML = `<img src="${icons[type]}" alt=""><span><strong>${plant.name}</strong><span class="cost">☀ ${plant.cost}</span></span><span class="cooldown" hidden></span>`;
   button.onclick = () => {
-    if (paused || !game || !isPlantUnlocked(type, game.stage)) return;
+    if (paused || !game || !isPlantAvailable(game, type)) return;
     selected = selected === type && !shovel ? null : type; shovel = false;
     audio.unlock();
     selectionHint();
@@ -279,14 +344,59 @@ seedCards.addEventListener("click", event => {
   if (cardDragged && event.detail > 0) { event.preventDefault(); event.stopImmediatePropagation(); }
   cardPointer = null;
 }, true);
-$("#board").addEventListener("pointerdown", event => { sunGesture = Boolean(event.target.closest(".sun-drop")); }, true);
-$("#board").addEventListener("click", event => {
-  // An auto-collected sun can disappear between pointerdown and the synthesized click.
-  if (event.detail > 0 && sunGesture && !event.target.closest(".sun-drop")) {
+const board = $("#board");
+function collectAlongPointer(from, to) {
+  if (paused || !game || game.status !== "playing") return false;
+  const bounds = board.getBoundingClientRect();
+  const rotated = window.matchMedia("(orientation: portrait)").matches;
+  const point = p => rotated
+    ? { x: (p.y - bounds.top) * 900 / bounds.height, y: (bounds.right - p.x) * 500 / bounds.width }
+    : { x: (p.x - bounds.left) * 900 / bounds.width, y: (p.y - bounds.top) * 500 / bounds.height };
+  let collected = false;
+  for (const id of sunsAlongPath(game, point(from), point(to), 26 * 900 / (rotated ? bounds.height : bounds.width))) {
+    if (collectSun(game, id)) collected = true;
+  }
+  if (collected) { sunGesture = true; audio.play("sun"); persist(); render(); }
+  return collected;
+}
+window.addEventListener("pointerdown", event => {
+  if (boardPointers.size && !boardPointers.has(event.pointerId)) {
+    sunGesture = true;
+    for (const pointer of boardPointers.values()) pointer.dragged = true;
+  }
+}, true);
+board.addEventListener("pointerdown", event => {
+  if (paused || !game || game.status !== "playing" || event.button > 0) return;
+  const point = { x: event.clientX, y: event.clientY };
+  const multiple = boardPointers.size > 0 || !event.isPrimary;
+  sunGesture = multiple || Boolean(event.target.closest(".sun-drop"));
+  boardPointers.set(event.pointerId, { start: point, last: point, dragged: multiple });
+  audio.unlock();
+  if (collectAlongPointer(point, point)) event.preventDefault();
+}, true);
+window.addEventListener("pointermove", event => {
+  const pointer = boardPointers.get(event.pointerId);
+  if (!pointer) return;
+  const point = { x: event.clientX, y: event.clientY };
+  if (Math.hypot(point.x - pointer.start.x, point.y - pointer.start.y) > 8) pointer.dragged = true;
+  if (pointer.dragged) sunGesture = true;
+  collectAlongPointer(pointer.last, point);
+  pointer.last = point;
+});
+window.addEventListener("pointerup", event => {
+  const pointer = boardPointers.get(event.pointerId);
+  if (!pointer) return;
+  const point = { x: event.clientX, y: event.clientY };
+  if (pointer.dragged || Math.hypot(point.x - pointer.start.x, point.y - pointer.start.y) > 8) sunGesture = true;
+  collectAlongPointer(pointer.last, point);
+  boardPointers.delete(event.pointerId);
+});
+window.addEventListener("pointercancel", event => { if (boardPointers.delete(event.pointerId)) sunGesture = true; });
+board.addEventListener("click", event => {
+  if (event.detail > 0 && sunGesture) {
     event.preventDefault();
     event.stopImmediatePropagation();
   }
-  sunGesture = false;
 }, true);
 for (let row = 0; row < 5; row++) for (let col = 0; col < 9; col++) {
   const button = document.createElement("button");
@@ -351,10 +461,13 @@ function render() {
   $("#hearts").textContent = "♥ ".repeat(game.lives) + "♡ ".repeat(3 - game.lives);
   setLabel($("#hearts"), `남은 하트 ${game.lives}개`);
   text($("#wave-label"), game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간");
-  text($("#enemy-count"), `막아낸 좀비 ${game.stats.defeated} / ${STAGES[game.stage - 1].count}`);
+  text($("#enemy-count"), `막아낸 좀비 ${game.stats.defeated} / ${scheduleFor(game.stage, game.pacingVersion ?? 1).length}`);
+  $("#pause-button").disabled = game.status !== "playing";
   $("#shovel-button").setAttribute("aria-pressed", String(shovel));
   for (const card of cards) {
     const type = card.dataset.type;
+    card.hidden = game.loadout !== undefined && !game.loadout.includes(type);
+    card.style.order = String(game.loadout?.indexOf(type) ?? 0);
     const locked = !isPlantUnlocked(type, game.stage);
     card.disabled = locked;
     card.classList.toggle("locked", locked);
@@ -393,14 +506,15 @@ function render() {
         event.stopPropagation();
         if (paused) return;
         audio.unlock();
-        if (collectSun(game, sun.id)) { audio.play("sun"); render(); }
+        if (collectSun(game, sun.id)) { audio.play("sun"); persist(); render(); }
       };
       sunLayer.append(button);
     }
     drawSunToken(button.firstChild.getContext("2d"), game.time + sun.id * .37);
   }
   const banner = $("#board-banner");
-  if (game.time < 8) {
+  if (game.status === "won") text(banner, "정원을 지켰어요! 잠시 마지막 장면을 감상해요.");
+  else if (game.time < 8) {
     const newcomers = introducedPlants(game.stage);
     text(banner, newcomers.length ? `새 식물: ${newcomers.map(type => PLANTS[type].name).join(", ")} · 카드를 골라 심어요!` : "식물을 배치해 방어선을 준비하세요!");
   }
@@ -416,9 +530,16 @@ function frame(now) {
   lastFrame = now;
   if (!game) return;
   if (game.status !== "playing") {
-    if (!document.hidden && !window.matchMedia("(orientation: portrait)").matches && game.effects.length) {
-      advanceEffects(game, delta);
-      render();
+    if (!document.hidden) {
+      if (game.effects.length) { advanceEffects(game, delta); render(); }
+      if (pendingResult) {
+        pendingResult.elapsed += Math.max(0, delta);
+        if (pendingResult.elapsed >= 2) {
+          const previous = pendingResult.previouslyUnlocked;
+          pendingResult = null;
+          endGame(previous);
+        }
+      }
     }
     return;
   }
@@ -430,7 +551,13 @@ function frame(now) {
     accumulator -= 1 / 30;
   }
   render();
-  if (game.status !== "playing") { endGame(); return; }
+  if (game.status !== "playing") {
+    const previouslyUnlocked = save.unlocked;
+    paused = true; boardPointers.clear(); persist(); audio.stopVoices();
+    if (game.status === "won") pendingResult = { elapsed: 0, previouslyUnlocked };
+    else endGame(previouslyUnlocked);
+    return;
+  }
   if (game.time - lastSaveAt >= 3) { persist(); lastSaveAt = game.time; }
 }
 document.addEventListener("visibilitychange", () => {
@@ -438,8 +565,9 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("pagehide", () => { audio.suspend(); if (game) persist(); });
 window.addEventListener("pageshow", event => { if (event.persisted) pauseGame("돌아왔네요! 준비가 되면 계속해요."); });
-window.matchMedia("(orientation: portrait)").addEventListener("change", event => {
-  if (event.matches) { audio.suspend(); pauseGame("화면을 가로로 돌린 뒤 계속해요."); }
+window.matchMedia("(orientation: portrait)").addEventListener("change", () => {
+  boardPointers.clear(); sunGesture = true; accumulator = 0; lastFrame = performance.now();
+  render();
 });
 document.addEventListener("keydown", event => {
   if (event.code === "Space" && game && !modal.open && !["BUTTON", "INPUT"].includes(document.activeElement.tagName)) {

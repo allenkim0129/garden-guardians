@@ -93,7 +93,7 @@ async function installNext(page, server) {
 test("두 번째 콩 예약이 있는 저장도 업데이트 후 한 번만 이어 발사", async ({ page }) => {
   const server = await releaseServer();
   try {
-    const game = createGame(10);
+    const game = createGame(10, ["sun", "pea", "twin", "pumpkin", "lantern", "iron"]);
     plantAt(game, "twin", 2, 0);
     game.enemies.push({ id: game.nextId++, type: "jelly", row: 2, x: 900, hp: ENEMIES.jelly.hp, age: 0, slow: 0, eating: false });
     game.enemies.push({ id: game.nextId++, type: "umbrella", row: 4, x: 800, hp: 100, age: 1, slow: 0, eating: false, equipmentDropped: true });

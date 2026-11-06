@@ -94,8 +94,9 @@ test("실제 전투 소리·정지·회전·음소거·재접속 및 음원 중�
   await page.evaluate(() => { delete document.hidden; });
   await page.getByRole("button", { name: "계속하기", exact: true }).tap();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect.poll(() => page.evaluate(() => window.testAudio.context.state)).toBe("suspended");
+  await expect.poll(() => page.evaluate(() => window.testAudio.context.state)).toBe("running");
   await page.setViewportSize({ width: 844, height: 390 });
+  await page.locator("#pause-button").tap();
   await page.getByRole("button", { name: "저장하고 나가기", exact: true }).tap();
   await page.locator("#sound-button").tap();
   expect(await page.evaluate(() => window.testAudio.voices.size)).toBe(0);

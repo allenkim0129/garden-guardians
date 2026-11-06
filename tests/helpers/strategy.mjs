@@ -1,7 +1,7 @@
 export function playStrategy(api, stage, mode = "mixed") {
   const { createGame, plantAt, collectSun, tick } = api;
   const game = createGame(stage);
-  const available = type => !api.isPlantUnlocked || api.isPlantUnlocked(type, stage);
+  const available = type => (!api.isPlantUnlocked || api.isPlantUnlocked(type, stage)) && (!game.loadout || game.loadout.includes(type));
   const has = (type, row, col) => game.plants.some(p => p.type === type && p.row === row && (col === undefined || p.col === col));
   const actions = [];
   let lostPlants = 0;

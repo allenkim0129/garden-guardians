@@ -38,10 +38,6 @@ const messages = {
   "모을 수 있는 햇빛": "Sunlight to collect",
   "식물 카드를 고른 뒤 빈 땅을 눌러 주세요.": "Choose a plant card, then tap an empty plot.",
   "닫기": "Close",
-  "정원을 넓게 펼쳐 주세요": "Turn your screen sideways",
-  "아이폰·아이패드를 가로로 돌리면": "Rotate your iPhone or iPad to landscape",
-  "식물 친구들을 만날 수 있어요.": "to meet your garden team.",
-  "화면 회전 잠금이 켜져 있다면 꺼 주세요.": "Turn off rotation lock if it is enabled.",
   "정원 수비대를 실행하려면 Safari 설정에서 JavaScript를 켜 주세요.": "Enable JavaScript in Safari settings to play Garden Guardians.",
   "햇살봉": "Sunbell",
   "콩별이": "Peabud",
@@ -91,7 +87,7 @@ const messages = {
   "새 친구 호박포! 도토리벽으로 붙잡으면 착지점에 모인 좀비를 맞히기 좋아요.": "Meet Pumpkin Lobber! Use Acorn Guard to hold a crowd at the landing spot.",
   "새 친구 해등나무! 더 많은 햇빛을 만들지만 첫 수확까지 기다려야 해요.": "Meet Sunlantern Tree! More sunlight per harvest, but a slower start.",
   "새 친구 철잎보루! 오래 버티지만 비용과 다시 심는 시간을 생각해요.": "Meet Ironleaf Fort! Lasts longer, but costs more and replants slowly.",
-  "마지막 소풍이에요. 열 친구의 능력을 조합해 정원을 지켜요!": "The final picnic! Combine all ten plants to defend your garden.",
+  "마지막 소풍이에요. 함께할 여섯 친구를 골라 정원을 지켜요!": "The final picnic! Pick up to six teammates to defend your garden.",
   "콩별이와 햇살봉은 처음부터 함께해요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 다시 도전할 때도 해당 정원의 식물로 시작해요. 별은 남은 하트 수예요.": "Start with Peabud and Sunbell. First wins in gardens 1–8 unlock a plant for the next garden. Replays use that garden's plant lineup. Stars equal your remaining hearts.",
   "잠김": "Locked",
   "새로 시작할까요?": "Start a new game?",
@@ -107,12 +103,12 @@ const messages = {
   "좀비가 왼쪽 끝에 닿으면 하트가 하나 줄어요. 3번의 무리를 막아요!": "Lose a heart if a zombie reaches the left edge. Stop all 3 waves!",
   "처음부터 사용 가능": "Available from the start",
   "처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~8번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.": "Start with Peabud and Sunbell. Gather sunlight from Sunbell and the sky. First wins in gardens 1–8 unlock a plant for the next garden. No card selected means no accidental planting. Tapping sunlight only collects it.",
-  "삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하거나 화면을 돌리면 자동으로 멈춰요.": "Dig removes a plant and refunds half its cost. Switching apps or rotating to portrait pauses the game.",
+  "삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하면 자동으로 멈춰요. 세로로 들고 있어도 게임은 가로형 화면으로 표시돼요.": "Dig removes a plant and refunds half its cost. Switching apps pauses the game. The game stays in a landscape layout even when your device is held upright.",
+  "선택한 식물 카드": "Selected plant cards",
   "좀비 친구 알아보기": "Meet the zombies",
   "함께 정원을 지켜요!": "Let's defend the garden!",
   "알겠어요, 출발!": "Got it, let's go!",
   "이전 저장에 있던 식물은 유지해요. 새로 심을 때는 이 정원의 해금 규칙을 따라요.": "Plants from your old save stay in place. New plants follow this garden's unlock rules.",
-  "화면을 가로로 돌린 뒤 계속해요.": "Rotate to landscape before continuing.",
   "잠깐 쉬어 가요. 정원은 안전하게 기다리고 있어요.": "Take a break. Your garden will wait safely.",
   "잠깐 쉬는 중": "Paused",
   "진행 상황은 이 기기에 자동 저장돼요.": "Progress is saved on this device.",
@@ -187,6 +183,7 @@ const messages = {
 };
 
 const patterns = [
+  [/^선택한 식물 (\d+) \/ (\d+)종$/, (_, count, max) => `Selected plants: ${count} / ${max}`],
   [/^화면 (v\d+)$/, (_, v) => `Version ${v}`],
   [/^(\d+)번째 정원 이어서 하기$/, (_, n) => `Continue garden ${n}`],
   [/^(\d+)\. (.+), (잠김|별 (\d+)개)$/, (_, n, name, state, stars) => `${n}. ${t(name)}, ${stars === undefined ? "locked" : `${stars} stars`}`],
@@ -228,6 +225,17 @@ const patterns = [
   [/^(.+): (.+)$/, (_, name, detail) => `${t(name)}: ${t(detail)}`],
 ];
 messages["소리 일시 정지 실패"] = "Could not pause sound";
+Object.assign(messages, {
+  "함께할 식물 고르기": "Choose your team",
+  "함께할 식물을 최대 6종 골라 주세요. 선택한 카드를 다시 누르면 뺄 수 있어요.": "Choose up to 6 plants. Tap a selected card again to remove it.",
+  "이 식물로 시작": "Start with this team",
+  "선택 취소": "Remove selection",
+  "함께할 식물을 1~6종 골라 주세요.": "Choose 1 to 6 plants for your team.",
+  "이번 정원에 고른 식물이 아니에요.": "This plant is not in your team for this garden.",
+  "햇빛을 누르거나 손가락으로 쓸어 모아요. 놓쳐도 8초 뒤 자동으로 모여요.": "Tap sunlight or sweep your finger across it. Missed sunlight is collected after 8 seconds.",
+  "시작 전에 최대 6종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 키보드에서는 Tab으로 카드를 이동해요.": "Choose up to 6 plants before starting. Only your team appears on large battle cards. Use Tab to move between cards.",
+  "정원을 지켰어요! 잠시 마지막 장면을 감상해요.": "Garden protected! Enjoy the final scene.",
+});
 messages["오프라인 확인 실패"] = "Offline check failed";
 
 export function t(source) {

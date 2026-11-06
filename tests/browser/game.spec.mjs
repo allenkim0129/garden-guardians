@@ -5,6 +5,7 @@ import path from "node:path";
 import { createGame, ENEMIES, STAGES, PLANTS } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
 import { isolatedServer } from "../helpers/server.mjs";
+import { confirmTeam } from "../helpers/browser.mjs";
 
 async function homeReady(page, url = "/") {
   await page.goto(url);
@@ -20,6 +21,7 @@ async function start(page) {
   await expect(page.locator("#modal-body")).toContainText("콩별이 · 처음부터 사용 가능");
   await expect(page.locator("#modal-body")).toContainText("도토리벽 · 2번째 정원 해금");
   await page.getByRole("button", { name: "알겠어요, 출발!" }).tap();
+  await confirmTeam(page);
   await expect(page.locator("#game")).toBeVisible();
   await expect(page.locator('.seed-card[data-type="sun"]')).toBeEnabled();
   await expect(page.locator('.seed-card[data-type="pea"]')).toBeEnabled();
@@ -62,6 +64,7 @@ test("실제 터치: 심기, 비용, 햇빛, 삽, 정지, 재접속 복원", asy
   expect(restored.current.sun).toBe(saved.current.sun);
   await page.getByRole("button", { name: "다시 시작", exact: true }).tap();
   await page.getByRole("button", { name: "다시 시작", exact: true }).tap();
+  await confirmTeam(page);
   await expect(page.locator("#sun-count")).toHaveText("250");
   await expect(page.locator('.plot[data-row="2"][data-col="0"]')).toHaveAttribute("aria-label", "3줄 1칸, 빈 땅");
   await expect(page.locator('.seed-card[data-type="sun"]')).toBeEnabled();
@@ -78,6 +81,7 @@ test("승리·다음 정원·패배·재도전과 최고 별 저장", async ({ p
   let saved = await readStored(page);
   expect(saved.unlocked).toBe(2); expect(saved.stars[0]).toBe(3); expect(saved.current).toBeNull();
   await page.getByRole("button", { name: "다음 정원", exact: true }).tap();
+  await confirmTeam(page);
   await expect(page.locator("#stage-title")).toContainText("2. 아침 산책");
   await expect(page.locator("#selection-hint")).not.toContainText("새 친구 햇살봉");
   const secondWin = createGame(2); secondWin.nextSpawn = STAGES[1].count; secondWin.time = 90;
@@ -85,6 +89,7 @@ test("승리·다음 정원·패배·재도전과 최고 별 저장", async ({ p
   await expect(page.locator("#modal-title")).toHaveText("정원을 지켰어요!");
   await expect(page.locator("#modal-body")).toContainText("새 식물 해금: 서리초");
   await page.getByRole("button", { name: "다음 정원", exact: true }).tap();
+  await confirmTeam(page);
   const lost = createGame(2); lost.lives = 1; lost.time = 80;
   lost.nextSpawn = STAGES[1].count;
   lost.enemies.push({ id: lost.nextId++, type: "roller", row: 0, x: -24.9, hp: ENEMIES.roller.hp, slow: 0, age: 20, eating: false });
@@ -95,6 +100,7 @@ test("승리·다음 정원·패배·재도전과 최고 별 저장", async ({ p
   saved = await readStored(page);
   expect(saved.current).toBeNull(); expect(saved.unlocked).toBe(2); expect(saved.stars[0]).toBe(3);
   await page.getByRole("button", { name: "다시 도전", exact: true }).tap();
+  await confirmTeam(page);
   await expect(page.locator("#hearts")).toHaveAttribute("aria-label", "남은 하트 3개");
   await expect(page.locator("#stage-title")).toContainText("2. 아침 산책");
 });
@@ -110,15 +116,15 @@ test("마지막 정원 완료 후 11단계 없이 재도전·정원 선택", asy
   await expect(page.locator(".stage-button:disabled")).toHaveCount(0);
 });
 
-test("세로 회전과 백그라운드 전환은 자동 정지, 명시적으로 재개", async ({ page }) => {
+test("세로에서도 가로형 게임은 계속되고 백그라운드에서만 자동 정지", async ({ page }) => {
   await homeReady(page); await start(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator(".rotate-notice")).toBeVisible();
+  await expect(page.locator("#game")).toBeVisible();
+  await expect(page.locator("#modal")).not.toBeVisible();
   const before = await readStored(page);
   await page.waitForTimeout(400);
   await page.setViewportSize({ width: 844, height: 390 });
-  await expect(page.locator("#modal-title")).toHaveText("잠깐 쉬는 중");
-  await page.getByRole("button", { name: "계속하기", exact: true }).tap();
+  await expect(page.locator("#modal")).not.toBeVisible();
   // A synthetic visibility transition exercises the actual lifecycle listener.
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
@@ -148,7 +154,7 @@ test("작은 아이폰부터 아이패드까지 터치 타깃 44px와 화면 범
       expect(r.x).toBeGreaterThanOrEqual(0); expect(r.y).toBeGreaterThanOrEqual(0);
       expect(r.right).toBeLessThanOrEqual(width + .1); expect(r.bottom).toBeLessThanOrEqual(height + .1);
     }
-    for (const card of await page.locator(".seed-card").all()) {
+    for (const card of await page.locator(".seed-card:visible").all()) {
       await card.scrollIntoViewIfNeeded();
       const bounds = await card.boundingBox();
       expect(bounds.width).toBeGreaterThanOrEqual(44);
@@ -340,12 +346,14 @@ test("1~10 정원의 잠금·해금, 이전 정원 선택·재시작·저장 복
   await page.locator("#play-button").tap();
   await page.locator(".stage-button").first().tap();
   await page.getByRole("button", { name: "새로 시작", exact: true }).tap();
+  await confirmTeam(page);
   await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
   await expect(page.locator('.seed-card[data-type="sun"]')).toBeEnabled();
   await expect(page.locator('.seed-card[data-type="pea"]')).toBeEnabled();
   await page.locator("#pause-button").tap();
   await page.getByRole("button", { name: "다시 시작", exact: true }).tap();
   await page.getByRole("button", { name: "다시 시작", exact: true }).tap();
+  await confirmTeam(page);
   await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
   await page.reload(); await page.locator("#resume-button").tap();
   await expect(page.locator(".seed-card:disabled")).toHaveCount(8);
@@ -474,6 +482,7 @@ test("최초 해금은 그림·능력·비용을 표시하고 재도전·저장 
     const earned = await readStored(page);
     expect(earned.unlocked).toBe(completed + 1);
     await next.tap();
+    await confirmTeam(page, type);
     await expect(page.locator(`.seed-card[data-type="${type}"]`)).toBeEnabled();
     await page.reload(); await page.locator("#resume-button").tap();
     await expect(page.locator(".plant-unlocks")).toHaveCount(0);

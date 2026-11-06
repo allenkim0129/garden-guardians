@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { confirmTeam } from "../helpers/browser.mjs";
 import { createGame, PLANTS, ENEMIES, STAGES } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
 import { isolatedServer } from "../helpers/server.mjs";
@@ -112,6 +113,7 @@ test("새 보상은 4~8단계 최초 클리어에만 표시하고 다음 정원�
     await expect(page.locator(".unlock-card p")).toHaveText(PLANTS[type].description);
     await expect(page.locator(".unlock-card span")).toContainText(`햇빛 ${PLANTS[type].cost}`);
     await page.getByRole("button", { name: "다음 정원", exact: true }).tap();
+    await confirmTeam(page, type);
     await expect(page.locator(`.seed-card[data-type="${type}"]`)).toBeEnabled();
     await fixture(page, game, { unlocked: stage + 1, stars: Array(10).fill(3) });
     await expect(page.locator("#modal-title")).toHaveText("정원을 지켰어요!");

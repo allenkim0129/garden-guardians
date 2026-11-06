@@ -115,9 +115,8 @@ test("실제 게임의 프레임 재생·일시 정지·복귀·저장 및 오�
   await page.setViewportSize({ width: 390, height: 844 });
   const portrait = await page.locator("#game-art").evaluate(canvas => canvas.toDataURL());
   await page.waitForTimeout(300);
-  expect(await page.locator("#game-art").evaluate(canvas => canvas.toDataURL())).toBe(portrait);
+  expect(await page.locator("#game-art").evaluate(canvas => canvas.toDataURL())).not.toBe(portrait);
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.getByRole("button", { name: "계속하기", exact: true }).tap();
   await page.locator("#pause-button").tap();
   const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
   expect(saved.current.plants[0].shotAt).toBeGreaterThan(0);

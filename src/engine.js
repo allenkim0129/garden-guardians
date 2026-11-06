@@ -5,6 +5,7 @@ export const HEIGHT = 500;
 export const FALL_DURATION = .88;
 export const BURST_DURATION = .75;
 export const GEAR_DURATION = 1.1;
+export const LOADOUT_LIMIT = 6;
 export const TWIN_GAP = .2;
 export const THORN_HITS = 3;
 export const PUMPKIN_RADIUS = 115;
@@ -27,7 +28,7 @@ export const ENEMIES = Object.freeze({
   umbrella: { name: "우산좀비", hp: 175, speed: 18, bite: 23, description: "65 피해를 받으면 우산을 놓치고 보통 걸음과 추위 저항으로 바뀌어요." },
 });
 export const STAGES = [
-  { name: "첫 번째 새싹", count: 8, gap: 6.5, types: ["sleepy"], rows: [2, 1, 3], startSun: 250, tip: "햇살봉으로 햇빛을 모으고, 좀비가 오는 줄에 콩별이를 심어요." },
+  { name: "첫 번째 새싹", count: 8, gap: 6.5, types: ["sleepy"], rows: [2, 1, 3, 0, 4], startSun: 250, tip: "햇살봉으로 햇빛을 모으고, 좀비가 오는 줄에 콩별이를 심어요." },
   { name: "아침 산책", count: 12, gap: 5.2, types: ["sleepy"], rows: [0, 4, 2, 1, 3], startSun: 250, tip: "새 친구 도토리벽! 콩별이 앞에 심어 좀비를 붙잡아요." },
   { name: "말랑말랑 손님", count: 14, gap: 4.8, types: ["sleepy", "sleepy", "jelly"], startSun: 275, tip: "새 친구 서리초! 얼음 결정으로 좀비를 느리게 해요." },
   { name: "씽씽 정원길", count: 17, gap: 4.3, types: ["sleepy", "roller", "sleepy"], startSun: 275, tip: "새 친구 방울폭탄! 좀비가 모인 곳에서 한 번에 펑!" },
@@ -36,8 +37,8 @@ export const STAGES = [
   { name: "반짝이는 연못", count: 26, gap: 3.4, types: ["umbrella", "roller", "sleepy", "jelly"], startSun: 325, tip: "새 친구 호박포! 도토리벽으로 붙잡으면 착지점에 모인 좀비를 맞히기 좋아요." },
   { name: "꼬불꼬불 덩굴", count: 30, gap: 3.1, types: ["roller", "jelly", "sleepy", "umbrella"], startSun: 325, tip: "새 친구 해등나무! 더 많은 햇빛을 만들지만 첫 수확까지 기다려야 해요." },
   { name: "노을빛 파티", count: 34, gap: 2.8, types: ["jelly", "umbrella", "roller", "sleepy"], startSun: 350, tip: "새 친구 철잎보루! 오래 버티지만 비용과 다시 심는 시간을 생각해요." },
-  { name: "우리들의 정원", count: 40, gap: 2.5, types: ["jelly", "roller", "umbrella", "sleepy", "jelly"], startSun: 350, tip: "마지막 소풍이에요. 열 친구의 능력을 조합해 정원을 지켜요!" },
-].map((stage, i) => Object.freeze({ ...stage, legacyCount: stage.count, count: Math.ceil(stage.count * 1.4), id: i + 1 }));
+  { name: "우리들의 정원", count: 40, gap: 2.5, types: ["jelly", "roller", "umbrella", "sleepy", "jelly"], startSun: 350, tip: "마지막 소풍이에요. 함께할 여섯 친구를 골라 정원을 지켜요!" },
+].map((stage, i) => Object.freeze({ ...stage, legacyRows: i === 0 ? [2, 1, 3] : stage.rows, legacyCount: stage.count, count: Math.ceil(stage.count * 1.4), id: i + 1 }));
 
 export function isPlantUnlocked(type, stage) {
   return Object.hasOwn(PLANTS, type) && Number.isInteger(stage) && stage >= PLANTS[type].unlockStage && stage <= STAGES.length;
@@ -46,10 +47,10 @@ export function introducedPlants(stage) {
   return Object.entries(PLANTS).filter(([, plant]) => plant.unlockStage === stage).map(([type]) => type);
 }
 
-export function scheduleFor(stageNumber, pacingVersion = 2) {
+export function scheduleFor(stageNumber, pacingVersion = 3) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
-  const rows = stage.rows ?? [2, 0, 4, 1, 3];
+  const rows = (pacingVersion < 3 ? stage.legacyRows : stage.rows) ?? [2, 0, 4, 1, 3];
   if (pacingVersion === 1) {
     return Array.from({ length: stage.legacyCount }, (_, i) => ({
       at: 12 + i * stage.gap + Math.floor(i / Math.ceil(stage.legacyCount / 3)) * 7,
@@ -68,11 +69,20 @@ export function scheduleFor(stageNumber, pacingVersion = 2) {
   });
 }
 
-export function createGame(stageNumber) {
+export function validLoadout(loadout, stage) {
+  return Array.isArray(loadout) && loadout.length >= 1 && loadout.length <= LOADOUT_LIMIT
+    && new Set(loadout).size === loadout.length && loadout.every(type => isPlantUnlocked(type, stage));
+}
+export function isPlantAvailable(game, type) {
+  return isPlantUnlocked(type, game.stage) && (game.loadout === undefined || game.loadout.includes(type));
+}
+export function createGame(stageNumber, loadout) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
+  if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError("함께할 식물을 1~6종 골라 주세요.");
   return {
-    version: 1, rulesVersion: 3, pacingVersion: 2, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 3, pacingVersion: 3, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
     cooldowns: Object.fromEntries(Object.keys(PLANTS).map(type => [type, 0])),
@@ -90,6 +100,7 @@ export function plantAt(game, type, row, col) {
   }
   const info = PLANTS[type];
   if (!isPlantUnlocked(type, game.stage)) return { ok: false, reason: `${info.name}은 ${info.unlockStage}번째 정원부터 함께해요.` };
+  if (!isPlantAvailable(game, type)) return { ok: false, reason: "이번 정원에 고른 식물이 아니에요." };
   if (game.plants.some(p => p.row === row && p.col === col)) return { ok: false, reason: "이미 친구가 있어요. 다른 땅을 골라 주세요." };
   if (game.sun < info.cost) return { ok: false, reason: "햇빛이 부족해요. 반짝이는 햇빛을 모아 주세요." };
   if (game.cooldowns[type] > 0) return { ok: false, reason: "친구가 준비 중이에요. 조금만 기다려 주세요." };
@@ -132,6 +143,15 @@ export function collectSun(game, sunId) {
   game.sun += sun.value;
   game.stats.collected += sun.value;
   return true;
+}
+
+export function sunsAlongPath(game, from, to, radius) {
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const length = dx * dx + dy * dy;
+  return game.suns.filter(sun => {
+    const fraction = length ? Math.max(0, Math.min(1, ((sun.x - from.x) * dx + (sun.y - from.y) * dy) / length)) : 0;
+    return Math.hypot(sun.x - from.x - dx * fraction, sun.y - from.y - dy * fraction) <= radius;
+  }).map(sun => sun.id);
 }
 
 export function equipmentThreshold(type) {
@@ -281,7 +301,8 @@ const object = value => value !== null && typeof value === "object" && !Array.is
 export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, 10) || g.status !== "playing") return false;
   if (g.rulesVersion !== undefined && ![2, 3].includes(g.rulesVersion)) return false;
-  if (g.pacingVersion !== undefined && ![1, 2].includes(g.pacingVersion)) return false;
+  if (g.pacingVersion !== undefined && ![1, 2, 3].includes(g.pacingVersion)) return false;
+  if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
   if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, 6) || !integer(g.wave, 0, 3)) return false;
   if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, PLANTS[t].recharge)

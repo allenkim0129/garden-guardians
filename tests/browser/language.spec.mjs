@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { confirmTeam } from "../helpers/browser.mjs";
 import { createGame, plantAt, STAGES } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
 
@@ -60,6 +61,8 @@ test("언어 전환은 메뉴·도움말·설치·모달을 번역하고 새로�
   await page.locator(".stage-button").first().tap();
   await noKoreanUI(page);
   await page.getByRole("button", { name: "Got it, let's go!" }).tap();
+  await noKoreanUI(page);
+  await confirmTeam(page);
   await noKoreanUI(page);
 });
 
