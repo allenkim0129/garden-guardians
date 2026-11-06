@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#183c32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="정원 수비대">
+    <meta name="description" content="햇빛을 모으고 작은 식물 친구들과 정원을 지키는 오프라인 터치 게임">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="./styles.css">
+    <title>정원 수비대</title>
+  </head>
+  <body>
+    <main id="home" class="home">
+      <header class="home-header">
+        <a class="brand" href="./" aria-label="정원 수비대 처음 화면"><span class="brand-mark">✿</span> LITTLE GARDEN CLUB</a>
+        <button id="help-button" class="button subtle">놀이 안내</button>
+      </header>
+      <div class="home-content">
+        <section class="hero">
+          <p class="eyebrow">작은 정원, 치밀한 작전</p>
+          <h1>정원<br><span>수비대</span><i aria-hidden="true">✦</i></h1>
+          <p class="hero-copy">해가 지면, 녀석들이 몰려온다.<br>다섯 식물의 힘으로 정원을 지켜라.</p>
+          <div class="hero-actions">
+            <button id="play-button" class="button primary large" disabled>정원으로 출발 <span aria-hidden="true">→</span></button>
+            <button id="resume-button" class="button light" hidden>이어서 하기</button>
+          </div>
+          <p class="small-note">배치하고, 조합하고, 버텨라 · 오프라인 전략 게임</p>
+        </section>
+        <div class="hero-art"><canvas id="title-art" width="1000" height="760" role="img" aria-label="햇살봉, 콩별이와 우스꽝스러운 좀비들이 있는 작은 정원"></canvas><span class="art-label">오늘도, 정원을 부탁해!</span></div>
+      </div>
+      <footer class="home-footer">
+        <div><div id="offline-status" role="status" class="offline-status">캐릭터 그림을 준비하는 중…</div><small id="app-version">화면 v7</small></div>
+        <div class="footer-actions">
+          <button id="cache-retry" class="text-button" hidden>다시 저장</button>
+          <button id="update-button" class="text-button" hidden>저장하고 업데이트</button>
+          <button id="install-button" class="text-button">설치 안내</button>
+          <button id="sound-button" class="text-button" aria-pressed="false">소리 꺼짐</button>
+        </div>
+      </footer>
+    </main>
+
+    <main id="game" class="game" hidden>
+      <header class="game-header">
+        <button id="home-button" class="icon-button" aria-label="정원 선택으로 나가기">⌂</button>
+        <div class="stage-heading"><strong id="stage-title"></strong><span id="wave-label"></span></div>
+        <div class="sun-counter" aria-label="보유 햇빛"><span aria-hidden="true">☀</span><strong id="sun-count">200</strong></div>
+        <div id="hearts" class="hearts" aria-label="남은 하트 3개">♥ ♥ ♥</div>
+        <button id="shovel-button" class="button shovel" aria-pressed="false">삽</button>
+        <button id="pause-button" class="icon-button" aria-label="일시 정지">Ⅱ</button>
+      </header>
+      <div class="game-layout">
+        <aside class="seed-bank" aria-label="식물 선택">
+          <div class="seed-label">함께할 친구</div>
+          <div id="seed-cards" class="seed-cards"></div>
+          <p class="seed-hint">한 번 선택, 한 번 배치<br>다시 누르면 선택 취소</p>
+        </aside>
+        <section class="garden-wrap" aria-label="정원">
+          <div id="board" class="board">
+            <canvas id="game-art" width="900" height="500" aria-hidden="true"></canvas>
+            <div id="board-grid" class="board-grid" role="group" aria-label="5줄 9칸 정원"></div>
+            <div id="sun-layer" class="sun-layer" aria-label="모을 수 있는 햇빛"></div>
+            <div id="board-banner" class="board-banner" aria-live="polite"></div>
+          </div>
+          <div class="garden-caption"><span id="selection-hint">식물 카드를 고른 뒤 빈 땅을 눌러 주세요.</span><span id="enemy-count"></span></div>
+        </section>
+      </div>
+    </main>
+
+    <dialog id="modal" aria-labelledby="modal-title">
+      <div class="modal-top"><span class="eyebrow" id="modal-kicker">GARDEN GUARDIANS</span><button id="modal-close" class="icon-button" aria-label="닫기">×</button></div>
+      <h2 id="modal-title"></h2>
+      <div id="modal-body"></div>
+      <div id="modal-actions" class="modal-actions"></div>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <div class="rotate-notice" role="status">
+      <div class="rotate-icon" aria-hidden="true">↻</div>
+      <h2>정원을 넓게 펼쳐 주세요</h2>
+      <p>아이폰·아이패드를 가로로 돌리면<br>식물 친구들을 만날 수 있어요.</p>
+      <small>화면 회전 잠금이 켜져 있다면 꺼 주세요.</small>
+    </div>
+    <noscript>정원 수비대를 실행하려면 Safari 설정에서 JavaScript를 켜 주세요.</noscript>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

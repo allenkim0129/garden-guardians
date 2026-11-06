@@ -1,0 +1,17 @@
+{
+  "name": "garden-guardians",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "아이폰과 아이패드에서 오프라인으로 즐기는 정원 수비대",
+  "scripts": {
+    "start": "node scripts/server.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/engine.test.mjs tests/storage.test.mjs tests/sprites.test.mjs",
+    "test:browser": "playwright test",
+    "icons": "node scripts/icons.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
+  }
+}

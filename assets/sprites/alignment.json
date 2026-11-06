@@ -1,0 +1,3055 @@
+{
+  "cell": [
+    320,
+    224
+  ],
+  "anchor": [
+    192,
+    210
+  ],
+  "sourceScale": 0.66,
+  "sheets": {
+    "pea": [
+      {
+        "state": "idle",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          350
+        ],
+        "sourceBounds": [
+          102,
+          54,
+          335,
+          322
+        ],
+        "sourceRoot": [
+          199,
+          322
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          128,
+          33,
+          282,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          350
+        ],
+        "sourceBounds": [
+          79,
+          42,
+          304,
+          322
+        ],
+        "sourceRoot": [
+          193,
+          322
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          117,
+          25,
+          265,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          350
+        ],
+        "sourceBounds": [
+          63,
+          62,
+          298,
+          322
+        ],
+        "sourceRoot": [
+          179,
+          322
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          115,
+          38,
+          270,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          350
+        ],
+        "sourceBounds": [
+          55,
+          79,
+          292,
+          325
+        ],
+        "sourceRoot": [
+          173,
+          325
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          114,
+          48,
+          270,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 0,
+        "sourceCell": [
+          0,
+          350,
+          384,
+          660
+        ],
+        "sourceBounds": [
+          60,
+          29,
+          337,
+          281
+        ],
+        "sourceRoot": [
+          194,
+          281
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          104,
+          44,
+          287,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 1,
+        "sourceCell": [
+          384,
+          350,
+          768,
+          660
+        ],
+        "sourceBounds": [
+          94,
+          43,
+          334,
+          282
+        ],
+        "sourceRoot": [
+          195,
+          282
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          125,
+          52,
+          283,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 2,
+        "sourceCell": [
+          768,
+          350,
+          1152,
+          660
+        ],
+        "sourceBounds": [
+          55,
+          57,
+          352,
+          282
+        ],
+        "sourceRoot": [
+          177,
+          282
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          111,
+          62,
+          307,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          350,
+          1536,
+          660
+        ],
+        "sourceBounds": [
+          55,
+          28,
+          293,
+          282
+        ],
+        "sourceRoot": [
+          173,
+          282
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          114,
+          42,
+          271,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 0,
+        "sourceCell": [
+          0,
+          660,
+          384,
+          1024
+        ],
+        "sourceBounds": [
+          87,
+          41,
+          317,
+          301
+        ],
+        "sourceRoot": [
+          197,
+          301
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          119,
+          38,
+          271,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 1,
+        "sourceCell": [
+          384,
+          660,
+          768,
+          1024
+        ],
+        "sourceBounds": [
+          56,
+          57,
+          309,
+          301
+        ],
+        "sourceRoot": [
+          190,
+          301
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          104,
+          49,
+          271,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 2,
+        "sourceCell": [
+          768,
+          660,
+          1152,
+          1024
+        ],
+        "sourceBounds": [
+          68,
+          22,
+          321,
+          301
+        ],
+        "sourceRoot": [
+          186,
+          301
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          114,
+          26,
+          281,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          660,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          60,
+          45,
+          300,
+          300
+        ],
+        "sourceRoot": [
+          176,
+          300
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          115,
+          42,
+          273,
+          210
+        ]
+      }
+    ],
+    "sleepy": [
+      {
+        "state": "walk",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          350
+        ],
+        "sourceBounds": [
+          128,
+          40,
+          321,
+          332
+        ],
+        "sourceRoot": [
+          232,
+          332
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          123,
+          17,
+          250,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          350
+        ],
+        "sourceBounds": [
+          95,
+          37,
+          279,
+          333
+        ],
+        "sourceRoot": [
+          205,
+          333
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          119,
+          15,
+          240,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          350
+        ],
+        "sourceBounds": [
+          94,
+          42,
+          284,
+          333
+        ],
+        "sourceRoot": [
+          200,
+          333
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          122,
+          18,
+          247,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          350
+        ],
+        "sourceBounds": [
+          95,
+          42,
+          270,
+          335
+        ],
+        "sourceRoot": [
+          203,
+          335
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          121,
+          17,
+          237,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 0,
+        "sourceCell": [
+          0,
+          350,
+          384,
+          687
+        ],
+        "sourceBounds": [
+          100,
+          21,
+          319,
+          314
+        ],
+        "sourceRoot": [
+          237,
+          314
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          102,
+          17,
+          247,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 1,
+        "sourceCell": [
+          384,
+          350,
+          768,
+          687
+        ],
+        "sourceBounds": [
+          47,
+          20,
+          319,
+          318
+        ],
+        "sourceRoot": [
+          223,
+          318
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          76,
+          13,
+          256,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 2,
+        "sourceCell": [
+          768,
+          350,
+          1152,
+          687
+        ],
+        "sourceBounds": [
+          25,
+          35,
+          341,
+          316
+        ],
+        "sourceRoot": [
+          244,
+          316
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          47,
+          25,
+          256,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          350,
+          1536,
+          687
+        ],
+        "sourceBounds": [
+          90,
+          19,
+          274,
+          318
+        ],
+        "sourceRoot": [
+          208,
+          318
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          114,
+          13,
+          235,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 0,
+        "sourceCell": [
+          0,
+          687,
+          384,
+          1024
+        ],
+        "sourceBounds": [
+          96,
+          19,
+          294,
+          294
+        ],
+        "sourceRoot": [
+          213,
+          294
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          115,
+          28,
+          246,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 1,
+        "sourceCell": [
+          384,
+          687,
+          768,
+          1024
+        ],
+        "sourceBounds": [
+          72,
+          31,
+          326,
+          292
+        ],
+        "sourceRoot": [
+          257,
+          292
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          70,
+          38,
+          238,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 2,
+        "sourceCell": [
+          768,
+          687,
+          1152,
+          1024
+        ],
+        "sourceBounds": [
+          27,
+          126,
+          321,
+          280
+        ],
+        "sourceRoot": [
+          291,
+          280
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          18,
+          108,
+          212,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          687,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          18,
+          147,
+          318,
+          283
+        ],
+        "sourceRoot": [
+          289,
+          283
+        ],
+        "scale": 0.66,
+        "flipped": false,
+        "alignedBounds": [
+          13,
+          120,
+          211,
+          210
+        ]
+      }
+    ],
+    "sun": [
+      {
+        "state": "idle",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          334
+        ],
+        "sourceBounds": [
+          89,
+          30,
+          342,
+          321
+        ],
+        "sourceRoot": [
+          203,
+          321
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          122,
+          32,
+          276,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          334
+        ],
+        "sourceBounds": [
+          76,
+          30,
+          319,
+          321
+        ],
+        "sourceRoot": [
+          190,
+          321
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          122,
+          32,
+          270,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          334
+        ],
+        "sourceBounds": [
+          74,
+          30,
+          314,
+          321
+        ],
+        "sourceRoot": [
+          207,
+          321
+        ],
+        "scale": 0.61,
+        "flipped": true,
+        "alignedBounds": [
+          127,
+          32,
+          273,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          334
+        ],
+        "sourceBounds": [
+          50,
+          35,
+          298,
+          323
+        ],
+        "sourceRoot": [
+          164,
+          323
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          122,
+          34,
+          273,
+          210
+        ]
+      },
+      {
+        "state": "produce",
+        "column": 0,
+        "sourceCell": [
+          0,
+          334,
+          384,
+          665
+        ],
+        "sourceBounds": [
+          90,
+          27,
+          319,
+          313
+        ],
+        "sourceRoot": [
+          203,
+          313
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          123,
+          36,
+          263,
+          210
+        ]
+      },
+      {
+        "state": "produce",
+        "column": 1,
+        "sourceCell": [
+          384,
+          334,
+          768,
+          665
+        ],
+        "sourceBounds": [
+          74,
+          21,
+          326,
+          316
+        ],
+        "sourceRoot": [
+          190,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          121,
+          30,
+          275,
+          210
+        ]
+      },
+      {
+        "state": "produce",
+        "column": 2,
+        "sourceCell": [
+          768,
+          334,
+          1152,
+          665
+        ],
+        "sourceBounds": [
+          62,
+          12,
+          320,
+          313
+        ],
+        "sourceRoot": [
+          202,
+          313
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          107,
+          26,
+          264,
+          210
+        ]
+      },
+      {
+        "state": "produce",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          334,
+          1536,
+          665
+        ],
+        "sourceBounds": [
+          58,
+          17,
+          305,
+          313
+        ],
+        "sourceRoot": [
+          165,
+          313
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          127,
+          29,
+          278,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 0,
+        "sourceCell": [
+          0,
+          665,
+          384,
+          1024
+        ],
+        "sourceBounds": [
+          83,
+          16,
+          326,
+          316
+        ],
+        "sourceRoot": [
+          193,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          125,
+          27,
+          273,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 1,
+        "sourceCell": [
+          384,
+          665,
+          768,
+          1024
+        ],
+        "sourceBounds": [
+          72,
+          65,
+          321,
+          316
+        ],
+        "sourceRoot": [
+          190,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          120,
+          57,
+          272,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 2,
+        "sourceCell": [
+          768,
+          665,
+          1152,
+          1024
+        ],
+        "sourceBounds": [
+          75,
+          14,
+          334,
+          316
+        ],
+        "sourceRoot": [
+          202,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          115,
+          26,
+          273,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          665,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          59,
+          21,
+          302,
+          316
+        ],
+        "sourceRoot": [
+          164,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          128,
+          30,
+          276,
+          210
+        ]
+      }
+    ],
+    "wall": [
+      {
+        "state": "idle",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          346
+        ],
+        "sourceBounds": [
+          57,
+          24,
+          342,
+          325
+        ],
+        "sourceRoot": [
+          204,
+          325
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          102,
+          26,
+          276,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          346
+        ],
+        "sourceBounds": [
+          65,
+          24,
+          342,
+          325
+        ],
+        "sourceRoot": [
+          204,
+          325
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          107,
+          26,
+          276,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          346
+        ],
+        "sourceBounds": [
+          62,
+          44,
+          336,
+          325
+        ],
+        "sourceRoot": [
+          198,
+          325
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          109,
+          39,
+          276,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          346
+        ],
+        "sourceBounds": [
+          58,
+          24,
+          330,
+          325
+        ],
+        "sourceRoot": [
+          193,
+          325
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          110,
+          26,
+          276,
+          210
+        ]
+      },
+      {
+        "state": "guard",
+        "column": 0,
+        "sourceCell": [
+          0,
+          346,
+          384,
+          678
+        ],
+        "sourceBounds": [
+          59,
+          23,
+          344,
+          310
+        ],
+        "sourceRoot": [
+          203,
+          310
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          104,
+          35,
+          278,
+          210
+        ]
+      },
+      {
+        "state": "guard",
+        "column": 1,
+        "sourceCell": [
+          384,
+          346,
+          768,
+          678
+        ],
+        "sourceBounds": [
+          62,
+          59,
+          344,
+          307
+        ],
+        "sourceRoot": [
+          203,
+          307
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          106,
+          59,
+          278,
+          210
+        ]
+      },
+      {
+        "state": "guard",
+        "column": 2,
+        "sourceCell": [
+          768,
+          346,
+          1152,
+          678
+        ],
+        "sourceBounds": [
+          62,
+          23,
+          339,
+          311
+        ],
+        "sourceRoot": [
+          200,
+          311
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          108,
+          34,
+          277,
+          210
+        ]
+      },
+      {
+        "state": "guard",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          346,
+          1536,
+          678
+        ],
+        "sourceBounds": [
+          57,
+          23,
+          333,
+          311
+        ],
+        "sourceRoot": [
+          192,
+          311
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          110,
+          34,
+          278,
+          210
+        ]
+      },
+      {
+        "state": "cracked",
+        "column": 0,
+        "sourceCell": [
+          0,
+          678,
+          384,
+          1024
+        ],
+        "sourceBounds": [
+          65,
+          22,
+          338,
+          311
+        ],
+        "sourceRoot": [
+          204,
+          311
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          107,
+          34,
+          274,
+          210
+        ]
+      },
+      {
+        "state": "cracked",
+        "column": 1,
+        "sourceCell": [
+          384,
+          678,
+          768,
+          1024
+        ],
+        "sourceBounds": [
+          66,
+          22,
+          339,
+          311
+        ],
+        "sourceRoot": [
+          204,
+          311
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          108,
+          34,
+          275,
+          210
+        ]
+      },
+      {
+        "state": "cracked",
+        "column": 2,
+        "sourceCell": [
+          768,
+          678,
+          1152,
+          1024
+        ],
+        "sourceBounds": [
+          63,
+          22,
+          335,
+          312
+        ],
+        "sourceRoot": [
+          198,
+          312
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          110,
+          33,
+          276,
+          210
+        ]
+      },
+      {
+        "state": "cracked",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          678,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          59,
+          22,
+          332,
+          311
+        ],
+        "sourceRoot": [
+          193,
+          311
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          110,
+          34,
+          277,
+          210
+        ]
+      }
+    ],
+    "frost": [
+      {
+        "state": "idle",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          346
+        ],
+        "sourceBounds": [
+          38,
+          29,
+          326,
+          325
+        ],
+        "sourceRoot": [
+          168,
+          325
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          113,
+          29,
+          289,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          346
+        ],
+        "sourceBounds": [
+          46,
+          36,
+          322,
+          325
+        ],
+        "sourceRoot": [
+          177,
+          325
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          112,
+          34,
+          280,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          346
+        ],
+        "sourceBounds": [
+          38,
+          39,
+          331,
+          325
+        ],
+        "sourceRoot": [
+          177,
+          325
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          107,
+          36,
+          286,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          346
+        ],
+        "sourceBounds": [
+          33,
+          29,
+          331,
+          325
+        ],
+        "sourceRoot": [
+          176,
+          325
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          105,
+          29,
+          287,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 0,
+        "sourceCell": [
+          0,
+          346,
+          384,
+          672
+        ],
+        "sourceBounds": [
+          51,
+          21,
+          352,
+          311
+        ],
+        "sourceRoot": [
+          194,
+          311
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          105,
+          33,
+          289,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 1,
+        "sourceCell": [
+          384,
+          346,
+          731,
+          672
+        ],
+        "sourceBounds": [
+          38,
+          45,
+          311,
+          311
+        ],
+        "sourceRoot": [
+          177,
+          311
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          107,
+          48,
+          274,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 2,
+        "sourceCell": [
+          731,
+          346,
+          1164,
+          672
+        ],
+        "sourceBounds": [
+          36,
+          48,
+          406,
+          310
+        ],
+        "sourceRoot": [
+          214,
+          310
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          83,
+          50,
+          309,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 3,
+        "sourceCell": [
+          1164,
+          346,
+          1536,
+          672
+        ],
+        "sourceBounds": [
+          28,
+          33,
+          306,
+          311
+        ],
+        "sourceRoot": [
+          161,
+          311
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          111,
+          40,
+          281,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 0,
+        "sourceCell": [
+          0,
+          672,
+          384,
+          1024
+        ],
+        "sourceBounds": [
+          44,
+          18,
+          350,
+          314
+        ],
+        "sourceRoot": [
+          200,
+          314
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          97,
+          29,
+          284,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 1,
+        "sourceCell": [
+          384,
+          672,
+          768,
+          1024
+        ],
+        "sourceBounds": [
+          62,
+          117,
+          328,
+          314
+        ],
+        "sourceRoot": [
+          193,
+          314
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          112,
+          90,
+          274,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 2,
+        "sourceCell": [
+          768,
+          672,
+          1152,
+          1024
+        ],
+        "sourceBounds": [
+          48,
+          48,
+          316,
+          314
+        ],
+        "sourceRoot": [
+          181,
+          314
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          111,
+          48,
+          274,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          672,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          32,
+          17,
+          329,
+          314
+        ],
+        "sourceRoot": [
+          173,
+          314
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          106,
+          29,
+          287,
+          210
+        ]
+      }
+    ],
+    "bomb": [
+      {
+        "state": "idle",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          343
+        ],
+        "sourceBounds": [
+          78,
+          35,
+          336,
+          324
+        ],
+        "sourceRoot": [
+          201,
+          324
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          117,
+          34,
+          274,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          343
+        ],
+        "sourceBounds": [
+          79,
+          38,
+          324,
+          323
+        ],
+        "sourceRoot": [
+          206,
+          323
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          115,
+          36,
+          264,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          343
+        ],
+        "sourceBounds": [
+          59,
+          39,
+          305,
+          323
+        ],
+        "sourceRoot": [
+          177,
+          323
+        ],
+        "scale": 0.61,
+        "flipped": true,
+        "alignedBounds": [
+          114,
+          37,
+          264,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          343
+        ],
+        "sourceBounds": [
+          49,
+          36,
+          296,
+          324
+        ],
+        "sourceRoot": [
+          178,
+          324
+        ],
+        "scale": 0.61,
+        "flipped": true,
+        "alignedBounds": [
+          120,
+          34,
+          271,
+          210
+        ]
+      },
+      {
+        "state": "prime",
+        "column": 0,
+        "sourceCell": [
+          0,
+          343,
+          384,
+          682
+        ],
+        "sourceBounds": [
+          76,
+          28,
+          338,
+          316
+        ],
+        "sourceRoot": [
+          200,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          116,
+          34,
+          276,
+          210
+        ]
+      },
+      {
+        "state": "prime",
+        "column": 1,
+        "sourceCell": [
+          384,
+          343,
+          768,
+          682
+        ],
+        "sourceBounds": [
+          58,
+          21,
+          335,
+          316
+        ],
+        "sourceRoot": [
+          203,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          104,
+          30,
+          273,
+          210
+        ]
+      },
+      {
+        "state": "prime",
+        "column": 2,
+        "sourceCell": [
+          768,
+          343,
+          1152,
+          682
+        ],
+        "sourceBounds": [
+          50,
+          21,
+          327,
+          316
+        ],
+        "sourceRoot": [
+          183,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          111,
+          30,
+          280,
+          210
+        ]
+      },
+      {
+        "state": "prime",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          343,
+          1536,
+          682
+        ],
+        "sourceBounds": [
+          62,
+          34,
+          307,
+          316
+        ],
+        "sourceRoot": [
+          181,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          119,
+          38,
+          268,
+          210
+        ]
+      },
+      {
+        "state": "burst",
+        "column": 0,
+        "sourceCell": [
+          0,
+          682,
+          384,
+          1024
+        ],
+        "sourceBounds": [
+          62,
+          38,
+          331,
+          300
+        ],
+        "sourceRoot": [
+          202,
+          300
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          107,
+          50,
+          271,
+          210
+        ]
+      },
+      {
+        "state": "burst",
+        "column": 1,
+        "sourceCell": [
+          384,
+          682,
+          768,
+          1024
+        ],
+        "sourceBounds": [
+          56,
+          24,
+          338,
+          301
+        ],
+        "sourceRoot": [
+          202,
+          301
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          103,
+          41,
+          275,
+          210
+        ]
+      },
+      {
+        "state": "burst",
+        "column": 2,
+        "sourceCell": [
+          768,
+          682,
+          1152,
+          1024
+        ],
+        "sourceBounds": [
+          40,
+          27,
+          327,
+          302
+        ],
+        "sourceRoot": [
+          183,
+          302
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          105,
+          42,
+          280,
+          210
+        ]
+      },
+      {
+        "state": "burst",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          682,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          63,
+          54,
+          303,
+          303
+        ],
+        "sourceRoot": [
+          183,
+          303
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          119,
+          58,
+          265,
+          210
+        ]
+      }
+    ],
+    "jelly": [
+      {
+        "state": "walk",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          377
+        ],
+        "sourceBounds": [
+          70,
+          54,
+          353,
+          364
+        ],
+        "sourceRoot": [
+          229,
+          364
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          95,
+          21,
+          268,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          377
+        ],
+        "sourceBounds": [
+          66,
+          52,
+          340,
+          364
+        ],
+        "sourceRoot": [
+          225,
+          364
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          95,
+          20,
+          262,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          377
+        ],
+        "sourceBounds": [
+          48,
+          55,
+          321,
+          364
+        ],
+        "sourceRoot": [
+          200,
+          364
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          99,
+          22,
+          266,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          377
+        ],
+        "sourceBounds": [
+          39,
+          52,
+          309,
+          364
+        ],
+        "sourceRoot": [
+          196,
+          364
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          96,
+          20,
+          261,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 0,
+        "sourceCell": [
+          0,
+          377,
+          400,
+          706
+        ],
+        "sourceBounds": [
+          81,
+          23,
+          373,
+          303
+        ],
+        "sourceRoot": [
+          241,
+          303
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          94,
+          39,
+          272,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 1,
+        "sourceCell": [
+          400,
+          377,
+          793,
+          706
+        ],
+        "sourceBounds": [
+          29,
+          18,
+          370,
+          305
+        ],
+        "sourceRoot": [
+          242,
+          305
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          62,
+          35,
+          270,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 2,
+        "sourceCell": [
+          793,
+          377,
+          1178,
+          706
+        ],
+        "sourceBounds": [
+          23,
+          24,
+          341,
+          305
+        ],
+        "sourceRoot": [
+          196,
+          305
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          86,
+          39,
+          280,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 3,
+        "sourceCell": [
+          1178,
+          377,
+          1536,
+          706
+        ],
+        "sourceBounds": [
+          45,
+          14,
+          308,
+          308
+        ],
+        "sourceRoot": [
+          184,
+          308
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          107,
+          31,
+          267,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 0,
+        "sourceCell": [
+          0,
+          706,
+          374,
+          1024
+        ],
+        "sourceBounds": [
+          70,
+          26,
+          352,
+          276
+        ],
+        "sourceRoot": [
+          243,
+          276
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          86,
+          58,
+          258,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 1,
+        "sourceCell": [
+          374,
+          706,
+          720,
+          1024
+        ],
+        "sourceBounds": [
+          23,
+          21,
+          313,
+          272
+        ],
+        "sourceRoot": [
+          235,
+          272
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          63,
+          57,
+          240,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 2,
+        "sourceCell": [
+          720,
+          706,
+          1111,
+          1024
+        ],
+        "sourceBounds": [
+          35,
+          73,
+          367,
+          269
+        ],
+        "sourceRoot": [
+          312,
+          269
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          23,
+          90,
+          226,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 3,
+        "sourceCell": [
+          1111,
+          706,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          25,
+          119,
+          393,
+          278
+        ],
+        "sourceRoot": [
+          327,
+          278
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          8,
+          113,
+          232,
+          210
+        ]
+      }
+    ],
+    "roller": [
+      {
+        "state": "walk",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          360
+        ],
+        "sourceBounds": [
+          105,
+          27,
+          353,
+          345
+        ],
+        "sourceRoot": [
+          221,
+          345
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          121,
+          16,
+          272,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          360
+        ],
+        "sourceBounds": [
+          69,
+          25,
+          355,
+          345
+        ],
+        "sourceRoot": [
+          206,
+          345
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          108,
+          15,
+          282,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          360
+        ],
+        "sourceBounds": [
+          71,
+          24,
+          292,
+          346
+        ],
+        "sourceRoot": [
+          193,
+          346
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          118,
+          14,
+          253,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          360
+        ],
+        "sourceBounds": [
+          115,
+          28,
+          353,
+          348
+        ],
+        "sourceRoot": [
+          222,
+          348
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          127,
+          15,
+          272,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 0,
+        "sourceCell": [
+          0,
+          360,
+          384,
+          693
+        ],
+        "sourceBounds": [
+          53,
+          13,
+          350,
+          316
+        ],
+        "sourceRoot": [
+          255,
+          316
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          69,
+          25,
+          250,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 1,
+        "sourceCell": [
+          384,
+          360,
+          768,
+          693
+        ],
+        "sourceBounds": [
+          32,
+          28,
+          333,
+          317
+        ],
+        "sourceRoot": [
+          227,
+          317
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          73,
+          34,
+          257,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 2,
+        "sourceCell": [
+          768,
+          360,
+          1152,
+          693
+        ],
+        "sourceBounds": [
+          27,
+          38,
+          348,
+          321
+        ],
+        "sourceRoot": [
+          219,
+          321
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          75,
+          37,
+          271,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          360,
+          1536,
+          693
+        ],
+        "sourceBounds": [
+          84,
+          18,
+          317,
+          320
+        ],
+        "sourceRoot": [
+          215,
+          320
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          112,
+          26,
+          254,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 0,
+        "sourceCell": [
+          0,
+          693,
+          384,
+          1024
+        ],
+        "sourceBounds": [
+          66,
+          13,
+          323,
+          303
+        ],
+        "sourceRoot": [
+          230,
+          303
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          92,
+          33,
+          249,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 1,
+        "sourceCell": [
+          384,
+          693,
+          723,
+          1024
+        ],
+        "sourceBounds": [
+          50,
+          25,
+          316,
+          300
+        ],
+        "sourceRoot": [
+          242,
+          300
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          75,
+          42,
+          237,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 2,
+        "sourceCell": [
+          723,
+          693,
+          1124,
+          1024
+        ],
+        "sourceBounds": [
+          24,
+          124,
+          366,
+          290
+        ],
+        "sourceRoot": [
+          312,
+          290
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          16,
+          109,
+          225,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 3,
+        "sourceCell": [
+          1124,
+          693,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          35,
+          148,
+          369,
+          286
+        ],
+        "sourceRoot": [
+          300,
+          286
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          30,
+          126,
+          234,
+          210
+        ]
+      }
+    ],
+    "umbrella": [
+      {
+        "state": "walk",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          384,
+          354
+        ],
+        "sourceBounds": [
+          53,
+          26,
+          356,
+          339
+        ],
+        "sourceRoot": [
+          274,
+          339
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          57,
+          19,
+          242,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 1,
+        "sourceCell": [
+          384,
+          0,
+          768,
+          354
+        ],
+        "sourceBounds": [
+          24,
+          27,
+          328,
+          339
+        ],
+        "sourceRoot": [
+          240,
+          339
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          60,
+          20,
+          245,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 2,
+        "sourceCell": [
+          768,
+          0,
+          1152,
+          354
+        ],
+        "sourceBounds": [
+          21,
+          22,
+          326,
+          341
+        ],
+        "sourceRoot": [
+          235,
+          341
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          61,
+          15,
+          247,
+          210
+        ]
+      },
+      {
+        "state": "walk",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          0,
+          1536,
+          354
+        ],
+        "sourceBounds": [
+          18,
+          31,
+          320,
+          340
+        ],
+        "sourceRoot": [
+          237,
+          340
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          58,
+          22,
+          242,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 0,
+        "sourceCell": [
+          0,
+          354,
+          368,
+          690
+        ],
+        "sourceBounds": [
+          41,
+          16,
+          351,
+          320
+        ],
+        "sourceRoot": [
+          259,
+          320
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          59,
+          25,
+          248,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 1,
+        "sourceCell": [
+          368,
+          354,
+          793,
+          690
+        ],
+        "sourceBounds": [
+          19,
+          51,
+          408,
+          319
+        ],
+        "sourceRoot": [
+          313,
+          319
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          13,
+          47,
+          250,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 2,
+        "sourceCell": [
+          793,
+          354,
+          1163,
+          690
+        ],
+        "sourceBounds": [
+          17,
+          15,
+          346,
+          322
+        ],
+        "sourceRoot": [
+          249,
+          322
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          50,
+          23,
+          251,
+          210
+        ]
+      },
+      {
+        "state": "attack",
+        "column": 3,
+        "sourceCell": [
+          1163,
+          354,
+          1536,
+          690
+        ],
+        "sourceBounds": [
+          24,
+          14,
+          341,
+          321
+        ],
+        "sourceRoot": [
+          247,
+          321
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          56,
+          23,
+          249,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 0,
+        "sourceCell": [
+          0,
+          690,
+          384,
+          1024
+        ],
+        "sourceBounds": [
+          42,
+          23,
+          346,
+          301
+        ],
+        "sourceRoot": [
+          269,
+          301
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          54,
+          40,
+          239,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 1,
+        "sourceCell": [
+          384,
+          690,
+          768,
+          1024
+        ],
+        "sourceBounds": [
+          33,
+          15,
+          289,
+          307
+        ],
+        "sourceRoot": [
+          177,
+          307
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          104,
+          32,
+          260,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 2,
+        "sourceCell": [
+          768,
+          690,
+          1152,
+          1024
+        ],
+        "sourceBounds": [
+          16,
+          126,
+          332,
+          283
+        ],
+        "sourceRoot": [
+          270,
+          283
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          37,
+          114,
+          230,
+          210
+        ]
+      },
+      {
+        "state": "fall",
+        "column": 3,
+        "sourceCell": [
+          1152,
+          690,
+          1536,
+          1024
+        ],
+        "sourceBounds": [
+          4,
+          145,
+          351,
+          286
+        ],
+        "sourceRoot": [
+          282,
+          286
+        ],
+        "scale": 0.61,
+        "flipped": false,
+        "alignedBounds": [
+          22,
+          124,
+          234,
+          210
+        ]
+      }
+    ]
+  }
+}
