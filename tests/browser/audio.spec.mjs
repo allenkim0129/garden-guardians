@@ -103,7 +103,7 @@ test("게임 중 소리 설정에서 켜기·볼륨·미리 듣기·음소거·�
   await expect(page.locator("#sound-preview")).toBeDisabled();
   await page.locator("#sound-volume").fill("65");
   await page.locator("#modal [data-language]").tap();
-  await expect(page.locator("#modal-title")).toHaveText("Sound settings");
+  await expect(page.locator("#modal-title")).toHaveText("Settings");
   await expect(page.getByLabel("Effects volume")).toHaveValue("65");
   await page.getByRole("button", { name: "Done", exact: true }).tap();
   await expect(page.locator("#modal-title")).toHaveText("Paused");

@@ -2,7 +2,7 @@ import { PLANTS, ENEMIES, STAGES, loadoutLimit, createGame, plantAt, removePlant
 import { drawTitle, drawBoard, plantIcon, drawSunToken } from "./art.js";
 import { loadSprites } from "./sprites.js";
 import { GardenAudio } from "./audio.js";
-import { readSave, writeSave, updateProgress } from "./storage.js";
+import { freshSave, readSave, writeSave, updateProgress } from "./storage.js";
 import { getLanguage, setLanguage, t, text, label as setLabel, localize } from "./i18n.js";
 
 const $ = selector => document.querySelector(selector);
@@ -459,7 +459,7 @@ async function setSound(enabled) {
   else audio.suspend();
 }
 $("#sound-button").onclick = () => setSound(!save.sound);
-function showSoundSettings() {
+function showSettings() {
   const inGame = game?.status === "playing";
   if (inGame) {
     paused = true; boardPointers.clear(); sunGesture = true; persist();
@@ -469,12 +469,13 @@ function showSoundSettings() {
     audio.suspend();
     if (inGame) pauseGame();
   };
-  openModal("소리 설정", `<p>효과음은 처음에는 꺼져 있어요. 소리를 켜거나 음량을 올린 뒤 미리 듣기로 확인해 주세요.</p>
+  openModal("설정", `<h3>소리 설정</h3><p>효과음은 처음에는 꺼져 있어요. 소리를 켜거나 음량을 올린 뒤 미리 듣기로 확인해 주세요.</p>
     <div class="sound-controls"><button id="sound-toggle" class="button light"></button>
       <label for="sound-volume">효과음 음량</label><output id="sound-volume-value" for="sound-volume"></output>
       <input id="sound-volume" type="range" min="0" max="100" step="1">
       <button id="sound-preview" class="button light">미리 듣기</button></div>
-    <p>들리지 않으면 기기의 미디어 음량과 무음 모드, Bluetooth 출력도 확인해 주세요.</p>`,
+    <p>들리지 않으면 기기의 미디어 음량과 무음 모드, Bluetooth 출력도 확인해 주세요.</p>
+    <hr><p><button id="reset-progress" class="button light">스테이지 리셋</button></p>`,
   [{ label: "완료", primary: true, action: finish }], finish);
   modal.dataset.kind = "sound";
   function refresh() {
@@ -499,9 +500,35 @@ function showSoundSettings() {
     await audio.unlock();
     audio.play("sun");
   };
+  $("#reset-progress").onclick = confirmProgressReset;
   refresh();
 }
-for (const button of document.querySelectorAll("[data-sound-settings]")) button.onclick = showSoundSettings;
+function confirmProgressReset() {
+  audio.suspend();
+  openModal("1단계부터 다시 시작할까요?", "<p>모든 별, 열린 정원과 진행 중인 판을 지워요. 식물 해금도 처음부터 다시 시작해요.</p><p>언어와 소리 설정은 유지돼요. 초기화한 진행은 되돌릴 수 없어요.</p>", [
+    { label: "돌아가기", primary: true, action: showSettings },
+    { label: "초기화하고 처음부터", action: resetProgress },
+  ], showSettings);
+}
+function resetProgress() {
+  const next = { ...freshSave(), sound: save.sound, volume: save.volume, language: save.language, tutorialSeen: save.tutorialSeen };
+  const error = storage ? writeSave(storage, next) : "브라우저가 기기 저장을 막고 있어요. 창을 닫으면 진행 상황이 사라져요.";
+  if (error) {
+    confirmProgressReset();
+    notify(error, 9000);
+    return;
+  }
+  Object.assign(save, next);
+  reportedSaveError = false;
+  paused = true; game = null; pendingResult = null;
+  selected = null; shovel = false; boardPointers.clear(); sunGesture = true;
+  audio.suspend();
+  document.body.classList.remove("game-active");
+  home.hidden = false; gameScreen.hidden = true;
+  refreshHome();
+  notify("스테이지를 초기화했어요. 1단계부터 새로 시작해요.");
+}
+for (const button of document.querySelectorAll("[data-sound-settings]")) button.onclick = showSettings;
 $("#install-button").onclick = () => openModal("언제 어디서나, 우리 정원", `<ol class="install-list">
   <li>아이폰·아이패드의 <b>Safari</b>로 이 게임의 HTTPS 주소를 열어요.</li>
   <li>아래에 <b>‘오프라인 준비 완료’</b>가 나타날 때까지 기다려요.</li>

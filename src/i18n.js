@@ -232,6 +232,13 @@ const patterns = [
 ];
 messages["소리 일시 정지 실패"] = "Could not pause sound";
 Object.assign(messages, {
+  "설정": "Settings",
+  "스테이지 리셋": "Reset stages",
+  "1단계부터 다시 시작할까요?": "Start over from stage 1?",
+  "모든 별, 열린 정원과 진행 중인 판을 지워요. 식물 해금도 처음부터 다시 시작해요.": "This erases all stars, unlocked gardens, and your current game. Plant unlocks also start over.",
+  "언어와 소리 설정은 유지돼요. 초기화한 진행은 되돌릴 수 없어요.": "Language and sound settings stay. Reset progress cannot be restored.",
+  "초기화하고 처음부터": "Reset and start over",
+  "스테이지를 초기화했어요. 1단계부터 새로 시작해요.": "Stages reset. Start fresh from stage 1.",
   "소리 설정": "Sound settings",
   "소리 켜기": "Turn sound on",
   "소리 끄기": "Turn sound off",
