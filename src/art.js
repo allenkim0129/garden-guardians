@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, PUMPKIN_RADIUS } from "./engine.js";
+import { PLANTS, ENEMIES, PUMPKIN_RADIUS, GEAR_DURATION } from "./engine.js";
 import { drawSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION } from "./sprites.js";
 
 const ink = "#304b3d";
@@ -47,13 +47,40 @@ export function drawPlant(c, type, x, y, scale = 1, time = 0, frame = { row: 0, 
   c.save(); c.translate(x, y); c.scale(scale, scale); groundShadow(c, type === "pea" ? 27 : 32); c.restore();
   drawSprite(c, type, frame, x, y, scale);
 }
-export function drawEnemy(c, type, x, y, scale = 1, age = 0, slow = false, eating = false, frame = { row: 0, col: 0 }) {
+export function drawEnemy(c, type, x, y, scale = 1, age = 0, slow = false, eating = false, frame = { row: 0, col: 0 }, equipmentDropped = false) {
   c.save(); c.translate(x, y); c.scale(scale, scale); groundShadow(c, type === "sleepy" ? 25 : 32); c.restore();
-  drawSprite(c, type, frame, x, y, scale);
+  drawSprite(c, type, frame, x, y, scale, equipmentDropped);
   if (slow) {
     star(c, x + 23 * scale, y - 35 * scale, 7 * scale, 2 * scale, "#d8f8ff", 6);
     if (type !== "sleepy") star(c, x - 29 * scale, y + 14 * scale, 9 * scale, 3 * scale, "#d8f8ff", 6);
   }
+}
+
+export function drawDroppedGear(c, effect) {
+  const progress = Math.min(1, effect.age / GEAR_DURATION);
+  c.save();
+  c.globalAlpha *= Math.min(1, (1 - progress) * 4);
+  c.translate(effect.x + (effect.type === "umbrella" ? -34 : 4) + progress * 35,
+    effect.y - 20 - Math.sin(progress * Math.PI) * 32 + progress * 48);
+  c.rotate(progress * (effect.type === "umbrella" ? -2.4 : 4));
+  if (effect.type === "umbrella") {
+    line(c, [[0, -17], [0, 20], [5, 24], [9, 20]], "#715749", 3);
+    shape(c, "M-27 0 Q-23 -25 0 -29 Q23 -25 27 0 Q14 -8 0 0 Q-14 -8 -27 0Z", "#865586", "#392e3c", 2);
+    line(c, [[0, -29], [-10, -13], [-13, -4]], "#b889ac", 1.5);
+    line(c, [[0, -29], [10, -13], [13, -4]], "#523651", 1.5);
+    shape(c, "M10 -16 L18 -12 L15 -5 L8 -9Z", "#ba9b83", "#524551", 1);
+  } else {
+    const colors = { sleepy: ["#398da1", "#85c7cd"], jelly: ["#7161d7", "#bcb2ff"], roller: ["#973d60", "#e7a7b9"] };
+    const [base, light] = colors[effect.type];
+    for (let i = 0; i < 3; i++) {
+      c.save(); c.translate((i - 1) * (12 + progress * 13), i % 2 * 10);
+      c.rotate(i + progress);
+      shape(c, "M-8 -8 L0 -5 L7 -9 L5 0 L9 6 L-1 4 L-6 8 L-4 -1Z", base, "#35433b", 1.5);
+      line(c, [[-3, -4], [2, -2], [0, 2]], light, 1.5);
+      c.restore();
+    }
+  }
+  c.restore();
 }
 
 // Visual muzzle alignment only; the engine's shot coordinates and collision rules stay unchanged.
@@ -162,16 +189,19 @@ export function drawBoard(c, game, selected, shovel) {
       if (shovel) { c.strokeStyle = "#a27342"; c.lineWidth = 2; c.strokeRect(plant.col * 100 + 5, row * 100 + 5, 90, 90); }
     }
     for (const enemy of game.enemies.filter(e => e.row === row).sort((a, b) => b.x - a.x)) {
-      drawEnemy(c, enemy.type, enemy.x, row * 100 + 54, .87, enemy.age, enemy.slow > 0, enemy.eating, enemyFrame(enemy, game.time));
+      drawEnemy(c, enemy.type, enemy.x, row * 100 + 54, .87, enemy.age, enemy.slow > 0, enemy.eating, enemyFrame(enemy, game.time), enemy.equipmentDropped);
       if (enemy.hp < ENEMIES[enemy.type].hp) healthBar(c, enemy.x, row * 100 + 91, enemy.hp / ENEMIES[enemy.type].hp, "#b97c68");
     }
   }
   for (const shot of game.shots) drawProjectile(c, shot);
   for (const effect of game.effects) {
     c.save(); c.globalAlpha = Math.max(0, 1 - effect.age * (effect.kind === "burst" ? 1.3 : 2));
-    if (effect.kind === "fall") {
+    if (effect.kind === "gear") {
+      c.globalAlpha = 1;
+      drawDroppedGear(c, effect);
+    } else if (effect.kind === "fall") {
       c.globalAlpha = Math.min(1, Math.max(0, (FALL_DURATION - effect.age) / .24));
-      drawEnemy(c, effect.type ?? "sleepy", effect.x, effect.y + 4, .87, 0, false, false, fallFrame(effect.age));
+      drawEnemy(c, effect.type ?? "sleepy", effect.x, effect.y + 4, .87, 0, false, false, fallFrame(effect.age), effect.equipmentDropped);
     } else if (effect.kind === "burst") {
       c.globalAlpha = Math.max(0, 1 - effect.age / .4) * .35;
       ellipse(c, effect.x, effect.y, Math.min(175, effect.age * 500), Math.min(175, effect.age * 500), "#ffba5124", "#e79a42", 2);

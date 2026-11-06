@@ -74,11 +74,42 @@ export function burstFrame(age) {
   return { state: "burst", row: 2, col: Math.min(3, Math.floor(Math.max(0, age) / .16)) };
 }
 
-export function drawSprite(context, type, frame, x, y, scale = 1) {
+// Canopy outlines in the original frames; keep the coat, face and walking poses.
+const umbrellaMasks = [
+  [[55, 53], [111, 53], [110, 82], [116, 113], [124, 125], [111, 165], [53, 165]],
+  [[62, 54], [113, 54], [112, 82], [119, 114], [126, 128], [112, 168], [60, 168]],
+  [[61, 58], [114, 58], [113, 86], [120, 115], [127, 131], [113, 171], [58, 171]],
+  [[58, 59], [112, 59], [111, 85], [119, 115], [126, 130], [112, 169], [55, 169]],
+  [[61, 48], [101, 48], [116, 78], [120, 110], [130, 141], [115, 172], [60, 172]],
+  [[15, 49], [59, 49], [70, 80], [77, 117], [82, 137], [66, 166], [13, 166]],
+  [[52, 48], [107, 48], [108, 86], [114, 119], [123, 140], [105, 171], [50, 171]],
+  [[56, 53], [110, 53], [113, 88], [121, 119], [130, 142], [113, 174], [53, 174]],
+  [[48, 60], [87, 60], [109, 96], [113, 127], [122, 147], [123, 181], [47, 181]],
+  [[105, 40], [146, 40], [163, 75], [169, 110], [177, 139], [156, 166], [104, 166]],
+  [[152, 181], [183, 174], [229, 182], [234, 224], [135, 224], [135, 207]],
+  [[131, 192], [165, 181], [227, 188], [237, 224], [126, 224]],
+];
+
+export function drawSprite(context, type, frame, x, y, scale = 1, equipmentDropped = false) {
   const image = images.get(type);
   if (!image) throw new Error(`${type} 그림을 먼저 불러와야 합니다.`);
   const { width, height, anchorX, anchorY } = SPRITE_CELL;
   const size = SPRITE_CELL.scale * scale;
+  context.save();
+  if (type === "umbrella" && equipmentDropped) {
+    const left = x - anchorX * size;
+    const top = y + 34 * scale - anchorY * size;
+    context.beginPath();
+    context.rect(left - 1, top - 1, width * size + 2, height * size + 2);
+    const mask = umbrellaMasks[frame.row * 4 + frame.col];
+    mask.forEach(([px, py], i) => {
+      if (i === 0) context.moveTo(left + px * size, top + py * size);
+      else context.lineTo(left + px * size, top + py * size);
+    });
+    context.closePath();
+    context.clip("evenodd");
+  }
   context.drawImage(image, frame.col * width, frame.row * height, width, height,
     x - anchorX * size, y + (Object.hasOwn(PLANTS, type) ? 31 : 34) * scale - anchorY * size, width * size, height * size);
+  context.restore();
 }

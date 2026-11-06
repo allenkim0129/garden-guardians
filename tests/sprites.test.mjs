@@ -187,7 +187,7 @@ test("방울폭탄 대기·준비·폭발 네 프레임과 기존 1초/340피해
   assert.deepEqual([0, .17, .34, .51].map(age => burstFrame(age).col), [0, 1, 2, 3]);
   assert.equal(BURST_DURATION, .75);
   const state = snapshot(game);
-  for (let i = 0; i < 10; i++) advanceEffects(game, .1);
+  for (let i = 0; i < 12; i++) advanceEffects(game, .1);
   assert.deepEqual(snapshot(game), state);
   assert.equal(game.effects.length, 0);
 });

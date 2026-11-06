@@ -71,6 +71,7 @@ const messages = {
   "느리지만 아주 튼튼해요.": "Slow, but very tough.",
   "롤러스케이트로 빠르게 와요.": "Rolls in quickly on skates.",
   "우산 덕에 추위에 덜 느려져요.": "Its umbrella reduces the slowing effect of ice.",
+  "65 피해를 받으면 우산을 놓치고 보통 걸음과 추위 저항으로 바뀌어요.": "After 65 damage, it drops its umbrella and walks and slows down like a regular zombie.",
   "첫 번째 새싹": "First Sprouts",
   "아침 산책": "Morning Stroll",
   "말랑말랑 손님": "Squishy Guests",

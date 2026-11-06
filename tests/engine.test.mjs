@@ -84,6 +84,75 @@ test("서리 효과와 우산의 추위 저항", () => {
   assert.ok(target.slow > 0);
   assert.ok(target.hp < ENEMIES.jelly.hp);
 });
+test("우산은 누적 65 피해에서 한 번만 탈락하고 보통 속도·추위 저항으로 전환", () => {
+  const game = createGame(5);
+  const target = enemy(game, "umbrella", 2, 500);
+  const hit = damage => {
+    game.shots.push({ id: game.nextId++, row: 2, x: target.x - 30, damage, frost: false });
+    tick(game, .1);
+  };
+  hit(64);
+  assert.equal(target.hp, 111);
+  assert.equal(target.equipmentDropped, undefined);
+  hit(1);
+  assert.equal(target.hp, 110);
+  assert.equal(target.equipmentDropped, true);
+  assert.equal(target.type, "umbrella");
+  assert.equal(game.effects.filter(e => e.kind === "gear").length, 1);
+  const x = target.x;
+  tick(game, .1);
+  assert.ok(Math.abs(x - target.x - ENEMIES.sleepy.speed * .1) < 1e-8);
+  target.slow = 3;
+  const slowedX = target.x;
+  hit(1);
+  assert.ok(Math.abs(slowedX - target.x - ENEMIES.sleepy.speed * .48 * .1) < 1e-8);
+  assert.equal(game.effects.filter(e => e.kind === "gear").length, 1);
+  const restored = snapshot(game);
+  assert.ok(validSnapshot(restored));
+  assert.equal(restored.enemies[0].equipmentDropped, true);
+  assert.deepEqual(restored.effects, []);
+  game.effects = [];
+  advance(game, .5); advance(restored, .5);
+  assert.deepEqual(restored, game);
+});
+test("모든 좀비의 탈락 효과는 범위·관통·폭탄 피해에도 한 번, 즉사에도 남음", () => {
+  for (const kind of ["pea", "thorn", "pumpkin", "bomb"]) {
+    const game = createGame(10);
+    for (const type of Object.keys(ENEMIES)) enemy(game, type, 2, 500);
+    if (kind === "bomb") {
+      plantAt(game, "bomb", 2, 4);
+      game.plants[0].age = 1;
+    } else {
+      for (let i = 0; i < 4; i++) game.shots.push({
+        id: game.nextId++, row: 2, x: 470, damage: 340, frost: false,
+        ...(kind === "thorn" ? { kind, hitIds: [] } : {}),
+        ...(kind === "pumpkin" ? { kind, originX: 470, targetX: 500, duration: .45, age: .44 } : {}),
+      });
+    }
+    tick(game, .1);
+    assert.equal(game.stats.defeated, 4, kind);
+    assert.equal(game.effects.filter(e => e.kind === "gear").length, 4, kind);
+    assert.ok(game.effects.filter(e => e.kind === "fall").every(e => e.equipmentDropped));
+    const effects = structuredClone(game.effects);
+    tick(game, 0);
+    assert.deepEqual(game.effects, effects);
+    for (let i = 0; i < 12; i++) engine.advanceEffects(game, .1);
+    assert.equal(game.effects.filter(e => e.kind === "gear").length, 0);
+  }
+});
+test("장비 상태 없는 이전 저장 허용, 잘못된 장비 상태·미래 피격 시간 거부", () => {
+  const game = createGame(5);
+  const target = enemy(game, "umbrella", 2, 500);
+  assert.ok(validSnapshot(game));
+  target.equipmentDropped = "yes";
+  assert.equal(validSnapshot(game), false);
+  target.equipmentDropped = true;
+  assert.equal(validSnapshot(game), false);
+  target.hp = 100;
+  assert.ok(validSnapshot(game));
+  target.hurtAt = 1;
+  assert.equal(validSnapshot(game), false);
+});
 test("방울폭탄은 1초 뒤 가까운 줄에도 피해를 주고 사라짐", () => {
   const game = createGame(5);
   plantAt(game, "bomb", 2, 5);

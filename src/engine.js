@@ -4,6 +4,7 @@ export const WIDTH = 900;
 export const HEIGHT = 500;
 export const FALL_DURATION = .88;
 export const BURST_DURATION = .75;
+export const GEAR_DURATION = 1.1;
 export const TWIN_GAP = .2;
 export const THORN_HITS = 3;
 export const PUMPKIN_RADIUS = 115;
@@ -23,7 +24,7 @@ export const ENEMIES = Object.freeze({
   sleepy: { name: "잠옷좀비", hp: 110, speed: 17, bite: 22, description: "졸려도 정원 산책은 좋아해요." },
   jelly: { name: "젤리좀비", hp: 340, speed: 13, bite: 25, description: "느리지만 아주 튼튼해요." },
   roller: { name: "롤러좀비", hp: 95, speed: 31, bite: 18, description: "롤러스케이트로 빠르게 와요." },
-  umbrella: { name: "우산좀비", hp: 175, speed: 18, bite: 23, description: "우산 덕에 추위에 덜 느려져요." },
+  umbrella: { name: "우산좀비", hp: 175, speed: 18, bite: 23, description: "65 피해를 받으면 우산을 놓치고 보통 걸음과 추위 저항으로 바뀌어요." },
 });
 export const STAGES = [
   { name: "첫 번째 새싹", count: 8, gap: 6.5, types: ["sleepy"], rows: [2, 1, 3], startSun: 250, tip: "햇살봉으로 햇빛을 모으고, 좀비가 오는 줄에 콩별이를 심어요." },
@@ -133,6 +134,21 @@ export function collectSun(game, sunId) {
   return true;
 }
 
+export function equipmentThreshold(type) {
+  return type === "umbrella" ? ENEMIES.umbrella.hp - 65 : ENEMIES[type].hp * .5;
+}
+function damageEnemy(game, enemy, damage, frost = false) {
+  if (enemy.hp <= 0) return;
+  enemy.hp -= damage;
+  enemy.hurtAt = game.time;
+  if (frost) enemy.slow = 3;
+  game.effects.push({ id: id(game), kind: frost ? "ice" : "hit", type: enemy.type, x: enemy.x, y: cellY(enemy.row), age: 0 });
+  if (!enemy.equipmentDropped && enemy.hp <= equipmentThreshold(enemy.type)) {
+    enemy.equipmentDropped = true;
+    game.effects.push({ id: id(game), kind: "gear", type: enemy.type, x: enemy.x, y: cellY(enemy.row), age: 0 });
+  }
+}
+
 export function tick(game, dt) {
   if (game.status !== "playing" || !Number.isFinite(dt) || dt <= 0) return;
   // Large wall-clock gaps must never make enemies jump past a plant.
@@ -168,7 +184,7 @@ export function tick(game, dt) {
     }
     if (plant.type === "bomb" && plant.age >= 1) {
       for (const enemy of game.enemies) {
-        if (Math.hypot(enemy.x - cellX(plant.col), cellY(enemy.row) - cellY(plant.row)) <= 175) enemy.hp -= 340;
+        if (Math.hypot(enemy.x - cellX(plant.col), cellY(enemy.row) - cellY(plant.row)) <= 175) damageEnemy(game, enemy, 340);
       }
       game.effects.push({ id: id(game), kind: "burst", x: cellX(plant.col), y: cellY(plant.row), age: 0 });
       plant.hp = 0;
@@ -196,7 +212,7 @@ export function tick(game, dt) {
       shot.x = shot.originX + (shot.targetX - shot.originX) * Math.min(1, shot.age / shot.duration);
       if (shot.age >= shot.duration) {
         for (const enemy of game.enemies) {
-          if (enemy.hp > 0 && Math.hypot(enemy.x - shot.targetX, (enemy.row - shot.row) * 100) <= PUMPKIN_RADIUS) enemy.hp -= shot.damage;
+          if (Math.hypot(enemy.x - shot.targetX, (enemy.row - shot.row) * 100) <= PUMPKIN_RADIUS) damageEnemy(game, enemy, shot.damage);
         }
         game.effects.push({ id: id(game), kind: "splash", x: shot.targetX, y: cellY(shot.row), age: 0 });
         shot.x = 1100;
@@ -209,9 +225,7 @@ export function tick(game, dt) {
       .filter(e => e.hp > 0 && e.row === shot.row && e.x + 25 >= previousX && e.x - 25 <= shot.x && (shot.kind !== "thorn" || !shot.hitIds.includes(e.id)))
       .sort((a, b) => a.x - b.x);
     for (const target of targets) {
-      target.hp -= shot.damage;
-      if (shot.frost) target.slow = 3;
-      game.effects.push({ id: id(game), kind: shot.frost ? "ice" : "hit", x: target.x, y: cellY(target.row), age: 0 });
+      damageEnemy(game, target, shot.damage, shot.frost);
       if (shot.kind === "thorn") shot.hitIds.push(target.id);
       if (shot.kind !== "thorn" || shot.hitIds.length >= THORN_HITS) { shot.x = 1100; break; }
     }
@@ -219,7 +233,7 @@ export function tick(game, dt) {
   for (const enemy of game.enemies) {
     if (enemy.hp <= 0) {
       game.stats.defeated++;
-      game.effects.push({ id: id(game), kind: "fall", type: enemy.type, x: enemy.x, y: cellY(enemy.row), age: 0 });
+      game.effects.push({ id: id(game), kind: "fall", type: enemy.type, equipmentDropped: enemy.equipmentDropped, x: enemy.x, y: cellY(enemy.row), age: 0 });
       continue;
     }
     const info = ENEMIES[enemy.type];
@@ -234,8 +248,9 @@ export function tick(game, dt) {
       meal.hp -= info.bite * dt;
       if (meal.hurtAt === undefined || game.time - meal.hurtAt >= .48) meal.hurtAt = game.time;
     } else {
-      const speed = enemy.slow > 0 ? (enemy.type === "umbrella" ? .8 : .48) : 1;
-      enemy.x -= info.speed * speed * dt;
+      const bareUmbrella = enemy.type === "umbrella" && enemy.equipmentDropped;
+      const speed = enemy.slow > 0 ? (enemy.type === "umbrella" && !bareUmbrella ? .8 : .48) : 1;
+      enemy.x -= (bareUmbrella ? ENEMIES.sleepy.speed : info.speed) * speed * dt;
     }
     if (enemy.x < -25) {
       game.lives = Math.max(0, game.lives - 1);
@@ -255,7 +270,7 @@ export function tick(game, dt) {
 export function advanceEffects(game, dt) {
   if (!Number.isFinite(dt) || dt <= 0) return;
   for (const effect of game.effects) effect.age += Math.min(dt, .1);
-  game.effects = game.effects.filter(e => e.age < (e.kind === "fall" ? FALL_DURATION : e.kind === "burst" ? BURST_DURATION : .5));
+  game.effects = game.effects.filter(e => e.age < (e.kind === "gear" ? GEAR_DURATION : e.kind === "fall" ? FALL_DURATION : e.kind === "burst" ? BURST_DURATION : .5));
 }
 
 const finite = (n, min, max) => Number.isFinite(n) && n >= min && n <= max;
@@ -280,7 +295,9 @@ export function validSnapshot(g) {
   if (!g.plants.every(p => p.pendingShotAt === undefined || (p.type === "twin" && finite(p.shotAt, 0, g.time)
     && finite(p.pendingShotAt, g.time, g.time + TWIN_GAP) && Math.abs(p.pendingShotAt - p.shotAt - TWIN_GAP) < 1e-8))) return false;
   if (!list(g.enemies, STAGES[g.stage - 1].count, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4) && finite(e.x, -25, 1000) && finite(e.hp, .000001, ENEMIES[e.type].hp) && finite(e.slow, 0, 3) && finite(e.age, 0, 100000) && typeof e.eating === "boolean")) return false;
-  if (!g.enemies.every(e => eventTime(e.motionAt))) return false;
+  if (!g.enemies.every(e => eventTime(e.motionAt) && eventTime(e.hurtAt)
+    && (e.equipmentDropped === undefined || (typeof e.equipmentDropped === "boolean"
+      && (!e.equipmentDropped || e.hp <= equipmentThreshold(e.type)))))) return false;
   if (!list(g.shots, 500, s => {
     if (!hasId(s) || !integer(s.row, 0, 4) || !finite(s.x, 0, 1000) || typeof s.frost !== "boolean") return false;
     if (s.kind === undefined) return [15, 18, 22].includes(s.damage);
