@@ -3,6 +3,7 @@ import { drawTitle, drawBoard, plantIcon, drawSunToken } from "./art.js";
 import { loadSprites } from "./sprites.js";
 import { GardenAudio } from "./audio.js";
 import { readSave, writeSave, updateProgress } from "./storage.js";
+import { getLanguage, setLanguage, t, text, label as setLabel, localize } from "./i18n.js";
 
 const $ = selector => document.querySelector(selector);
 const home = $("#home");
@@ -10,25 +11,36 @@ const gameScreen = $("#game");
 const modal = $("#modal");
 const canvas = $("#game-art");
 const context = canvas.getContext("2d");
-try {
-  await loadSprites();
-} catch (error) {
-  $("#offline-status").className = "offline-status error";
-  $("#offline-status").textContent = `캐릭터 그림 준비 실패 · ${error.message} 온라인 상태에서 다시 시도해 주세요.`;
-  $("#play-button").disabled = false;
-  $("#play-button").textContent = "그림 다시 불러오기";
-  $("#play-button").onclick = () => location.reload();
-  throw error;
-}
-$("#play-button").disabled = false;
-document.body.dataset.spritesReady = "true";
-const icons = Object.fromEntries(Object.keys(PLANTS).map(type => [type, plantIcon(type)]));
 let storage;
 let storageAccessError = null;
 try { storage = window.localStorage; } catch (error) { storageAccessError = error; }
 const loaded = storage ? readSave(storage) : { data: null, error: null };
 // Accessing localStorage itself can be denied on restricted Safari profiles.
 const save = loaded.data ?? readSave({ getItem: () => null }).data;
+setLanguage(save.language);
+function refreshLanguage() {
+  localize(document.body);
+  document.documentElement.lang = getLanguage();
+  document.title = t("정원 수비대");
+  for (const button of document.querySelectorAll("[data-language]")) {
+    button.setAttribute("aria-pressed", String(getLanguage() === "en"));
+    button.setAttribute("aria-label", getLanguage() === "en" ? "Language: English. Switch to Korean" : "언어: 한국어. 영어로 바꾸기");
+  }
+}
+refreshLanguage();
+try {
+  await loadSprites();
+} catch (error) {
+  $("#offline-status").className = "offline-status error";
+  text($("#offline-status"), `캐릭터 그림 준비 실패 · ${error.message} 온라인 상태에서 다시 시도해 주세요.`);
+  $("#play-button").disabled = false;
+  text($("#play-button"), "그림 다시 불러오기");
+  $("#play-button").onclick = () => location.reload();
+  throw error;
+}
+$("#play-button").disabled = false;
+document.body.dataset.spritesReady = "true";
+const icons = Object.fromEntries(Object.keys(PLANTS).map(type => [type, plantIcon(type)]));
 let game = null;
 let paused = false;
 let selected = null;
@@ -54,7 +66,7 @@ const audio = new GardenAudio(message => notify(message));
 audio.enabled = save.sound;
 
 function notify(message, duration = 3600) {
-  $("#toast").textContent = message;
+  text($("#toast"), message);
   $("#toast").hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { $("#toast").hidden = true; }, duration);
@@ -69,10 +81,10 @@ function persist() {
 }
 function refreshHome() {
   $("#resume-button").hidden = !save.current;
-  $("#resume-button").textContent = save.current ? `${save.current.stage}번째 정원 이어서 하기` : "이어서 하기";
-  $("#sound-button").textContent = save.sound ? "소리 켜짐" : "소리 꺼짐";
+  text($("#resume-button"), save.current ? `${save.current.stage}번째 정원 이어서 하기` : "이어서 하기");
+  text($("#sound-button"), save.sound ? "소리 켜짐" : "소리 꺼짐");
   $("#sound-button").setAttribute("aria-pressed", String(save.sound));
-  $("#play-button").firstChild.textContent = save.unlocked > 1 ? "정원 선택하기 " : "정원으로 출발 ";
+  text($("#play-button").firstChild, save.unlocked > 1 ? "정원 선택하기 " : "정원으로 출발 ");
 }
 function openModal(title, content, actions, onClose = null) {
   closeAction = onClose;
@@ -88,6 +100,7 @@ function openModal(title, content, actions, onClose = null) {
     button.onclick = () => { closeModal(false); action(); };
     $("#modal-actions").append(button);
   }
+  localize(modal);
   if (!modal.open) modal.showModal();
   modal.scrollTop = 0;
 }
@@ -164,8 +177,8 @@ function startStage(stageNumber, resume = false) {
   selected = null; shovel = false; paused = false; sunGesture = false;
   lastWave = -1; lastSaveAt = game.time; accumulator = 0; lastFrame = performance.now();
   home.hidden = true; gameScreen.hidden = false;
-  $("#stage-title").textContent = `${game.stage}. ${STAGES[game.stage - 1].name}`;
-  $("#selection-hint").textContent = STAGES[game.stage - 1].tip;
+  text($("#stage-title"), `${game.stage}. ${STAGES[game.stage - 1].name}`);
+  text($("#selection-hint"), STAGES[game.stage - 1].tip);
   $("#sun-layer").replaceChildren();
   audio.unlock();
   persist(); render();
@@ -229,15 +242,15 @@ function endGame() {
 }
 
 function selectionHint() {
-  $("#selection-hint").textContent = shovel ? "뽑을 식물을 톡! 햇빛 절반을 돌려받아요."
+  text($("#selection-hint"), shovel ? "뽑을 식물을 톡! 햇빛 절반을 돌려받아요."
     : selected ? `${PLANTS[selected].name}: ${PLANTS[selected].description}`
-    : "선택 해제 · 햇빛을 모으거나 식물 카드를 골라 주세요.";
+    : "선택 해제 · 햇빛을 모으거나 식물 카드를 골라 주세요.");
 }
 for (const [type, plant] of Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage)) {
   const button = document.createElement("button");
   button.className = "seed-card";
   button.dataset.type = type;
-  button.setAttribute("aria-label", `${plant.name}, 햇빛 ${plant.cost}. ${plant.description}`);
+  setLabel(button, `${plant.name}, 햇빛 ${plant.cost}. ${plant.description}`);
   button.innerHTML = `<img src="${icons[type]}" alt=""><span><strong>${plant.name}</strong><span class="cost">☀ ${plant.cost}</span></span><span class="cooldown" hidden></span>`;
   button.onclick = () => {
     if (paused || !game || !isPlantUnlocked(type, game.stage)) return;
@@ -260,7 +273,7 @@ $("#board").addEventListener("click", event => {
 for (let row = 0; row < 5; row++) for (let col = 0; col < 9; col++) {
   const button = document.createElement("button");
   button.className = "plot"; button.dataset.row = row; button.dataset.col = col;
-  button.setAttribute("aria-label", `${row + 1}줄 ${col + 1}칸, 빈 땅`);
+  setLabel(button, `${row + 1}줄 ${col + 1}칸, 빈 땅`);
   button.onclick = () => {
     if (paused || !game || game.status !== "playing") return;
     if (!selected && !shovel) return;
@@ -318,27 +331,27 @@ function render() {
   drawBoard(context, game, selected, shovel);
   $("#sun-count").textContent = game.sun;
   $("#hearts").textContent = "♥ ".repeat(game.lives) + "♡ ".repeat(3 - game.lives);
-  $("#hearts").setAttribute("aria-label", `남은 하트 ${game.lives}개`);
-  $("#wave-label").textContent = game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간";
-  $("#enemy-count").textContent = `막아낸 좀비 ${game.stats.defeated} / ${STAGES[game.stage - 1].count}`;
+  setLabel($("#hearts"), `남은 하트 ${game.lives}개`);
+  text($("#wave-label"), game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간");
+  text($("#enemy-count"), `막아낸 좀비 ${game.stats.defeated} / ${STAGES[game.stage - 1].count}`);
   $("#shovel-button").setAttribute("aria-pressed", String(shovel));
   for (const card of cards) {
     const type = card.dataset.type;
     const locked = !isPlantUnlocked(type, game.stage);
     card.disabled = locked;
     card.classList.toggle("locked", locked);
-    card.setAttribute("aria-label", `${PLANTS[type].name}, ${locked ? `${PLANTS[type].unlockStage}번째 정원부터 해금` : `햇빛 ${PLANTS[type].cost}. ${PLANTS[type].description}`}`);
-    card.querySelector(".cost").textContent = locked ? `${PLANTS[type].unlockStage}정원 해금` : `☀ ${PLANTS[type].cost}`;
+    setLabel(card, `${PLANTS[type].name}, ${locked ? `${PLANTS[type].unlockStage}번째 정원부터 해금` : `햇빛 ${PLANTS[type].cost}. ${PLANTS[type].description}`}`);
+    text(card.querySelector(".cost"), locked ? `${PLANTS[type].unlockStage}정원 해금` : `☀ ${PLANTS[type].cost}`);
     card.setAttribute("aria-pressed", String(type === selected && !shovel));
     card.classList.toggle("unaffordable", !locked && game.sun < PLANTS[type].cost);
     const cooldown = card.querySelector(".cooldown");
     cooldown.hidden = locked || game.cooldowns[type] <= 0;
-    cooldown.textContent = `${Math.ceil(game.cooldowns[type])}초`;
+    text(cooldown, `${Math.ceil(game.cooldowns[type])}초`);
   }
   for (const plot of plots) {
     const plant = game.plants.find(p => p.row === Number(plot.dataset.row) && p.col === Number(plot.dataset.col));
     const label = `${Number(plot.dataset.row) + 1}줄 ${Number(plot.dataset.col) + 1}칸, ${plant ? PLANTS[plant.type].name : "빈 땅"}`;
-    if (plot.getAttribute("aria-label") !== label) plot.setAttribute("aria-label", label);
+    if (plot.getAttribute("aria-label") !== t(label)) setLabel(plot, label);
   }
   const sunLayer = $("#sun-layer");
   const sunIds = new Set(game.suns.map(s => String(s.id)));
@@ -348,7 +361,7 @@ function render() {
     if (!button) {
       button = document.createElement("button");
       button.className = "sun-drop"; button.dataset.id = sun.id;
-      button.setAttribute("aria-label", "햇빛 25 모으기");
+      setLabel(button, "햇빛 25 모으기");
       const art = document.createElement("canvas");
       art.width = art.height = 96; art.setAttribute("aria-hidden", "true");
       button.append(art);
@@ -366,13 +379,13 @@ function render() {
   const banner = $("#board-banner");
   if (game.time < 8) {
     const newcomers = introducedPlants(game.stage);
-    banner.textContent = newcomers.length ? `새 식물: ${newcomers.map(type => PLANTS[type].name).join(", ")} · 카드를 골라 심어요!` : "식물을 배치해 방어선을 준비하세요!";
+    text(banner, newcomers.length ? `새 식물: ${newcomers.map(type => PLANTS[type].name).join(", ")} · 카드를 골라 심어요!` : "식물을 배치해 방어선을 준비하세요!");
   }
   else if (game.wave !== lastWave) {
     lastWave = game.wave;
-    banner.textContent = game.wave ? `${game.wave}번째 무리가 오고 있어요!` : "";
+    text(banner, game.wave ? `${game.wave}번째 무리가 오고 있어요!` : "");
     banner.dataset.until = String(game.time + 3);
-  } else if (game.time > Number(banner.dataset.until ?? 0)) banner.textContent = "";
+  } else if (game.time > Number(banner.dataset.until ?? 0)) text(banner, "");
 }
 function frame(now) {
   requestAnimationFrame(frame);
@@ -410,7 +423,7 @@ function setCacheStatus(ready, message, error = false) {
   offlineReady = ready;
   const node = $("#offline-status");
   node.className = `offline-status${ready ? " ready" : error ? " error" : ""}`;
-  node.textContent = message;
+  text(node, message);
   $("#cache-retry").hidden = ready || !error;
 }
 function workerMessage(worker, type) {
@@ -452,7 +465,7 @@ function updateFailed(error) {
   clearTimeout(updateTimer);
   updateApplying = false;
   $("#update-button").disabled = false;
-  $("#update-button").textContent = "저장하고 업데이트";
+  text($("#update-button"), "저장하고 업데이트");
   notify(`업데이트를 적용하지 못했어요. ${error.message}`, 9000);
   if (game?.status === "playing") pauseGame("업데이트를 멈췄어요. 기존 정원을 계속하거나 나중에 다시 시도해 주세요.");
 }
@@ -465,7 +478,7 @@ async function applyUpdate() {
   }
   updateApplying = true;
   $("#update-button").disabled = true;
-  $("#update-button").textContent = "업데이트 적용 중…";
+  text($("#update-button"), "업데이트 적용 중…");
   try {
     if (updateNeedsReload) { location.reload(); return; }
     const waiting = workerRegistration?.waiting;
@@ -538,6 +551,17 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("cont
   }).catch(error => setCacheStatus(false, `오프라인 확인 실패: ${error.message}`, true));
 });
 
+for (const button of document.querySelectorAll("[data-language]")) {
+  button.onclick = event => {
+    event.stopPropagation();
+    save.language = getLanguage() === "ko" ? "en" : "ko";
+    setLanguage(save.language);
+    refreshLanguage();
+    persist();
+    render();
+  };
+}
+refreshLanguage();
 drawTitle($("#title-art"));
 refreshHome();
 if (loaded.error || storageAccessError) notify(loaded.error ?? "기기 저장이 차단되어 있어요. 창을 닫으면 진행 상황이 사라질 수 있어요.", 9000);

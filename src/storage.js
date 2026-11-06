@@ -1,12 +1,13 @@
 import { validSnapshot, snapshot, PLANTS } from "./engine.js";
 
 export const SAVE_KEY = "garden-guardians-save-v1";
-export const freshSave = () => ({ version: 1, unlocked: 1, stars: Array(10).fill(0), sound: false, tutorialSeen: false, current: null });
+export const freshSave = () => ({ version: 1, unlocked: 1, stars: Array(10).fill(0), sound: false, tutorialSeen: false, language: "ko", current: null });
 export function validateSave(value) {
   return value !== null && typeof value === "object" && value.version === 1
     && Number.isInteger(value.unlocked) && value.unlocked >= 1 && value.unlocked <= 10
     && Array.isArray(value.stars) && value.stars.length === 10 && value.stars.every(n => Number.isInteger(n) && n >= 0 && n <= 3)
     && typeof value.sound === "boolean" && typeof value.tutorialSeen === "boolean"
+    && (value.language === undefined || ["ko", "en"].includes(value.language))
     && (value.current === null || (validSnapshot(value.current) && value.current.stage <= value.unlocked));
 }
 export function readSave(storage) {
@@ -15,6 +16,7 @@ export function readSave(storage) {
     if (raw === null) return { data: freshSave(), error: null };
     const data = JSON.parse(raw);
     if (!validateSave(data)) throw new Error("저장 형식이 맞지 않습니다.");
+    data.language ??= "ko";
     let notice = null;
     if (data.current) {
       data.current.effects = [];

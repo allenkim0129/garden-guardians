@@ -198,12 +198,15 @@ test("서버 종료 후 하위 경로에서 오프라인 새로고침·새 창·
     await page.locator('.plot[data-row="0"][data-col="0"]').tap();
     await expect(page.locator('.plot[data-row="0"][data-col="0"]')).toHaveAttribute("aria-label", "1줄 1칸, 햇살봉");
     await page.locator("#pause-button").tap();
+    await page.locator("#modal [data-language]").tap();
     await page.close();
     const reopened = await context.newPage();
     await reopened.goto(server.url);
-    await expect(reopened.locator("#offline-status")).toContainText("오프라인 준비 완료");
+    await expect(reopened.locator("#offline-status")).toContainText("Offline ready");
+    await expect(reopened.locator("html")).toHaveAttribute("lang", "en");
     await reopened.locator("#resume-button").tap();
     await expect(reopened.locator("#game")).toBeVisible();
+    await expect(reopened.locator('.plot[data-row="0"][data-col="0"]')).toHaveAttribute("aria-label", "Row 1, column 1, Sunbell");
     expect(external).toEqual([]);
   } finally { await server.stop(); }
 });
@@ -391,7 +394,7 @@ test("구버전 진행 중 식물은 보존하고 새 배치는 해금 규칙을
   expect(saved.current.plants[0].type).toBe("sun");
 });
 
-test("새 오프라인 캐시 v7이 이전 v5를 정리하고 기본 해금과 9종 프레임 저장", async ({ page }) => {
+test("새 오프라인 캐시 v8이 이전 v5를 정리하고 기본 해금과 9종 프레임 저장", async ({ page }) => {
   await page.goto("/manifest.webmanifest");
   await page.evaluate(async () => {
     const old = await caches.open("garden-guardians-%2F-v5");
@@ -400,7 +403,7 @@ test("새 오프라인 캐시 v7이 이전 v5를 정리하고 기본 해금과 9
   await homeReady(page);
   const cached = await page.evaluate(async () => {
     const keys = await caches.keys();
-    const active = await caches.open("garden-guardians-%2F-v7");
+    const active = await caches.open("garden-guardians-%2F-v8");
     const sprites = await Promise.all(["pea", "sun", "wall", "frost", "bomb", "sleepy", "jelly", "roller", "umbrella"].map(async type => {
       const response = await active.match(new URL(`./assets/sprites/${type}.png`, location.href));
       return response?.ok && (await response.blob()).size > 10000;
@@ -408,7 +411,7 @@ test("새 오프라인 캐시 v7이 이전 v5를 정리하고 기본 해금과 9
     return { keys, sprites, app: await (await active.match(new URL("./src/app.js", location.href))).text(),
       engine: await (await active.match(new URL("./src/engine.js", location.href))).text() };
   });
-  expect(cached.keys).toContain("garden-guardians-%2F-v7");
+  expect(cached.keys).toContain("garden-guardians-%2F-v8");
   expect(cached.keys).not.toContain("garden-guardians-%2F-v5");
   expect(cached.sprites).toEqual(Array(9).fill(true));
   expect(cached.app).toContain("let selected = null");

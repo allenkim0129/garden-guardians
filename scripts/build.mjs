@@ -3,7 +3,7 @@ import { copyFile, mkdir, stat } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const files = [
   "index.html", "styles.css", "manifest.webmanifest", "sw.js",
-  "src/app.js", "src/engine.js", "src/art.js", "src/audio.js", "src/storage.js", "src/sprites.js",
+  "src/app.js", "src/engine.js", "src/art.js", "src/audio.js", "src/storage.js", "src/sprites.js", "src/i18n.js",
   "assets/sprites/pea.png", "assets/sprites/sleepy.png",
   "assets/sprites/sun.png", "assets/sprites/wall.png", "assets/sprites/frost.png", "assets/sprites/bomb.png",
   "assets/sprites/jelly.png", "assets/sprites/roller.png", "assets/sprites/umbrella.png",

@@ -133,22 +133,23 @@ test("진행 중 새 버전은 기다리고 저장 후 명시적 적용: 다른 
     expect(buttonBounds.y).toBeGreaterThanOrEqual(0);
     expect(buttonBounds.y + buttonBounds.height).toBeLessThanOrEqual(320);
     await page.locator("#pause-button").tap();
+    await page.locator("#modal [data-language]").tap();
     const before = await saved(page);
-    await expect(page.locator("#app-version")).toHaveText(`화면 ${server.current}`);
-    await expect(page.getByRole("button", { name: "저장하고 업데이트", exact: true })).toBeVisible();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.current}`);
+    await expect(page.getByRole("button", { name: "Save and update", exact: true })).toBeVisible();
     await server.stop();
-    await page.getByRole("button", { name: "저장하고 업데이트", exact: true }).tap();
-    await expect(page.locator("#app-version")).toHaveText(`화면 ${server.next}`);
-    await expect(page.locator("#offline-status")).toContainText("오프라인 준비 완료");
+    await page.getByRole("button", { name: "Save and update", exact: true }).tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
     expect(await saved(page)).toEqual(before);
     // An idle older tab must neither reload itself nor overwrite the newer saved game.
     await expect(second.locator("#app-version")).toHaveText(`화면 ${server.current}`);
     await expect(second.locator("#update-button")).toBeVisible();
     await second.locator("#update-button").tap();
-    await expect(second.locator("#app-version")).toHaveText(`화면 ${server.next}`);
+    await expect(second.locator("#app-version")).toHaveText(`Version ${server.next}`);
     expect(await saved(second)).toEqual(before);
     await page.locator("#resume-button").tap();
-    await expect(page.locator('.plot[data-row="0"][data-col="0"]')).toHaveAttribute("aria-label", "1줄 1칸, 햇살봉");
+    await expect(page.locator('.plot[data-row="0"][data-col="0"]')).toHaveAttribute("aria-label", "Row 1, column 1, Sunbell");
   } finally { await server.stop(); }
 });
 
