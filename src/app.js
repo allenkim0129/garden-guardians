@@ -228,7 +228,7 @@ function showLoadout(stageNumber) {
       button.disabled = !available.includes(button.dataset.type) || (!chosen && picked.size === limit);
     }
     const slots = content.querySelector(".loadout-slots");
-    slots.style.gridTemplateColumns = `repeat(${limit}, 1fr)`;
+    slots.style.gridTemplateColumns = `repeat(${limit}, minmax(0, 1fr))`;
     slots.replaceChildren();
     for (let i = 0; i < limit; i++) {
       const type = [...picked][i];
@@ -257,7 +257,6 @@ function startStage(stageNumber, resume = false, loadout) {
   seedCards.classList.toggle("extended", (game.loadout?.length ?? 0) > 6);
   const scrollCards = game.loadout === undefined || game.loadout.length > 6;
   setLabel(seedCards, scrollCards ? "식물 카드 목록 · 위아래로 스크롤" : "선택한 식물 카드");
-  $(".seed-scroll-hint").hidden = !scrollCards;
   text($("#stage-title"), `${game.stage}. ${STAGES[game.stage - 1].name}`);
   text($("#selection-hint"), STAGES[game.stage - 1].tip);
   $("#sun-layer").replaceChildren();

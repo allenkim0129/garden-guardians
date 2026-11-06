@@ -113,6 +113,50 @@ for (const portrait of [false, true]) test(`10단계 8종 선택·큰 카드 목
   await expect(page.locator(".seed-card:visible")).toHaveCount(8);
 });
 
+test("안전 여백으로 좁아진 화면의 6종 카드 스크롤·44px·방향 전환", async ({ page, context, browserName }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await seed(page, createGame(10, team), { language: "en" });
+  await page.evaluate(() => document.documentElement.style.setProperty("--device-top", "20px"));
+  await page.locator("#resume-button").tap();
+  await expect(page.locator(".seed-scroll-hint")).toBeVisible();
+  expect(await page.locator("#seed-cards").evaluate(node => node.className)).toBe("seed-cards");
+  const board = await page.locator("#board").boundingBox();
+  const bank = await page.locator("#seed-cards").boundingBox();
+  if (browserName === "chromium") {
+    await swipe(page, context, browserName,
+      { x: bank.x + 20, y: bank.y + bank.height / 2 },
+      { x: bank.x + bank.width - 20, y: bank.y + bank.height / 2 });
+  } else await page.locator("#seed-cards").evaluate(node => node.scrollTop = node.scrollHeight);
+  await expect.poll(() => page.locator("#seed-cards").evaluate(node => node.scrollTop)).toBeGreaterThan(20);
+  await expect(page.locator('.seed-card[aria-pressed="true"]')).toHaveCount(0);
+  const card = page.locator('.seed-card[data-type="twin"]');
+  await expect(card).toBeInViewport();
+  await card.tap();
+  expect(await card.locator("img").evaluate(node => node.getBoundingClientRect().width)).toBe(56);
+  await page.locator('.plot[data-row="0"][data-col="0"]').tap();
+  await expect(page.locator("#sun-count")).toHaveText("125");
+  expect(await page.locator("#board").boundingBox()).toEqual(board);
+  expect(await page.evaluate(() => [scrollX, scrollY])).toEqual([0, 0]);
+  expect(board.width / 5).toBeGreaterThanOrEqual(44);
+  expect(board.height / 9).toBeGreaterThanOrEqual(44);
+  await page.setViewportSize({ width: 568, height: 320 });
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty("--device-top", "0px");
+    document.documentElement.style.setProperty("--device-left", "20px");
+  });
+  const rotated = await page.locator("#board").boundingBox();
+  expect(rotated.x).toBeGreaterThanOrEqual(40);
+  expect(rotated.x + rotated.width).toBeLessThanOrEqual(568);
+  expect(rotated.y + rotated.height).toBeLessThanOrEqual(320);
+  expect(rotated.width / 9).toBeGreaterThanOrEqual(44);
+  expect(rotated.height / 5).toBeGreaterThanOrEqual(44);
+  await page.locator("#pause-button").tap();
+  const saved = (await stored(page)).current;
+  expect(saved.loadout).toEqual(team);
+  expect(saved.plants).toHaveLength(1);
+  expect(saved.plants[0]).toMatchObject({ type: "twin", row: 0, col: 0 });
+});
+
 for (const portrait of [false, true]) test(`빠른 햇빛 쓸기·오배치 방지·화면 고정 (${portrait ? "세로 기기의 가로형 화면" : "가로"})`, async ({ page, context, browserName }) => {
   await page.setViewportSize(portrait ? { width: 320, height: 568 } : { width: 568, height: 320 });
   const game = createGame(10, team);
