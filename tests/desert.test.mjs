@@ -175,7 +175,7 @@ test("연쇄는 적이 범위 밖으로 나가면 끊기고 발사 후 식물 �
   }
 });
 
-test("선인장은 400햇빛·20초 재배치·22해금이며 첫3초와 매3초 가장 가까운 한 마리만 즉사", () => {
+test("선인장은 400햇빛·16초 재배치·22해금이며 첫3초와 매3초 가장 가까운 한 마리만 즉사", () => {
   assert.deepEqual(engine.introducedPlants(22), ["cactus"]);
   assert.deepEqual(engine.introducedPlants(28), []);
   assert.equal(plantAt(createGame(21), "cactus", 2, 5).ok, false);
@@ -184,7 +184,7 @@ test("선인장은 400햇빛·20초 재배치·22해금이며 첫3초와 매3초
   game.sun = 1000;
   assert.ok(plantAt(game, "cactus", 2, 5).ok);
   assert.equal(game.sun, 600);
-  assert.equal(game.cooldowns.cactus, 20);
+  assert.equal(game.cooldowns.cactus, 16);
   assert.equal(game.plants[0].hp, 160);
   assert.equal(plantAt(game, "cactus", 1, 5).ok, false);
   const front = enemy(game, "barrel", 2, 950);
@@ -196,7 +196,7 @@ test("선인장은 400햇빛·20초 재배치·22해금이며 첫3초와 매3초
   const samePosition = enemy(game, "barrel", 2, 550);
   tick(game, .1);
   assert.equal(front.hp, 0);
-  assert.ok(Math.abs(game.cooldowns.cactus - 17) < 1e-8);
+  assert.ok(Math.abs(game.cooldowns.cactus - 13) < 1e-8);
   assert.equal(farther.hp, 400);
   assert.equal(game.plants[0].laserTargetX, front.x);
   assert.equal(behind.hp, 400);
@@ -215,33 +215,45 @@ test("선인장은 400햇빛·20초 재배치·22해금이며 첫3초와 매3초
   assert.ok(game.plants.some(p => p.type === "cactus"));
 });
 
-test("선인장 최대2개는 자원·쿨다운 차감 없이 차단하고 제거·사망 후 슬롯을 반환", () => {
-  for (const removal of ["shovel", "death"]) {
-    const game = createGame(22, ["cactus"]);
-    game.sun = 3000;
-    assert.ok(plantAt(game, "cactus", 0, 0).ok);
-    advance(game, 19.9);
-    assert.equal(plantAt(game, "cactus", 1, 0).ok, false);
-    tick(game, .1);
-    assert.ok(plantAt(game, "cactus", 1, 0).ok);
-    assert.equal(game.cooldowns.cactus, 20);
+test("선인장은 16초마다 다섯 개 이상 설치 가능하며 대기 중 실패는 자원·쿨다운 불변", () => {
+  const game = createGame(22, ["cactus"]);
+  game.sun = 5000;
+  assert.equal(PLANTS.cactus.maxCount, undefined);
+  assert.ok(plantAt(game, "cactus", 0, 0).ok);
+  for (let row = 1; row < 5; row++) {
+    advance(game, 15.9);
     const before = snapshot(game);
-    assert.match(plantAt(game, "cactus", 2, 0).reason, /최대 2개/);
+    assert.equal(plantAt(game, "cactus", row, 0).ok, false);
     assert.deepEqual(snapshot(game), before);
-    advance(game, 20);
-    assert.equal(game.cooldowns.cactus, 0);
-    assert.equal(engine.plantLimitReached(game, "cactus"), true);
-    if (removal === "shovel") engine.removePlant(game, 0, 0);
-    else { game.plants[0].hp = 0; tick(game, .1); }
-    assert.equal(engine.plantLimitReached(game, "cactus"), false);
-    assert.ok(plantAt(game, "cactus", 2, 0).ok);
-    assert.equal(game.plants.filter(p => p.type === "cactus").length, 2);
-    assert.equal(game.cooldowns.cactus, 20);
+    tick(game, .1);
+    const sun = game.sun;
+    assert.ok(plantAt(game, "cactus", row, 0).ok);
+    assert.equal(game.sun, sun - 400);
+    assert.equal(game.plants.filter(p => p.type === "cactus").length, row + 1);
+    assert.equal(game.cooldowns.cactus, 16);
     assert.ok(validSnapshot(snapshot(game)));
   }
+  engine.removePlant(game, 0, 0);
+  assert.equal(game.cooldowns.cactus, 16);
+  assert.equal(plantAt(game, "cactus", 0, 0).ok, false);
 });
 
-test("기존 선인장3개와 남은6초는 삭제·연장 없이 복구하고 2개 미만일 때만 추가 허용", () => {
+test("같은 줄 선인장 세 개도 각각 최근접 한 마리만 처치하고 네 번째 적은 생존", () => {
+  const game = createGame(22, ["cactus"]); game.sun = 1200;
+  for (let col = 0; col < 3; col++) {
+    game.cooldowns.cactus = 0;
+    assert.ok(plantAt(game, "cactus", 2, col).ok);
+  }
+  const targets = [600, 700, 800, 900].map(x => enemy(game, "barrel", 2, x));
+  advance(game, 3);
+  assert.deepEqual(targets.map(e => e.hp), [0, 0, 0, 400]);
+  assert.equal(game.stats.defeated, 3);
+  assert.equal(game.effects.filter(e => e.kind === "laser").length, 3);
+  assert.deepEqual(game.plants.map(p => p.laserTargetX), targets.slice(0, 3).map(e => e.x));
+  assert.ok(validSnapshot(snapshot(game)));
+});
+
+test("기존 선인장3개와 남은6초를 보존하고 대기 후 네 번째를 바로 추가", () => {
   const game = createGame(28, ["cactus"]);
   game.rulesVersion = 7; game.pacingVersion = 6; game.sun = 2000;
   for (let row = 0; row < 3; row++) game.plants.push({
@@ -251,18 +263,15 @@ test("기존 선인장3개와 남은6초는 삭제·연장 없이 복구하고 2
   const data = { ...freshSave(), unlocked: 28, current: snapshot(game) };
   const loaded = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(loaded.error, null);
-  assert.deepEqual(loaded.data, { ...data, current: { ...data.current, rulesVersion: 8,
+  assert.deepEqual(loaded.data, { ...data, current: { ...data.current, rulesVersion: 9,
     plants: data.current.plants.map(p => ({ ...p, timer: 3 })) } });
   const restored = loaded.data.current;
   advance(restored, 6);
   assert.equal(restored.cooldowns.cactus, 0);
   assert.equal(restored.plants.length, 3);
-  assert.equal(plantAt(restored, "cactus", 3, 0).ok, false);
-  engine.removePlant(restored, 0, 0);
-  assert.equal(plantAt(restored, "cactus", 3, 0).ok, false);
-  engine.removePlant(restored, 1, 0);
   assert.ok(plantAt(restored, "cactus", 3, 0).ok);
-  assert.equal(restored.cooldowns.cactus, 20);
+  assert.equal(restored.plants.length, 4);
+  assert.equal(restored.cooldowns.cactus, 16);
   const before = snapshot(restored);
   tick(restored, 0);
   assert.deepEqual(snapshot(restored), before);
@@ -331,7 +340,8 @@ test("v31 공격 타이머는 최대3초로 한 번만 이관하고 초과 선�
     teamSlots: ["cactus", null, "shuriken", null, null, null, null, null], current: snapshot(game) };
   const loaded = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(loaded.error, null);
-  const expected = structuredClone(data); expected.current.rulesVersion = 8;
+  const expected = structuredClone(data); expected.current.rulesVersion = 9;
+  expected.current.cooldowns.cactus = 16;
   expected.current.plants[0].timer = 3; expected.current.plants[1].timer = 3;
   assert.deepEqual(loaded.data, expected);
   const again = readSave({ getItem: () => JSON.stringify(loaded.data) });
@@ -362,6 +372,35 @@ test("선인장 목표 좌표 저장을 검증하고 승리 연출은 추가 처
   assert.equal(game.effects.filter(e => e.kind === "laser").length, 0);
 });
 
+test("v33 이전 재배치20초는 검증 후16초로만 줄이고 공격·생산·다른 식물은 보존", () => {
+  for (const rulesVersion of [6, 7, 8]) for (const remaining of [0, .1, 6, 16, 17, 20]) {
+    const game = createGame(22, ["cactus", "shuriken"]); game.sun = 1000;
+    plantAt(game, "cactus", 2, 0); plantAt(game, "shuriken", 0, 0);
+    enemy(game, "barrel", 0, 800); tick(game, .1);
+    game.rulesVersion = rulesVersion; game.cooldowns.cactus = remaining;
+    const data = { ...freshSave(), unlocked: 22, stars: freshSave().stars.fill(3), language: "en", volume: 67,
+      teamSlots: ["cactus", null, "shuriken", null, null, null, null, null], current: snapshot(game) };
+    const loaded = readSave({ getItem: () => JSON.stringify(data) });
+    assert.equal(loaded.error, null);
+    const expected = structuredClone(data); expected.current.rulesVersion = 9;
+    expected.current.cooldowns.cactus = Math.min(remaining, 16);
+    assert.deepEqual(loaded.data, expected);
+    assert.deepEqual(readSave({ getItem: () => JSON.stringify(loaded.data) }).data, expected);
+    assert.ok(validSnapshot(loaded.data.current));
+  }
+  for (const [rulesVersion, cooldown] of [[8, 20.01], [9, 16.01]]) {
+    const game = createGame(22); game.rulesVersion = rulesVersion; game.cooldowns.cactus = cooldown;
+    assert.equal(validSnapshot(game), false);
+  }
+  assert.equal(engine.SKY_SUN_INTERVAL, 7);
+  assert.equal(PLANTS.sun.interval, 8);
+  assert.equal(PLANTS.lantern.interval, 10);
+  assert.deepEqual(Object.fromEntries(Object.entries(PLANTS).map(([type, plant]) => [type, plant.recharge])), {
+    sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9,
+    lantern: 9, iron: 12, ember: 9, storm: 10, cactus: 16, shuriken: 10,
+  });
+});
+
 test("v25에서 기존 19·22단계 진행과 팀은 보존하고 새 선택에 해금을 적용", () => {
   for (const [type, stage] of [["storm", 19], ["cactus", 22]]) {
     const data = { ...freshSave(), unlocked: stage, stars: [...Array(stage - 1).fill(3), ...Array(31 - stage).fill(0)],
@@ -390,7 +429,7 @@ test("v23 별20칸·팀빈칸·진행·발사체 보존, 마지막 클리어 때
     const restored = readSave({ getItem: () => JSON.stringify(old) });
     assert.equal(restored.error, null);
     assert.deepEqual(restored.data, { ...old, unlocked: cleared ? 21 : 20, stars: [...old.stars, ...Array(10).fill(0)],
-      current: { ...old.current, rulesVersion: 8, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
+      current: { ...old.current, rulesVersion: 9, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
     assert.equal(restored.data.current.shots[0].damage, 24);
     advance(restored.data.current, .2);
     assert.equal(restored.data.current.shots[1].damage, 33);

@@ -50,7 +50,10 @@ export function readSave(storage) {
           if (plant.type === "cactus") plant.timer = Math.min(plant.timer, PLANTS.cactus.interval);
         }
       }
-      data.current.rulesVersion = 8;
+      if ((data.current.rulesVersion ?? 1) < 9) {
+        data.current.cooldowns.cactus = Math.min(data.current.cooldowns.cactus, PLANTS.cactus.recharge);
+      }
+      data.current.rulesVersion = 9;
     }
     return { data, error: null, notice };
   } catch (error) {

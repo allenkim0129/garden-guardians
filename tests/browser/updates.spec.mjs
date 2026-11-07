@@ -115,7 +115,7 @@ async function releaseServer(legacy = false) {
     },
   };
 }
-test("v31 공격 저장은 명시적 업데이트·오프라인 뒤 rules8로 한 번만 안전 이관", async ({ page }) => {
+test("v31 공격 저장은 명시적 업데이트·오프라인 뒤 rules9로 한 번만 안전 이관", async ({ page }) => {
   const server = await releaseServer();
   try {
     const game = createGame(22, ["shuriken", "cactus"]); game.sun = 2000;
@@ -129,7 +129,8 @@ test("v31 공격 저장은 명시적 업데이트·오프라인 뒤 rules8로 �
     game.cooldowns.cactus = 17;
     const data = { ...freshSave(), unlocked: 22, stars: freshSave().stars.fill(3), tutorialSeen: true,
       language: "en", volume: 67, teamSlots: ["shuriken", null, "cactus", null, null, null, null, null], current: game };
-    const expected = structuredClone(data); expected.current.rulesVersion = 8; expected.current.plants[1].timer = 3;
+    const expected = structuredClone(data); expected.current.rulesVersion = 9; expected.current.plants[1].timer = 3;
+    expected.current.cooldowns.cactus = 16;
     await page.goto(`${server.url}manifest.webmanifest`);
     await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
     await page.goto(server.url);
@@ -148,7 +149,8 @@ test("v31 공격 저장은 명시적 업데이트·오프라인 뒤 rules8로 �
     expect(paused.current.plants).toHaveLength(4);
     expect(paused.current.shots[0].damage).toBe(32);
     expect(paused.current.shots[0].outHits).toEqual(game.shots[0].outHits);
-    expect(paused.current.cooldowns.cactus).toBeGreaterThan(16);
+    expect(paused.current.cooldowns.cactus).toBeGreaterThan(15);
+    expect(paused.current.cooldowns.cactus).toBeLessThanOrEqual(16);
     await page.reload();
     expect(await saved(page)).toEqual(paused);
   } finally { await server.stop(); }
@@ -240,7 +242,7 @@ test("v30 테마 체력과 구버전 체력은 업데이트·오프라인·재�
   }
 });
 
-test("선인장 초과 개수와 기존6초·새20초 대기는 업데이트·오프라인에서도 보존", async ({ page }) => {
+test("선인장 세 개와 기존6초·20초 대기는 업데이트·오프라인에서 안전 이관", async ({ page }) => {
   for (const cooldown of [6, 20]) {
     const server = await releaseServer();
     try {
@@ -263,18 +265,55 @@ test("선인장 초과 개수와 기존6초·새20초 대기는 업데이트·�
       await expect(page.locator("#offline-status")).toContainText("Offline ready");
       expect(await saved(page)).toEqual(data);
       await page.locator("#resume-button").tap();
-      await expect(page.locator('.seed-card[data-type="cactus"]')).toHaveAttribute("aria-disabled", "true");
+      await expect(page.locator('.seed-card[data-type="cactus"]')).toHaveAttribute("aria-disabled", "false");
+      await expect(page.locator('.seed-card[data-type="cactus"] .plant-limit')).toHaveCount(0);
       await page.locator("#pause-button").tap();
       const after = await saved(page);
       expect(after.current.plants).toHaveLength(3);
-      expect(after.current.cooldowns.cactus).toBeLessThanOrEqual(cooldown);
-      expect(after.current.cooldowns.cactus).toBeGreaterThan(cooldown - 1);
+      expect(after.current.cooldowns.cactus).toBeLessThanOrEqual(Math.min(cooldown, 16));
+      expect(after.current.cooldowns.cactus).toBeGreaterThan(Math.min(cooldown, 16) - 1);
       expect(after.current.sun).toBe(data.current.sun);
-      expect(after.current.rulesVersion).toBe(8);
+      expect(after.current.rulesVersion).toBe(9);
       expect(after.current.plants[0].timer).toBeLessThanOrEqual(3);
       expect(after.current.plants[0].timer).toBeGreaterThan(2);
     } finally { await server.stop(); }
   }
+});
+
+test("v32 선인장 두 개 저장도 명시적 업데이트·오프라인에서 세 번째 설치 가능", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(22, ["cactus"]); game.rulesVersion = 8; game.sun = 1600;
+    plantAt(game, "cactus", 0, 0); game.cooldowns.cactus = 0;
+    plantAt(game, "cactus", 1, 0); game.cooldowns.cactus = 0; game.effects = [];
+    const data = { ...freshSave(), unlocked: 22, language: "en", tutorialSeen: true, current: game };
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await installNext(page, server);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await server.stop();
+    await page.reload();
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await page.locator("#resume-button").tap();
+    const card = page.locator('.seed-card[data-type="cactus"]');
+    await expect(card).toHaveAttribute("aria-disabled", "false");
+    await card.tap();
+    await page.locator('.plot[data-row="2"][data-col="0"]').tap();
+    await expect(card.locator(".cooldown")).toHaveText("16s");
+    await page.locator("#pause-button").tap();
+    const after = await saved(page);
+    expect(after.current.plants).toHaveLength(3);
+    expect(after.current.sun).toBe(400);
+    expect(after.current.cooldowns.cactus).toBeGreaterThan(15);
+    expect(after.current.cooldowns.cactus).toBeLessThanOrEqual(16);
+    expect(after.current.rulesVersion).toBe(9);
+    await page.reload();
+    expect(await saved(page)).toEqual(after);
+  } finally { await server.stop(); }
 });
 
 test("기존 쌍콩이 예약과 사막 저장은 명시적 업데이트·오프라인 뒤 한 번씩 이어짐", async ({ page }) => {
@@ -401,7 +440,7 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     game.plants.push({ id: game.nextId++, type: "lantern", row: 0, col: 1, hp: 140, timer: 9.5, age: 12 });
     const data = { ...freshSave(), unlocked: 10, stars: freshSave().stars.fill(3), language: "en", volume: 65, tutorialSeen: true, current: game };
     const expected = structuredClone(data);
-    expected.current.rulesVersion = 8;
+    expected.current.rulesVersion = 9;
     expected.current.cooldowns = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9, storm: 0, cactus: 0, shuriken: 0 };
     expected.current.skyTimer = 5;
     expected.current.plants[0].timer = 6;
@@ -431,7 +470,7 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     await expect(sun.locator(".cooldown")).toHaveText("4s");
     await page.locator("#pause-button").tap();
     const after = await saved(page);
-    expect(after.current.rulesVersion).toBe(8);
+    expect(after.current.rulesVersion).toBe(9);
     expect(after.current.cooldowns.sun).toBeGreaterThan(0);
     expect(after.current.cooldowns.sun).toBeLessThanOrEqual(4);
     expect(after.current.plants.at(-1).timer).toBeLessThanOrEqual(5);

@@ -16,7 +16,7 @@ function enemy(game, type, row, x) {
   game.enemies.push({ id: game.nextId++, type, row, x, hp: maxHp, maxHp, slow: 0, age: 0, eating: false });
 }
 
-test("선인장 초과 저장은 보존하고 양언어 카드 한도·삽 슬롯 반환·20초 재배치를 표시", async ({ page }, testInfo) => {
+test("선인장 세 개 저장에서 양언어로 네 번째 배치·16초 대기·삽·복구", async ({ page }, testInfo) => {
   for (const language of ["ko", "en"]) {
     await page.setViewportSize(language === "ko" ? { width: 568, height: 320 } : { width: 320, height: 568 });
     const game = createGame(28, ["cactus"]);
@@ -27,35 +27,39 @@ test("선인장 초과 저장은 보존하고 양언어 카드 한도·삽 슬�
     await seed(page, { ...freshSave(), unlocked: 28, tutorialSeen: true, language, current: game });
     await page.locator("#resume-button").tap();
     const card = page.locator('.seed-card[data-type="cactus"]');
-    await expect(card).toHaveAttribute("aria-disabled", "true");
-    await expect(card).toHaveAttribute("aria-label", language === "ko" ? /20초.*최대 2개/ : /20s.*Maximum 2/);
-    await expect(card.locator(".plant-limit")).toHaveText(language === "ko" ? "최대 2개" : "Max 2");
+    await expect(card).toHaveAttribute("aria-disabled", "false");
+    await expect(card).toHaveAttribute("aria-label", language === "ko" ? /16초.*설치 개수 제한은 없어요/ : /16s.*No planting count limit/);
+    await expect(card.locator(".plant-limit")).toHaveCount(0);
     const box = await card.boundingBox();
     expect(box.width).toBeGreaterThanOrEqual(44);
     expect(box.height).toBeGreaterThanOrEqual(44);
     await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
-    await expect(page.locator("#toast")).toContainText(language === "ko" ? "동시에 최대 2개" : "Only 2 Cacti");
-    await expect(card).toHaveAttribute("aria-pressed", "false");
+    await expect(card).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator("#sun-count")).toHaveText("1200");
+    await page.locator('.plot[data-row="3"][data-col="0"]').tap();
+    await expect(card.locator(".cooldown")).toHaveText(language === "ko" ? "16초" : "16s");
+    await expect(page.locator("#sun-count")).toHaveText("800");
+    await expect(card).toHaveAttribute("aria-pressed", "false");
+    await expect(card).toHaveAttribute("aria-disabled", "false");
     await page.locator("#shovel-button").tap();
     await page.locator('.plot[data-row="0"][data-col="0"]').tap();
-    await expect(card).toHaveAttribute("aria-disabled", "true");
-    await page.locator("#shovel-button").tap();
-    await page.locator('.plot[data-row="1"][data-col="0"]').tap();
-    await expect(card).toHaveAttribute("aria-disabled", "false");
-    await expect(card.locator(".plant-limit")).toBeHidden();
+    await expect(page.locator("#sun-count")).toHaveText("1000");
     await card.tap();
-    await page.locator('.plot[data-row="3"][data-col="0"]').tap();
-    await expect(card.locator(".cooldown")).toHaveText(language === "ko" ? "20초" : "20s");
-    await expect(card).toHaveAttribute("aria-disabled", "true");
+    await page.locator('.plot[data-row="4"][data-col="0"]').tap();
+    await expect(page.locator("#sun-count")).toHaveText("1000");
     await page.locator("#pause-button").tap();
     const after = await stored(page);
-    expect(after.current.plants.map(p => p.row)).toEqual([2, 3]);
-    expect(after.current.plants[1].id).toBeGreaterThan(3);
-    expect(after.current.sun).toBe(1200);
-    expect(after.current.cooldowns.cactus).toBeGreaterThan(19);
-    await page.locator("#modal-close").tap();
-    await page.screenshot({ path: testInfo.outputPath(`cactus-cap-${language}.png`) });
+    expect(after.current.plants.map(p => p.row)).toEqual([1, 2, 3]);
+    expect(after.current.plants[2].id).toBeGreaterThan(3);
+    expect(after.current.sun).toBe(1000);
+    expect(after.current.cooldowns.cactus).toBeGreaterThan(12);
+    expect(after.current.cooldowns.cactus).toBeLessThanOrEqual(16);
+    expect(after.current.rulesVersion).toBe(9);
+    await page.reload();
+    expect(await stored(page)).toEqual(after);
+    await page.locator("#resume-button").tap();
+    await expect(card).toHaveAttribute("aria-disabled", "false");
+    await page.screenshot({ path: testInfo.outputPath(`cactus-unlimited-${language}.png`) });
   }
 });
 

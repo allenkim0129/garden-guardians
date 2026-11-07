@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, STAGES, THEMES, ROWS, COLS, HEIGHT, boardColumns, boardWidth, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress, plantDamageLabel, plantLimitReached } from "./engine.js";
+import { PLANTS, ENEMIES, STAGES, THEMES, ROWS, COLS, HEIGHT, boardColumns, boardWidth, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress, plantDamageLabel } from "./engine.js";
 import { drawTitle, drawBoard, plantIcon, drawSunToken } from "./art.js";
 import { loadSprites } from "./sprites.js";
 import { GardenAudio } from "./audio.js";
@@ -404,15 +404,11 @@ for (const [type, plant] of Object.entries(PLANTS).sort((a, b) => a[1].unlockSta
   button.className = "seed-card";
   button.dataset.type = type;
   setLabel(button, `${plant.name}, 햇빛 ${plant.cost}. ${plant.description}`);
-  button.innerHTML = `<img src="${icons[type]}" alt=""><strong class="visually-hidden">${plant.name}</strong><span class="cost">☀ ${plant.cost}</span><span class="damage visually-hidden">${plantDamageLabel(type)}</span><span class="compact-damage" aria-hidden="true" title="${plantDamageLabel(type)}">${plantDamageLabel(type, true)}</span><span class="cooldown" hidden></span><span class="plant-limit" hidden></span>`;
+  button.innerHTML = `<img src="${icons[type]}" alt=""><strong class="visually-hidden">${plant.name}</strong><span class="cost">☀ ${plant.cost}</span><span class="damage visually-hidden">${plantDamageLabel(type)}</span><span class="compact-damage" aria-hidden="true" title="${plantDamageLabel(type)}">${plantDamageLabel(type, true)}</span><span class="cooldown" hidden></span>`;
   button.querySelector(".damage").id = `seed-damage-${type}`;
   button.setAttribute("aria-describedby", `seed-damage-${type}`);
   button.onclick = () => {
     if (paused || !game || !isPlantAvailable(game, type)) return;
-    if (plantLimitReached(game, type)) {
-      notify("선인장은 정원에 동시에 최대 2개까지만 심을 수 있어요.");
-      return;
-    }
     selected = selected === type && !shovel ? null : type; shovel = false;
     audio.unlock();
     selectionHint();
@@ -653,11 +649,9 @@ function render() {
     card.hidden = game.loadout !== undefined && !game.loadout.includes(type);
     card.style.order = String(game.loadout?.indexOf(type) ?? 0);
     const locked = !isPlantUnlocked(type, game.stage);
-    const limited = plantLimitReached(game, type);
     card.disabled = locked;
     card.classList.toggle("locked", locked);
-    card.classList.toggle("at-limit", limited);
-    card.setAttribute("aria-disabled", String(locked || limited));
+    card.setAttribute("aria-disabled", String(locked));
     setLabel(card, `${PLANTS[type].name}, ${locked ? `${PLANTS[type].unlockStage}번째 정원부터 해금` : `햇빛 ${PLANTS[type].cost}. ${PLANTS[type].description}`}`);
     text(card.querySelector(".cost"), locked ? `${PLANTS[type].unlockStage}정원 해금` : `☀ ${PLANTS[type].cost}`);
     card.setAttribute("aria-pressed", String(type === selected && !shovel));
@@ -665,9 +659,6 @@ function render() {
     const cooldown = card.querySelector(".cooldown");
     cooldown.hidden = locked || game.cooldowns[type] <= 0;
     text(cooldown, `${Math.ceil(game.cooldowns[type])}초`);
-    const limit = card.querySelector(".plant-limit");
-    limit.hidden = !limited;
-    text(limit, "최대 2개");
   }
   for (const plot of plots) {
     const plant = game.plants.find(p => p.row === Number(plot.dataset.row) && p.col === Number(plot.dataset.col));

@@ -33,7 +33,7 @@ export const PLANTS = Object.freeze({
   iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 12, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 12초!" },
   ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 15, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 15 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요." },
   storm: { name: "번개가시", unlockStage: 19, cost: 275, hp: 110, recharge: 10, interval: 4.2, damage: 64, description: "가시풀의 상위형! 4.2초마다 노란 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!" },
-  cactus: { name: "선인장", unlockStage: 22, cost: 400, hp: 160, recharge: 20, maxCount: 2, firstAttack: 3, interval: 3, description: "심고 3초 뒤부터 3초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 가장 가까운 좀비 한 마리만 즉사시켜요. 뒤쪽과 다른 줄은 공격하지 않아요. 다시 심기까지 20초, 정원에 동시에 최대 2개!" },
+  cactus: { name: "선인장", unlockStage: 22, cost: 400, hp: 160, recharge: 16, firstAttack: 3, interval: 3, description: "심고 3초 뒤부터 3초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 가장 가까운 좀비 한 마리만 즉사시켜요. 뒤쪽과 다른 줄은 공격하지 않아요. 다시 심기까지 16초, 설치 개수 제한은 없어요!" },
   shuriken: { name: "표창잎", unlockStage: 15, cost: 300, hp: 110, recharge: 10, damage: 36, description: "손의 표창이 같은 줄 오른쪽 끝까지 날아갔다 돌아와요. 갈 때와 올 때 적마다 한 번씩 36 피해! 한 개만 날리며 회수 즉시 다시 던져요. 가까이 심으면 빨리 돌아오지만 좀비에게 물리기 쉬워요." },
 });
 const LEGACY_RECHARGES = Object.freeze({ sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 });
@@ -200,16 +200,12 @@ export function validLoadout(loadout, stage) {
 export function isPlantAvailable(game, type) {
   return isPlantUnlocked(type, game.stage) && (game.loadout === undefined || game.loadout.includes(type));
 }
-export function plantLimitReached(game, type) {
-  const limit = PLANTS[type]?.maxCount;
-  return limit !== undefined && game.plants.filter(p => p.type === type && p.hp > 0).length >= limit;
-}
 export function createGame(stageNumber, loadout) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 8, pacingVersion: 7, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 9, pacingVersion: 7, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -229,7 +225,6 @@ export function plantAt(game, type, row, col) {
   const info = PLANTS[type];
   if (!isPlantUnlocked(type, game.stage)) return { ok: false, reason: `${info.name}은 ${info.unlockStage}번째 정원부터 함께해요.` };
   if (!isPlantAvailable(game, type)) return { ok: false, reason: "이번 정원에 고른 식물이 아니에요." };
-  if (plantLimitReached(game, type)) return { ok: false, reason: "선인장은 정원에 동시에 최대 2개까지만 심을 수 있어요." };
   if (game.plants.some(p => p.row === row && p.col === col)) return { ok: false, reason: "이미 친구가 있어요. 다른 땅을 골라 주세요." };
   if (game.sun < info.cost) return { ok: false, reason: "햇빛이 부족해요. 반짝이는 햇빛을 모아 주세요." };
   if (game.cooldowns[type] > 0) return { ok: false, reason: "친구가 준비 중이에요. 조금만 기다려 주세요." };
@@ -536,13 +531,15 @@ export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, STAGES.length) || g.status !== "playing") return false;
   if (g.columns !== undefined && ![9, COLS].includes(g.columns)) return false;
   const columns = boardColumns(g), width = boardWidth(g);
-  if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6, 7, 8].includes(g.rulesVersion)) return false;
+  if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6, 7, 8, 9].includes(g.rulesVersion)) return false;
   if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5, 6, 7].includes(g.pacingVersion)) return false;
   const schedule = scheduleFor(g.stage, g.pacingVersion ?? 1);
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
   if (!integer(g.nextSpawn, 0, schedule.length) || !finite(g.skyTimer, -1, (g.rulesVersion ?? 1) < 5 ? 6 : SKY_SUN_INTERVAL) || !integer(g.wave, 0, 3)) return false;
-  if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, (g.rulesVersion ?? 1) < 5 ? LEGACY_RECHARGES[t] ?? PLANTS[t].recharge : PLANTS[t].recharge)
+  const rechargeLimit = type => (g.rulesVersion ?? 1) < 5 ? LEGACY_RECHARGES[type] ?? PLANTS[type].recharge
+    : type === "cactus" && g.rulesVersion < 9 ? 20 : PLANTS[type].recharge;
+  if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, rechargeLimit(t))
     || ((g.rulesVersion ?? 1) < (t === "shuriken" ? 7 : ["storm", "cactus"].includes(t) ? 6 : t === "ember" ? 4 : PLANTS[t].unlockStage >= 5 ? 3 : 1) && g.cooldowns[t] === undefined))) return false;
   if (!object(g.stats) || !["planted", "defeated", "collected"].every(k => integer(g.stats[k], 0, 1000000))) return false;
   const hasId = p => object(p) && integer(p.id, 1, g.nextId - 1);
