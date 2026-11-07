@@ -118,7 +118,7 @@ test("게임 중 소리 설정에서 켜기·볼륨·미리 듣기·음소거·�
 
 test("실제 전투 소리·정지·회전·음소거·재접속 및 음원 중첩 제한", async ({ page }) => {
   const game = createGame(10);
-  for (const [row, type] of Object.keys(ENEMIES).entries()) {
+  for (const [row, type] of ["sleepy", "jelly", "roller", "umbrella"].entries()) {
     game.plants.push({ id: game.nextId++, type: "pea", row, col: 0, hp: PLANTS.pea.hp, timer: .1, age: 0 });
     game.enemies.push({ id: game.nextId++, type, row, x: 750, hp: ENEMIES[type].hp, slow: 0, age: 0, eating: false });
   }

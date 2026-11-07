@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createGame, STAGES } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
-import { confirmTeam } from "../helpers/browser.mjs";
+import { confirmTeam, selectStage } from "../helpers/browser.mjs";
 import { isolatedServer } from "../helpers/server.mjs";
 
 const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
@@ -16,7 +16,7 @@ async function seed(page, url, current = null) {
 }
 async function choose(page, stage) {
   await page.locator("#play-button").tap();
-  await page.locator(`.stage-button[data-stage="${stage}"]`).tap();
+  await selectStage(page, stage);
   if (await page.locator("#modal-title").textContent() === "Start a new game?") await page.locator("#modal-actions .primary").tap();
   await expect(page.locator("#modal-title")).toHaveText("Choose your team");
 }

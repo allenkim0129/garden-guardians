@@ -17,8 +17,9 @@ test("v19 클리어 여부로 11단계만 해금하고 두 테마 선택·8종 �
   const legacy = { ...freshSave(), stars: [...Array(9).fill(3), 0], unlocked: 10, tutorialSeen: true, language: "en", volume: 65 };
   await seed(page, legacy);
   await page.locator("#play-button").tap();
-  await expect(page.locator(".chapter-heading")).toHaveText(["1–10 · Sunlit Garden", "11–20 · Moonlit Greenhouse · Challenge"]);
-  await expect(page.locator(".stage-button")).toHaveCount(20);
+  await expect(page.locator(".theme-tab")).toHaveText(["1–10 · Sunlit Garden", "11–20 · Moonlit Greenhouse · Challenge", "21–30 · Sandy Desert · Expert"]);
+  await expect(page.locator(".stage-button")).toHaveCount(30);
+  await expect(page.locator(".stage-button:visible")).toHaveCount(10);
   await expect(page.locator('.stage-button[data-stage="11"]')).toBeDisabled();
   legacy.stars[9] = 2;
   await seed(page, legacy);
@@ -34,7 +35,7 @@ test("v19 클리어 여부로 11단계만 해금하고 두 테마 선택·8종 �
   await page.locator("#pause-button").tap();
   const saved = await stored(page);
   expect(saved.unlocked).toBe(11);
-  expect(saved.stars).toEqual([...legacy.stars, ...Array(10).fill(0)]);
+  expect(saved.stars).toEqual([...legacy.stars, ...Array(20).fill(0)]);
   expect(saved.current.loadout).toContain("ember");
   expect(saved.volume).toBe(65);
   await page.getByRole("button", { name: "Continue", exact: true }).tap();

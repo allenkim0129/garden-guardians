@@ -9,6 +9,8 @@ const files = [
   "assets/sprites/jelly.png", "assets/sprites/roller.png", "assets/sprites/umbrella.png",
   "assets/sprites/twin.png", "assets/sprites/thorn.png", "assets/sprites/pumpkin.png", "assets/sprites/lantern.png", "assets/sprites/iron.png",
   "assets/sprites/ember.png",
+  "assets/sprites/storm.png", "assets/sprites/cactus.png", "assets/sprites/barrel.png", "assets/sprites/courier.png",
+  "assets/sprites/barrel-bare.png", "assets/sprites/courier-bare.png", "assets/sprites/desert-gear.png",
   "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png",
 ];
 let bytes = 0;

@@ -1,8 +1,17 @@
 import { PLANTS, ENEMIES, TWIN_GAP } from "./engine.js";
 
 export const SPRITE_CELL = Object.freeze({ width: 320, height: 224, anchorX: 192, anchorY: 210, scale: .48 });
+// Red orb centers measured in the approved, aligned cactus atlas.
+export const CACTUS_MUZZLES = Object.freeze([
+  [194.47, 30.42], [197.54, 30.70], [213.25, 32.52], [194.68, 30.42],
+  [195.01, 37.50], [212.33, 38.51], [228.69, 40.93], [196.35, 29.95],
+  [191.83, 30.25], [163.91, 40.54], [178.61, 29.95], [194.90, 30.39],
+]);
 export const SPRITE_URLS = Object.freeze(Object.fromEntries(
   [...Object.keys(PLANTS), ...Object.keys(ENEMIES)].map(type => [type, new URL(`../assets/sprites/${type}.png`, import.meta.url).href])
+));
+export const GEAR_URLS = Object.freeze(Object.fromEntries(
+  ["barrel-bare", "courier-bare", "desert-gear"].map(type => [type, new URL(`../assets/sprites/${type}.png`, import.meta.url).href])
 ));
 export { FALL_DURATION, BURST_DURATION } from "./engine.js";
 const images = new Map();
@@ -11,12 +20,13 @@ let loading;
 
 export function loadSprites() {
   if (loading) return loading;
-  loading = Promise.all(Object.entries(SPRITE_URLS).map(([type, url]) => new Promise((resolve, reject) => {
+  loading = Promise.all(Object.entries({ ...SPRITE_URLS, ...GEAR_URLS }).map(([type, url]) => new Promise((resolve, reject) => {
     const image = new Image();
     const timer = setTimeout(() => reject(new Error(`${type} 그림을 불러오는 시간이 초과됐어요.`)), 15000);
     image.onload = () => {
       clearTimeout(timer);
-      if (image.naturalWidth !== SPRITE_CELL.width * 4 || image.naturalHeight !== SPRITE_CELL.height * 3) {
+      const columns = type === "desert-gear" ? 2 : 4, rows = type === "desert-gear" ? 1 : 3;
+      if (image.naturalWidth !== SPRITE_CELL.width * columns || image.naturalHeight !== SPRITE_CELL.height * rows) {
         reject(new Error(`${type} 프레임 시트의 크기가 맞지 않아요.`));
       } else resolve([type, image]);
     };
@@ -46,8 +56,9 @@ export function plantFrame(plant, game) {
   if (plant.type === "twin") {
     const elapsed = game.time - (plant.shotAt ?? -100);
     if (elapsed >= 0 && elapsed < TWIN_GAP * 2) return { state: "fire", row: 1, col: Math.min(3, Math.floor((elapsed + 1e-9) / (TWIN_GAP / 2))) };
-  } else if (PLANTS[plant.type].damage) {
-    const targetAhead = game.enemies.some(enemy => enemy.hp > 0 && enemy.row === plant.row && enemy.x >= plant.col * 100 + 40);
+  } else if (PLANTS[plant.type].damage || plant.type === "cactus") {
+    const targetAhead = game.enemies.some(enemy => enemy.hp > 0 && enemy.row === plant.row
+      && (plant.type === "cactus" ? enemy.x > plant.col * 100 + 50 : enemy.x >= plant.col * 100 + 40));
     const frame = actionFrame(game.time, plant.shotAt, targetAhead ? plant.timer : 0, "fire");
     if (frame) return frame;
   } else if (plant.type === "sun" || plant.type === "lantern") {
@@ -63,7 +74,7 @@ export function plantFrame(plant, game) {
 
 export function enemyFrame(enemy, time) {
   const age = Math.max(0, time - (enemy.motionAt ?? time - enemy.age));
-  const speed = enemy.type === "roller" ? 8 : enemy.type === "jelly" ? 4 : 6;
+  const speed = enemy.type === "roller" || enemy.type === "courier" ? 8 : enemy.type === "jelly" || enemy.type === "barrel" ? 4 : 6;
   return enemy.eating
     ? { state: "attack", row: 1, col: Math.floor(age * 5) % 4 }
     : { state: "walk", row: 0, col: Math.floor(age * speed * (enemy.slow > 0 ? 3.5 / 6 : 1)) % 4 };
@@ -92,10 +103,11 @@ const umbrellaMasks = [
 ];
 
 export function drawSprite(context, type, frame, x, y, scale = 1, equipmentDropped = false, frozen = false) {
-  let image = images.get(type);
+  const imageKey = equipmentDropped && (type === "barrel" || type === "courier") ? `${type}-bare` : type;
+  let image = images.get(imageKey);
   if (!image) throw new Error(`${type} 그림을 먼저 불러와야 합니다.`);
   if (frozen && Object.hasOwn(ENEMIES, type)) {
-    if (!frozenImages.has(type)) {
+    if (!frozenImages.has(imageKey)) {
       const tinted = document.createElement("canvas");
       tinted.width = image.width; tinted.height = image.height;
       const brush = tinted.getContext("2d");
@@ -103,9 +115,9 @@ export function drawSprite(context, type, frame, x, y, scale = 1, equipmentDropp
       brush.globalCompositeOperation = "source-atop";
       brush.fillStyle = "rgba(60, 135, 255, .6)";
       brush.fillRect(0, 0, tinted.width, tinted.height);
-      frozenImages.set(type, tinted);
+      frozenImages.set(imageKey, tinted);
     }
-    image = frozenImages.get(type);
+    image = frozenImages.get(imageKey);
   }
   const { width, height, anchorX, anchorY } = SPRITE_CELL;
   const size = SPRITE_CELL.scale * scale;
@@ -126,4 +138,10 @@ export function drawSprite(context, type, frame, x, y, scale = 1, equipmentDropp
   context.drawImage(image, frame.col * width, frame.row * height, width, height,
     x - anchorX * size, y + (Object.hasOwn(PLANTS, type) ? 31 : 34) * scale - anchorY * size, width * size, height * size);
   context.restore();
+}
+
+export function drawGearSprite(context, type) {
+  const image = images.get("desert-gear");
+  if (!image) throw new Error("장비 그림을 먼저 불러와야 합니다.");
+  context.drawImage(image, type === "barrel" ? 0 : 320, 0, 320, 224, -160 * .48, -112 * .48, 320 * .48, 224 * .48);
 }

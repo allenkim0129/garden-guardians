@@ -14,13 +14,13 @@ async function seed(page, game, extra = {}, url = "/") {
 }
 const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
 
-test("v22 역할별 공격 설명은 양언어 카드에 반영되고 호박포 실제 비용은 300", async ({ page }) => {
+test("v24 역할별 공격 설명은 양언어 카드에 반영되고 호박포 실제 비용은 300", async ({ page }) => {
   const game = createGame(20, ["sun", "pea", "wall", "frost", "twin", "thorn", "pumpkin", "ember"]);
   await seed(page, game, { language: "en" });
   await page.locator("#resume-button").tap();
   for (const [type, label] of [
-    ["pea", /14-damage pea every 1.6s/], ["frost", /7 damage every 1.6s.*slows zombies for 3s/],
-    ["twin", /two 24-damage peas/], ["pumpkin", /300.*70 splash damage.*4.5s/], ["ember", /12 damage.*4 burn damage/],
+    ["pea", /12-damage pea every 1.6s/], ["frost", /6 damage every 1.6s.*slows zombies for 3s/],
+        ["twin", /two 22-damage peas/], ["pumpkin", /300.*64 splash damage.*4.5s/], ["ember", /10 damage.*4 burn damage/],
   ]) await expect(page.locator(`.seed-card[data-type="${type}"]`)).toHaveAttribute("aria-label", label);
   await page.locator('.seed-card[data-type="pumpkin"]').tap();
   await page.locator('.plot[data-row="2"][data-col="0"]').tap();
@@ -30,8 +30,8 @@ test("v22 역할별 공격 설명은 양언어 카드에 반영되고 호박포 
   expect(data.current.plants[0].type).toBe("pumpkin");
   expect(data.current.cooldowns.pumpkin).toBeGreaterThan(0);
   await page.locator("#modal [data-language]").tap();
-  await expect(page.locator('.seed-card[data-type="pumpkin"]')).toHaveAttribute("aria-label", /300.*4.5초.*70 피해/);
-  await expect(page.locator('.seed-card[data-type="frost"]')).toHaveAttribute("aria-label", /7 피해와 3초 둔화/);
+  await expect(page.locator('.seed-card[data-type="pumpkin"]')).toHaveAttribute("aria-label", /300.*4.5초.*64 피해/);
+  await expect(page.locator('.seed-card[data-type="frost"]')).toHaveAttribute("aria-label", /6 피해와 3초 둔화/);
 });
 
 test("냉기는 모든 좀비의 몸만 파랗게 물들이고 투명도·우산 탈락·원본 복원을 보존", async ({ page }) => {

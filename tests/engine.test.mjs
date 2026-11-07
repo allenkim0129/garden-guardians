@@ -14,10 +14,10 @@ function enemy(game, type, row, x) {
   return e;
 }
 
-test("식물 11종, 좀비 4종, 증가하는 20개의 유효한 스테이지", () => {
-  assert.equal(Object.keys(PLANTS).length, 11);
-  assert.equal(Object.keys(ENEMIES).length, 4);
-  assert.equal(STAGES.length, 20);
+test("식물 13종, 좀비 6종, 증가하는 30개의 유효한 스테이지", () => {
+  assert.equal(Object.keys(PLANTS).length, 13);
+  assert.equal(Object.keys(ENEMIES).length, 6);
+  assert.equal(STAGES.length, 30);
   for (const stage of STAGES) {
     const plan = scheduleFor(stage.id);
     assert.equal(plan.length, stage.count);
@@ -29,7 +29,7 @@ test("달빛 온실은 10개 단계·5줄·초반 3명·더 빠른 중후반과 
   const baseline = scheduleFor(10);
   const health = plan => plan.reduce((sum, spawn) => sum + ENEMIES[spawn.type].hp, 0);
   assert.ok(STAGES.slice(0, 10).every(stage => stage.theme === "garden"));
-  for (const stage of STAGES.slice(10)) {
+  for (const stage of STAGES.slice(10, 20)) {
     const plan = scheduleFor(stage.id);
     assert.equal(stage.theme, "moon");
     assert.equal(plan.length, 70 + (stage.id - 11) * 6);
@@ -68,13 +68,13 @@ test("실제 8종 조합으로 11~20단계 연속 통과하며 후반은 단일 
   const progress = freshSave(); progress.unlocked = 11; progress.stars.fill(3, 0, 10);
   const peaks = [];
   for (let stage = 10; stage <= 20; stage++) {
-    const team = ["sun", "pea", "frost", "bomb", "twin", stage === 19 ? "thorn" : "pumpkin", "lantern", "wall"];
+    const team = ["sun", "pea", "frost", "bomb", "twin", [15, 18, 19, 20].includes(stage) ? "thorn" : "pumpkin", "lantern", "wall"];
     let peak = 0;
     const api = { ...engine, createGame: n => createGame(n, team), tick: (game, dt) => {
       tick(game, dt);
       peak = Math.max(peak, game.enemies.reduce((sum, e) => sum + e.hp, 0));
     } };
-    const result = playStrategy(api, stage, "expanded");
+    const result = playStrategy(api, stage, "expanded", stage === 20 ? "twin" : "pea");
     assert.equal(result.game.status, "won", `${stage}단계`);
     assert.ok(result.actions.every(action => team.includes(action.type)));
     assert.ok(result.game.time < 240);
@@ -83,8 +83,9 @@ test("실제 8종 조합으로 11~20단계 연속 통과하며 후반은 단일 
     peaks.push(peak);
     t.diagnostic(`${stage}단계: ${result.game.time.toFixed(1)}초, 하트 ${result.game.lives}, 최대 생존 적 체력 ${Math.round(peak)}`);
   }
-  assert.equal(progress.unlocked, 20);
-  assert.ok(progress.stars.every(stars => stars > 0));
+  assert.equal(progress.unlocked, 21);
+  assert.ok(progress.stars.slice(0, 20).every(stars => stars > 0));
+  assert.ok(progress.stars.slice(20).every(stars => stars === 0));
   assert.ok(peaks.at(-1) > peaks[0] * 3);
   assert.equal(playStrategy(engine, 19, "pea").game.status, "lost");
   assert.equal(playStrategy(engine, 20, "pea").game.status, "lost");
@@ -130,8 +131,8 @@ test("공격은 같은 줄 앞쪽만 맞히고 좀비 제거를 한 번만 계�
   const target = enemy(game, "sleepy", 2, 460);
   const other = enemy(game, "jelly", 3, 460);
   advance(game, 11);
-  assert.equal(target.hp, 12);
-  advance(game, 2);
+  assert.equal(target.hp, 26);
+  advance(game, 5);
   assert.ok(!game.enemies.includes(target));
   assert.equal(other.hp, ENEMIES.jelly.hp);
   assert.equal(game.stats.defeated, 1);
@@ -149,7 +150,7 @@ test("서리 효과와 우산의 추위 저항", () => {
   const target = enemy(frostGame, "jelly", 0, 450);
   advance(frostGame, 1.5);
   assert.ok(target.slow > 0);
-  assert.equal(target.hp, ENEMIES.jelly.hp - 7);
+  assert.equal(target.hp, ENEMIES.jelly.hp - 6);
 });
 test("우산은 누적 65 피해에서 한 번만 탈락하고 보통 속도·추위 저항으로 전환", () => {
   const game = createGame(5);
@@ -185,20 +186,20 @@ test("우산은 누적 65 피해에서 한 번만 탈락하고 보통 속도·�
 test("모든 좀비의 탈락 효과는 범위·관통·폭탄 피해에도 한 번, 즉사에도 남음", () => {
   for (const kind of ["pea", "thorn", "pumpkin", "bomb"]) {
     const game = createGame(10);
-    for (const type of Object.keys(ENEMIES)) enemy(game, type, 2, 500);
+    for (const type of Object.keys(ENEMIES)) enemy(game, type, 2, 500).hp = 100;
     if (kind === "bomb") {
       plantAt(game, "bomb", 2, 4);
       game.plants[0].age = 1;
     } else {
-      for (let i = 0; i < 4; i++) game.shots.push({
+      for (let i = 0; i < Object.keys(ENEMIES).length; i++) game.shots.push({
         id: game.nextId++, row: 2, x: 470, damage: 340, frost: false,
         ...(kind === "thorn" ? { kind, hitIds: [] } : {}),
         ...(kind === "pumpkin" ? { kind, originX: 470, targetX: 500, duration: .45, age: .44 } : {}),
       });
     }
     tick(game, .1);
-    assert.equal(game.stats.defeated, 4, kind);
-    assert.equal(game.effects.filter(e => e.kind === "gear").length, 4, kind);
+    assert.equal(game.stats.defeated, Object.keys(ENEMIES).length, kind);
+    assert.equal(game.effects.filter(e => e.kind === "gear").length, Object.keys(ENEMIES).length, kind);
     assert.ok(game.effects.filter(e => e.kind === "fall").every(e => e.equipmentDropped));
     const effects = structuredClone(game.effects);
     tick(game, 0);
@@ -223,14 +224,15 @@ test("장비 상태 없는 이전 저장 허용, 잘못된 장비 상태·미래
 test("방울폭탄은 1초 뒤 가까운 줄에도 피해를 주고 사라짐", () => {
   const game = createGame(5);
   plantAt(game, "bomb", 2, 5);
-  enemy(game, "jelly", 2, 600);
+  const tough = enemy(game, "jelly", 2, 600);
   enemy(game, "sleepy", 1, 600);
   const far = enemy(game, "sleepy", 4, 800);
   advance(game, .9);
   assert.equal(game.plants.length, 1);
   advance(game, .2);
   assert.equal(game.plants.length, 0);
-  assert.equal(game.stats.defeated, 2);
+  assert.equal(game.stats.defeated, 1);
+  assert.equal(tough.hp, 40);
   assert.equal(far.hp, ENEMIES.sleepy.hp);
 });
 test("도토리벽은 이동을 막으며 먹힌 뒤에는 좀비가 다시 이동", () => {
@@ -393,10 +395,10 @@ test("콩별이·햇살봉은 기본 해금하고 2~10 정원에 한 종씩 추�
   advance(game, 6.1);
   assert.ok(game.suns.some(sun => sun.x === 72 && sun.y === 50));
 });
-test("9·10칸 후반은 단일 공격 도배보다 조합이 유리하고 v22의 기존 판 전략도 유지", t => {
+test("9·10칸 후반은 단일 공격 도배보다 조합이 유리함", t => {
   assert.equal(PLANTS.pea.cost, 125);
   assert.equal(PLANTS.pea.recharge, 5);
-  assert.equal(PLANTS.pea.damage / PLANTS.pea.interval, 8.75);
+  assert.equal(PLANTS.pea.damage / PLANTS.pea.interval, 7.5);
   assert.ok(PLANTS.pea.damage / PLANTS.pea.interval < (22 / 1.25) * .65);
   for (const columns of [9, 10]) for (const stage of [19, 20]) {
     for (const attacker of ["pea", "frost", "twin", "thorn", "pumpkin", "ember"]) {
@@ -405,12 +407,13 @@ test("9·10칸 후반은 단일 공격 도배보다 조합이 유리하고 v22�
       assert.equal(solo.game.status, "lost", `${stage}단계 ${attacker} 도배`);
       assert.ok(solo.actions.every(action => team.includes(action.type)));
     }
-    const attack = columns === 10 && stage === 20 ? "pumpkin" : "thorn";
-    const team = ["sun", "pea", "frost", "bomb", "twin", attack, "lantern", "wall"];
-    const mixed = playStrategy({ ...engine, createGame: n => ({ ...createGame(n, team), columns }) }, stage, "expanded");
+    const attack = columns === 9 && stage === 20 ? "pumpkin" : "thorn";
+    const defender = columns === 9 && stage === 19 ? "iron" : "wall";
+    const team = ["sun", "pea", "frost", "bomb", "twin", attack, "lantern", defender];
+    const mixed = playStrategy({ ...engine, createGame: n => ({ ...createGame(n, team), columns }) }, stage, "expanded", "twin");
     assert.equal(mixed.game.status, "won", `${columns}칸 ${stage}단계 혼합 조합`);
     assert.ok(mixed.actions.every(action => team.includes(action.type)));
-    for (const type of ["twin", attack, "frost", "wall", "lantern"]) assert.ok(mixed.actions.some(action => action.type === type));
+    for (const type of ["twin", "bomb", "frost", defender, "lantern"]) assert.ok(mixed.actions.some(action => action.type === type));
     t.diagnostic(`${columns}칸 ${stage}단계: 단일 공격 6종 패배, 혼합 하트 ${mixed.game.lives}`);
   }
 });
@@ -452,7 +455,7 @@ test("불꽃봉오리의 비용·쿨다운·발사 간격·같은 줄 앞쪽 타
   tick(game, .1);
   assert.equal(game.shots.length, 1);
   assert.equal(game.shots[0].kind, "ember");
-  assert.equal(game.shots[0].damage, 12);
+  assert.equal(game.shots[0].damage, 10);
   assert.equal(game.plants[0].timer, 3.2);
   assert.ok(validSnapshot(snapshot(game)));
 });
@@ -463,7 +466,7 @@ test("불씨는 명중점 반경 105 안의 같은 줄·인접 줄에 한 번만
   const outside = [enemy(game, "jelly", 2, 605.01), enemy(game, "jelly", 3, 533), enemy(game, "jelly", 4, 500)];
   emberHit(game, target);
   for (const e of inside) {
-    assert.equal(e.hp, 328);
+    assert.equal(e.hp, 330);
     assert.equal(e.burn, 3);
   }
   for (const e of outside) {
@@ -474,7 +477,7 @@ test("불씨는 명중점 반경 105 안의 같은 줄·인접 줄에 한 번만
   assert.equal(game.effects.filter(e => e.kind === "flame").length, 1);
   advance(game, 3.1);
   for (const e of inside) {
-    assert.ok(Math.abs(e.hp - 316) < 1e-8);
+    assert.ok(Math.abs(e.hp - 318) < 1e-8);
     assert.equal(e.burn, 0);
   }
   assert.ok(outside.every(e => e.hp === 340));
@@ -488,7 +491,7 @@ test("화상 재명중은 시간만 갱신하고 중첩·전염되지 않으며 
   advance(game, 1);
   const hp = target.hp;
   emberHit(game, target);
-  assert.ok(Math.abs(target.hp - hp + 12 + .4) < 1e-8);
+  assert.ok(Math.abs(target.hp - hp + 10 + .4) < 1e-8);
   assert.equal(target.burn, 3);
   const nearby = enemy(game, "jelly", 2, target.x + 10);
   const after = target.hp;
@@ -557,7 +560,7 @@ test("화상 소수 피해의 오차가 체력 0인 좀비와 유효하지 않�
 
 test("v18 모든 식물의 배치 대기가 1~2초 줄고 실제 재배치 경계도 일치", () => {
   const expected = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9 };
-  assert.deepEqual(Object.keys(expected), Object.keys(PLANTS));
+  assert.deepEqual(Object.keys(expected), Object.keys(PLANTS).filter(type => PLANTS[type].unlockStage <= 10));
   for (const [type, recharge] of Object.entries(expected)) {
     const game = createGame(10);
     game.sun = 10000;

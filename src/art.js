@@ -1,5 +1,5 @@
-import { PLANTS, ENEMIES, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, boardColumns, boardWidth } from "./engine.js";
-import { drawSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION } from "./sprites.js";
+import { PLANTS, ENEMIES, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, LASER_DURATION, boardColumns, boardWidth } from "./engine.js";
+import { drawSprite, drawGearSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION, SPRITE_CELL, CACTUS_MUZZLES } from "./sprites.js";
 
 const ink = "#304b3d";
 function ellipse(c, x, y, rx, ry, fill, stroke = null, width = 3) {
@@ -60,8 +60,8 @@ export function drawDroppedGear(c, effect) {
   const progress = Math.min(1, effect.age / GEAR_DURATION);
   c.save();
   c.globalAlpha *= Math.min(1, (1 - progress) * 4);
-  c.translate(effect.x + (effect.type === "umbrella" ? -34 : 4) + progress * 35,
-    effect.y - 20 - Math.sin(progress * Math.PI) * 32 + progress * 48);
+  c.translate(effect.x + (effect.type === "umbrella" ? -34 : effect.type === "courier" ? -16 : 4) + progress * 35,
+    effect.y + (effect.type === "barrel" ? 7 : effect.type === "courier" ? 11 : -20) - Math.sin(progress * Math.PI) * 32 + progress * 48);
   c.rotate(progress * (effect.type === "umbrella" ? -2.4 : 4));
   if (effect.type === "umbrella") {
     line(c, [[0, -17], [0, 20], [5, 24], [9, 20]], "#715749", 3);
@@ -69,6 +69,8 @@ export function drawDroppedGear(c, effect) {
     line(c, [[0, -29], [-10, -13], [-13, -4]], "#b889ac", 1.5);
     line(c, [[0, -29], [10, -13], [13, -4]], "#523651", 1.5);
     shape(c, "M10 -16 L18 -12 L15 -5 L8 -9Z", "#ba9b83", "#524551", 1);
+  } else if (effect.type === "barrel" || effect.type === "courier") {
+    drawGearSprite(c, effect.type);
   } else {
     const colors = { sleepy: ["#398da1", "#85c7cd"], jelly: ["#7161d7", "#bcb2ff"], roller: ["#973d60", "#e7a7b9"] };
     const [base, light] = colors[effect.type];
@@ -105,7 +107,9 @@ export function projectilePosition(shot) {
 export function drawProjectile(c, shot) {
   const { x, y } = projectilePosition(shot);
   c.save(); c.translate(x, y);
-  if (shot.kind === "ember") {
+  if (shot.kind === "storm") {
+    shape(c, "M-15 -3 L-2 -5 L-5 -12 L15 0 L2 3 L5 11Z", "#e7faff", "#596da1", 2);
+  } else if (shot.kind === "ember") {
     c.rotate(Math.PI / 2);
     drawFlame(c, 0, 0, .65, shot.x / 100);
   } else if (shot.kind === "pumpkin") {
@@ -177,16 +181,39 @@ function grass(c, x, y, color) {
   line(c, [[x, y], [x + 1, y - 6]], color, 1.6);
   line(c, [[x + 3, y], [x + 5, y - 3]], color, 1.6);
 }
+export function cactusLaserOrigin(plant, game) {
+  const frame = plantFrame(plant, game);
+  const [x, y] = CACTUS_MUZZLES[frame.row * 4 + frame.col];
+  const scale = SPRITE_CELL.scale * .9;
+  return {
+    x: plant.col * 100 + 50 + (x - SPRITE_CELL.anchorX) * scale,
+    y: plant.row * 100 + 53 + 31 * .9 + (y - SPRITE_CELL.anchorY) * scale,
+  };
+}
 export function drawBoard(c, game, selected, shovel) {
   const columns = boardColumns(game);
   c.clearRect(0, 0, boardWidth(game), 500);
   const moon = STAGES[game.stage - 1].theme === "moon";
+  const desert = STAGES[game.stage - 1].theme === "desert";
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < columns; col++) {
-      c.fillStyle = moon ? ((row + col) % 2 ? "#728b9b" : "#819eaa") : ((row + col) % 2 ? "#bcd496" : "#c5dda0");
+      c.fillStyle = desert ? ((row + col) % 2 ? "#dfc187" : "#edd29a")
+        : moon ? ((row + col) % 2 ? "#728b9b" : "#819eaa") : ((row + col) % 2 ? "#bcd496" : "#c5dda0");
       c.fillRect(col * 100, row * 100, 100, 100);
-      grass(c, col * 100 + 17 + (row * 7) % 15, row * 100 + 86, moon ? "#b9c9e880" : "#89ac6a70");
-      grass(c, col * 100 + 76, row * 100 + 19, moon ? "#c7e4dc80" : "#97b77670");
+      if (desert) {
+        const x = col * 100, y = row * 100;
+        c.beginPath(); c.moveTo(x + 10, y + 80); c.quadraticCurveTo(x + 27, y + 71, x + 47, y + 78);
+        c.strokeStyle = "#b68f5855"; c.lineWidth = 2; c.stroke();
+        c.beginPath(); c.moveTo(x + 65, y + 21); c.quadraticCurveTo(x + 78, y + 16, x + 90, y + 22);
+        c.strokeStyle = "#fff0ce80"; c.stroke();
+        if ((row + col) % 3 === 0) {
+          ellipse(c, x + 20, y + 83, 6, 3, "#b9986b", "#9d805b", 1);
+          ellipse(c, x + 30, y + 85, 3, 2, "#c5a274");
+        }
+      } else {
+        grass(c, col * 100 + 17 + (row * 7) % 15, row * 100 + 86, moon ? "#b9c9e880" : "#89ac6a70");
+        grass(c, col * 100 + 76, row * 100 + 19, moon ? "#c7e4dc80" : "#97b77670");
+      }
       if (moon) {
         line(c, [[col * 100 + 2, row * 100 + 98], [col * 100 + 98, row * 100 + 98]], "#3e556a55", 2);
         line(c, [[col * 100 + 5, row * 100 + 20], [col * 100 + 20, row * 100 + 5]], "#d8efff55", 3);
@@ -196,7 +223,7 @@ export function drawBoard(c, game, selected, shovel) {
           c.restore();
         }
       }
-      if ((row * columns + col) % 11 === 0) {
+      if (!desert && (row * columns + col) % 11 === 0) {
         ellipse(c, col * 100 + 82, row * 100 + 76, 3, 3, moon ? "#e1c5ff" : "#f7f1be");
         ellipse(c, col * 100 + 86, row * 100 + 79, 3, 3, moon ? "#e1c5ff" : "#f7f1be");
         ellipse(c, col * 100 + 82, row * 100 + 81, 3, 3, moon ? "#e1c5ff" : "#f7f1be");
@@ -219,12 +246,29 @@ export function drawBoard(c, game, selected, shovel) {
       if (enemy.hp < ENEMIES[enemy.type].hp) healthBar(c, enemy.x, row * 100 + 91, enemy.hp / ENEMIES[enemy.type].hp, "#b97c68");
     }
   }
-  for (const shot of game.shots) drawProjectile(c, shot);
+  for (const shot of game.shots) if (!(shot.kind === "storm" && shot.hitIds)) drawProjectile(c, shot);
+  for (const plant of game.plants.filter(p => p.type === "cactus")) {
+    const elapsed = game.status === "playing" ? game.time - (plant.shotAt ?? -100)
+      : game.effects.find(e => e.kind === "laser" && e.plantId === plant.id)?.age ?? LASER_DURATION;
+    if (elapsed < 0 || elapsed >= LASER_DURATION) continue;
+    const origin = cactusLaserOrigin(plant, game);
+    c.save();
+    c.beginPath(); c.rect(0, plant.row * 100 + 1, boardWidth(game), 98); c.clip();
+    c.globalAlpha = (1 - elapsed / LASER_DURATION) * .22;
+    line(c, [[origin.x, origin.y], [boardWidth(game), origin.y]], "#ff3030", 8);
+    c.globalAlpha = 1 - elapsed / LASER_DURATION;
+    line(c, [[origin.x, origin.y], [boardWidth(game), origin.y]], "#e62332", 2.8);
+    c.restore();
+  }
   for (const effect of game.effects) {
+    if (effect.kind === "laser") continue;
     c.save(); c.globalAlpha = Math.max(0, 1 - effect.age * (effect.kind === "burst" ? 1.3 : 2));
     if (effect.kind === "gear") {
       c.globalAlpha = 1;
       drawDroppedGear(c, effect);
+    } else if (effect.kind === "chain") {
+      line(c, [[effect.x, effect.y], [(effect.x + effect.toX) / 2 + 8, (effect.y + effect.toY) / 2 - 8], [effect.toX, effect.toY]], "#596da1", 6);
+      line(c, [[effect.x, effect.y], [(effect.x + effect.toX) / 2 + 8, (effect.y + effect.toY) / 2 - 8], [effect.toX, effect.toY]], "#e7faff", 3);
     } else if (effect.kind === "fall") {
       c.globalAlpha = Math.min(1, Math.max(0, (FALL_DURATION - effect.age) / .24));
       drawEnemy(c, effect.type ?? "sleepy", effect.x, effect.y + 4, .87, 0, false, false, fallFrame(effect.age), effect.equipmentDropped);

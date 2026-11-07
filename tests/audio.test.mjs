@@ -6,7 +6,7 @@ import { createGame, ENEMIES, snapshot } from "../src/engine.js";
 function fixture() {
   const game = createGame(10);
   for (const [row, type] of Object.keys(ENEMIES).entries()) {
-    game.enemies.push({ id: game.nextId++, type, row, x: 700, hp: ENEMIES[type].hp, slow: 0, age: 0, eating: false });
+    game.enemies.push({ id: game.nextId++, type, row: row % 5, x: 700, hp: ENEMIES[type].hp, slow: 0, age: 0, eating: false });
   }
   const audio = new GardenAudio(message => assert.fail(message));
   audio.enabled = audio.active = true;
@@ -17,18 +17,18 @@ function fixture() {
 }
 test("피격·장비·폭발 이벤트는 프레임 사이 한 번만 소리로 전달하고 게임을 변경하지 않음", () => {
   const { audio, game, calls } = fixture();
-  for (const kind of ["hit", "ice", "gear", "burst", "splash", "flame"]) {
+  for (const kind of ["hit", "ice", "gear", "burst", "splash", "flame", "chain"]) {
     game.effects.push({ id: game.nextId++, kind, type: "jelly", age: 0, x: 500, y: 50 });
   }
   const before = structuredClone(game);
   audio.update(game); audio.update(game);
-  assert.deepEqual(calls.map(call => call.kind), ["hit", "ice", "gear", "burst", "splash", "flame"]);
+  assert.deepEqual(calls.map(call => call.kind), ["hit", "ice", "gear", "burst", "splash", "flame", "chain"]);
   assert.deepEqual(game, before);
   audio.reset(snapshot(game));
   audio.update(audio.game);
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 7);
 });
-test("좀비가 많아도 보행음은 전역 간격과 종류별 간격을 지키고 네 종류 모두 들림", () => {
+test("좀비가 많아도 보행음은 전역 간격과 종류별 간격을 지키고 여섯 종류 모두 들림", () => {
   const { audio, game, calls } = fixture();
   for (let i = 0; i < 50; i++) game.enemies.push({ ...game.enemies[i % 4], id: game.nextId++ });
   for (let step = 0; step < 300; step++) {

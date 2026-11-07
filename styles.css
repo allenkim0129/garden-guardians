@@ -129,6 +129,20 @@ h1 i { position: absolute; font-style: normal; font-size: .5em; color: #dcaa44; 
 .game[data-theme="moon"] .plot:focus-visible { outline-color: #fff1b7; }
 .chapter-heading { margin: 20px 0 8px; font-size: 16px; }
 .stage-grid[data-theme="moon"] .stage-button:not(:disabled) { background: #e5e3f6; border-color: #9c9fc4; }
+.game[data-theme="desert"] { background: #eed6aa; }
+.game[data-theme="desert"] .game-header { background: #fff1d2; border-color: #c2a376; }
+.game[data-theme="desert"] .game-layout {
+  background: radial-gradient(ellipse at 85% 115%, #d2a460 0 38%, transparent 38.5%),
+    radial-gradient(ellipse at 5% 130%, #e1ba7c 0 50%, transparent 50.5%),
+    linear-gradient(#f7e3bd, #eacb91);
+}
+.game[data-theme="desert"] .board { background: #dfc187; box-shadow: 0 5px 0 #b18b53; }
+.game[data-theme="desert"] .wave-fill { background: #ac7944; }
+.stage-grid[data-theme="desert"] .stage-button:not(:disabled) { background: #f8e5bc; border-color: #c2a06c; }
+.theme-tabs { display: flex; gap: 6px; position: sticky; top: 0; z-index: 1; background: #fcfaee; padding-block: 6px; }
+.theme-tab { flex: 1; min-width: 44px; min-height: 44px; padding: 8px; border: 2px solid #b5c3a3; border-radius: 12px; background: #edf1dc; font-size: 12px; font-weight: 800; }
+.theme-tab[aria-selected="true"] { background: #214f3b; border-color: #214f3b; color: #fffdf0; }
+dialog[data-kind="stages"] { width: 840px; max-width: calc(var(--usable-width) * .95); }
 dialog { padding: 24px 28px; border: 1px solid #d9dfc6; border-radius: 24px; background: #fcfaee; color: #233e32; inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); margin: auto; max-width: min(600px, calc(var(--usable-width) * .9)); width: 560px; max-height: calc(var(--usable-height) * .9); overflow-y: auto; box-shadow: 0 20px 100px #12281f44; }
 dialog::backdrop { background: #173c3280; backdrop-filter: blur(5px); }
 .modal-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }

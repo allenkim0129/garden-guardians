@@ -164,7 +164,7 @@ test("도토리벽은 실제 체력 35% 이하에서 균열을 유지하며 공�
   assert.equal(game.shots.length, 0);
 });
 
-test("방울폭탄 대기·준비·폭발 네 프레임과 기존 1초/340피해를 분리", () => {
+test("방울폭탄 대기·준비·폭발 네 프레임과 1초/300피해를 분리", () => {
   const game = createGame(5);
   plantAt(game, "bomb", 2, 5);
   const bomb = game.plants[0];
@@ -180,9 +180,9 @@ test("방울폭탄 대기·준비·폭발 네 프레임과 기존 1초/340피해
   assert.deepEqual([...frames.idle], [0, 1, 2, 3]);
   assert.deepEqual([...frames.prime], [0, 1, 2, 3]);
   assert.equal(game.plants.length, 0);
-  assert.equal(target.hp, 0);
+  assert.equal(target.hp, 40);
   assert.equal(far.hp, ENEMIES.sleepy.hp);
-  assert.equal(game.stats.defeated, 1);
+  assert.equal(game.stats.defeated, 0);
   assert.equal(game.effects.filter(e => e.kind === "burst").length, 1);
   assert.deepEqual([0, .17, .34, .51].map(age => burstFrame(age).col), [0, 1, 2, 3]);
   assert.equal(BURST_DURATION, .75);

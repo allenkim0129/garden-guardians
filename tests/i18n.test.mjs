@@ -32,7 +32,7 @@ test("언어 없는 기존 저장은 한국어로 복원하고 영어 선택도 
   const storage = { getItem: () => raw, setItem: (_, value) => { raw = value; } };
   const read = readSave(storage);
   assert.equal(read.error, null);
-  const expanded = { ...legacy, stars: [...legacy.stars, ...Array(10).fill(0)] };
+  const expanded = { ...legacy, stars: [...legacy.stars, ...Array(20).fill(0)] };
   assert.deepEqual(read.data, { ...expanded, language: "ko" });
   read.data.language = "en";
   assert.equal(writeSave(storage, read.data), null);

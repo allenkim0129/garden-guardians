@@ -7,7 +7,7 @@ const validTeamSlots = slots => Array.isArray(slots) && [6, 8].includes(slots.le
   && validLoadout(slots.filter(type => type !== null), STAGES.length);
 export function validateSave(value) {
   return value !== null && typeof value === "object" && value.version === 1
-    && Array.isArray(value.stars) && [10, STAGES.length].includes(value.stars.length) && value.stars.every(n => Number.isInteger(n) && n >= 0 && n <= 3)
+    && Array.isArray(value.stars) && [10, 20, STAGES.length].includes(value.stars.length) && value.stars.every(n => Number.isInteger(n) && n >= 0 && n <= 3)
     && Number.isInteger(value.unlocked) && value.unlocked >= 1 && value.unlocked <= value.stars.length
     && typeof value.sound === "boolean" && typeof value.tutorialSeen === "boolean"
     && (value.volume === undefined || (Number.isInteger(value.volume) && value.volume >= 0 && value.volume <= 100))
@@ -22,7 +22,8 @@ export function readSave(storage) {
     const data = JSON.parse(raw);
     if (!validateSave(data)) throw new Error("저장 형식이 맞지 않습니다.");
     if (data.stars.length < STAGES.length) {
-      if (data.unlocked === 10 && data.stars[9] > 0) data.unlocked = 11;
+      const previousLast = data.stars.length;
+      if (data.unlocked === previousLast && data.stars[previousLast - 1] > 0) data.unlocked = previousLast + 1;
       data.stars.push(...Array(STAGES.length - data.stars.length).fill(0));
     }
     data.language ??= "ko";
@@ -44,7 +45,7 @@ export function readSave(storage) {
         }
         data.current.skyTimer = Math.min(data.current.skyTimer, 5);
       }
-      data.current.rulesVersion = 5;
+      data.current.rulesVersion = 6;
     }
     return { data, error: null, notice };
   } catch (error) {

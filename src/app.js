@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, STAGES, ROWS, COLS, HEIGHT, boardColumns, boardWidth, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress } from "./engine.js";
+import { PLANTS, ENEMIES, STAGES, THEMES, ROWS, COLS, HEIGHT, boardColumns, boardWidth, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress } from "./engine.js";
 import { drawTitle, drawBoard, plantIcon, drawSunToken } from "./art.js";
 import { loadSprites } from "./sprites.js";
 import { GardenAudio } from "./audio.js";
@@ -118,25 +118,59 @@ function closeModal(invokeAction = true) {
 $("#modal-close").onclick = () => closeModal();
 modal.addEventListener("cancel", event => { event.preventDefault(); closeModal(); });
 
+let stageTheme = null;
 function showStages() {
   const content = document.createElement("div");
   const message = document.createElement("p");
   message.textContent = "콩별이와 햇살봉은 처음부터 함께해요. 1~9번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 다시 도전할 때도 해당 정원의 식물로 시작해요. 별은 남은 하트 수예요.";
-  content.append(message);
   const replayHint = document.createElement("p");
   replayHint.textContent = "완료한 정원도 다시하기를 눌러 처음부터 도전할 수 있어요. 모은 별과 열린 정원은 지우지 않아요.";
-  content.append(replayHint);
-  let grid;
-  for (const stage of STAGES) {
-    if (!grid || grid.dataset.theme !== stage.theme) {
-      const heading = document.createElement("h3");
-      heading.className = "chapter-heading";
-      heading.textContent = stage.theme === "moon" ? "11~20 · 달빛 온실 · 도전" : "1~10 · 햇살 정원";
-      grid = document.createElement("div");
-      grid.className = "stage-grid";
-      grid.dataset.theme = stage.theme;
-      content.append(heading, grid);
+  const tabs = document.createElement("div");
+  tabs.className = "theme-tabs";
+  tabs.setAttribute("role", "tablist");
+  setLabel(tabs, "정원 테마");
+  content.append(tabs);
+  const panels = new Map();
+  for (const theme of THEMES) {
+    const tab = document.createElement("button");
+    tab.className = "theme-tab";
+    tab.id = `theme-tab-${theme.id}`;
+    tab.dataset.theme = theme.id;
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-controls", `theme-panel-${theme.id}`);
+    text(tab, theme.title);
+    tabs.append(tab);
+    const panel = document.createElement("div");
+    panel.id = `theme-panel-${theme.id}`;
+    panel.setAttribute("role", "tabpanel");
+    panel.setAttribute("aria-labelledby", tab.id);
+    panel.className = "stage-grid";
+    panel.dataset.theme = theme.id;
+    panels.set(theme.id, panel);
+    content.append(panel);
+    tab.onclick = () => selectTheme(theme.id);
+    tab.onkeydown = event => {
+      const index = THEMES.findIndex(item => item.id === theme.id);
+      const target = event.key === "ArrowRight" ? (index + 1) % THEMES.length
+        : event.key === "ArrowLeft" ? (index + THEMES.length - 1) % THEMES.length
+          : event.key === "Home" ? 0 : event.key === "End" ? THEMES.length - 1 : null;
+      if (target === null) return;
+      event.preventDefault();
+      selectTheme(THEMES[target].id);
+      tabs.children[target].focus();
+    };
+  }
+  function selectTheme(id) {
+    stageTheme = id;
+    for (const tab of tabs.children) {
+      const active = tab.dataset.theme === id;
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
     }
+    for (const [theme, panel] of panels) panel.hidden = theme !== id;
+    modal.scrollTop = 0;
+  }
+  for (const stage of STAGES) {
     const button = document.createElement("button");
     const locked = stage.id > save.unlocked;
     button.className = "stage-button";
@@ -171,9 +205,12 @@ function showStages() {
         prepareStage(stage.id);
       }
     };
-    grid.append(button);
+    panels.get(stage.theme).append(button);
   }
+  content.append(message, replayHint);
+  selectTheme(stageTheme ?? STAGES[(save.current?.stage ?? save.unlocked) - 1].theme);
   openModal("어느 정원으로 갈까요?", content, [{ label: "돌아가기", action: () => {} }]);
+  modal.dataset.kind = "stages";
 }
 function helpMarkup() {
   return `<div class="help-steps">
@@ -184,6 +221,7 @@ function helpMarkup() {
   <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~9번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
   <p>시작 전에 최대 6종, 10번째 정원부터는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.</p>
   <p>10번째 정원을 지키면 달빛 온실이 열려요. 11~20단계를 차례로 지키며 더 큰 무리와 빠른 등장 간격에 도전해요. 밤에도 햇빛 생산은 같아요.</p>
+  <p>20번째 정원을 지키면 모래 사막이 열려요. 테마 탭으로 10단계씩 골라요. 25단계의 번개가시는 가시풀의 상위형이고, 28단계의 선인장은 앞쪽 같은 줄을 쓸어내요. 기존 식물과 별도로 선택하며 최대 8종 제한은 같아요.</p>
   <p>삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하면 자동으로 멈춰요. 세로로 들고 있어도 게임은 가로형 화면으로 표시돼요.</p>
   <details><summary>좀비 친구 알아보기</summary><p>${Object.values(ENEMIES).map(e => `<b>${e.name}</b>: ${e.description}`).join("<br>")}</p></details>`;
 }
@@ -336,7 +374,7 @@ function endGame(previouslyUnlocked) {
   const newChapter = won && game.stage === 10 && previouslyUnlocked <= 10;
   const title = won ? (finalStage ? "모든 정원을 지켰어요!" : "정원을 지켰어요!") : "괜찮아요, 한 번 더!";
   const message = won
-    ? (finalStage ? "스무 개의 정원에 다시 평화가 찾아왔어요. 여러분이 진짜 정원 수비대예요!"
+    ? (finalStage ? "서른 개의 정원에 다시 평화가 찾아왔어요. 여러분이 진짜 정원 수비대예요!"
       : newChapter ? "달빛 온실이 열렸어요! 11~20단계에서 더 강한 무리에 도전해요."
         : `${STAGES[game.stage].name} 정원이 열렸어요. 친구들과 다음 소풍을 떠나 볼까요?`)
     : STAGES[game.stage - 1].tip;
@@ -548,6 +586,7 @@ function resetProgress() {
     return;
   }
   Object.assign(save, next);
+  stageTheme = null;
   reportedSaveError = false;
   paused = true; game = null; pendingResult = null;
   selected = null; shovel = false; boardPointers.clear(); sunGesture = true;

@@ -132,7 +132,7 @@ test("이전 다섯 쿨다운 저장 복원 뒤 새 5종 캐시와 영어 오프
     await page.locator('.plot[data-row="2"][data-col="0"]').tap();
     await page.locator("#pause-button").tap();
     const before = await stored(page);
-    expect(before.current.rulesVersion).toBe(5);
+    expect(before.current.rulesVersion).toBe(6);
     for (const type of types) expect(before.current.cooldowns[type]).toBeGreaterThanOrEqual(0);
     const cached = await page.evaluate(async () => {
       const key = (await caches.keys()).find(k => k.startsWith("garden-guardians-"));

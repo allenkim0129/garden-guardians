@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createGame } from "../../src/engine.js";
+import { createGame, PLANTS } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
 import { confirmTeam } from "../helpers/browser.mjs";
 import { isolatedServer } from "../helpers/server.mjs";
@@ -54,10 +54,10 @@ test("작은 회전 화면의 설정 리셋: 취소·언어 전환·기록 초�
     expect(await stored(page)).toEqual(expected);
     await page.locator("#play-button").tap();
     await expect(page.locator(".stage-button:enabled")).toHaveCount(1);
-    await expect(page.locator(".stage-button:disabled")).toHaveCount(19);
+    await expect(page.locator(".stage-button:disabled")).toHaveCount(29);
     await page.locator(".stage-button").first().tap();
     await expect(page.locator(".loadout-choice:enabled")).toHaveCount(2);
-    await expect(page.locator(".loadout-choice:disabled")).toHaveCount(9);
+    await expect(page.locator(".loadout-choice:disabled")).toHaveCount(Object.keys(PLANTS).length - 2);
     await confirmTeam(page);
     await expect(page.locator(".seed-card:visible")).toHaveCount(2);
     await page.locator("#pause-button").tap();

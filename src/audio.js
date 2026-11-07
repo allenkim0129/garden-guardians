@@ -1,3 +1,5 @@
+import { boardWidth } from "./engine.js";
+
 export const AUDIO_LIMITS = Object.freeze({ voices: 6, master: 1, impactGap: .12, ambientGap: 1.4 });
 const tunes = { plant: [392, 523], sun: [659, 880], win: [523, 659, 784, 1047], lose: [330, 294, 220] };
 const voices = {
@@ -5,12 +7,16 @@ const voices = {
   jelly: { frequency: 78, end: 115, duration: .7, filter: 320, wave: "triangle", pulses: true },
   roller: { noise: true, duration: .65, filter: 1900, filterEnd: 600, pulses: true },
   umbrella: { frequency: 145, end: 92, duration: .75, filter: 730, wave: "sawtooth", flutter: true },
+  barrel: { frequency: 62, end: 42, duration: .9, filter: 260, wave: "triangle", pulses: true },
+  courier: { noise: true, duration: .45, filter: 2400, filterEnd: 850, pulses: true },
 };
 const impacts = {
   sleepy: { frequency: 180, end: 75, filter: 700 },
   jelly: { frequency: 230, end: 55, filter: 420, wave: "triangle" },
   roller: { frequency: 460, end: 170, filter: 1700, wave: "triangle" },
   umbrella: { frequency: 330, end: 110, filter: 1100, wave: "triangle" },
+  barrel: { frequency: 130, end: 45, filter: 550, wave: "triangle" },
+  courier: { frequency: 520, end: 210, filter: 1900, wave: "triangle" },
 };
 
 export class GardenAudio {
@@ -73,7 +79,7 @@ export class GardenAudio {
     if (this.game !== game) this.reset(game);
     for (const effect of game.effects) {
       if (effect.id <= this.lastEffectId) continue;
-      if (["hit", "ice", "burst", "splash", "flame", "gear"].includes(effect.kind)) this.play(effect.kind, effect.type);
+      if (["hit", "ice", "burst", "splash", "flame", "gear", "chain", "laser"].includes(effect.kind)) this.play(effect.kind, effect.type);
     }
     this.lastEffectId = game.nextId - 1;
     for (const plant of game.plants) {
@@ -81,7 +87,7 @@ export class GardenAudio {
     }
     this.hurtTimes = new Map(game.plants.map(plant => [plant.id, plant.hurtAt]));
     if (!this.enabled || !this.active || game.status !== "playing") return;
-    const walking = new Set(game.enemies.filter(enemy => !enemy.eating && enemy.x > 0 && enemy.x < 920).map(enemy => enemy.type));
+    const walking = new Set(game.enemies.filter(enemy => !enemy.eating && enemy.x > 0 && enemy.x < boardWidth(game) + 20).map(enemy => enemy.type));
     for (const type of this.ambientDue.keys()) if (!walking.has(type)) this.ambientDue.delete(type);
     for (const type of walking) if (!this.ambientDue.has(type)) this.ambientDue.set(type, game.time + .8);
     if (game.time < this.nextAmbientAt) return;
@@ -108,6 +114,10 @@ export class GardenAudio {
     } else if (kind === "hit") {
       if (!impacts[type]) throw new RangeError(`Unknown zombie impact: ${type}`);
       this.emit({ ...impacts[type], duration: .16, volume: .05 });
+    } else if (kind === "chain") {
+      this.emit({ frequency: 720, end: 180, wave: "sawtooth", filter: 1200, duration: .18, volume: .025 });
+    } else if (kind === "laser") {
+      this.emit({ frequency: 380, end: 100, wave: "triangle", duration: .3, volume: .04 });
     } else if (kind === "ice") {
       this.emit({ frequency: 1000, end: 470, wave: "triangle", duration: .16, volume: .035 });
     } else if (kind === "bite") {

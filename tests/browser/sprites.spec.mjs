@@ -15,15 +15,16 @@ async function fixture(page, game = null) {
   await page.locator("#resume-button").tap();
 }
 
-test("15종 180개 프레임의 픽셀 차이·투명 테두리·접지·모든 카드 일치", async ({ page }) => {
+test("19종과 장비 없는 252개 프레임의 픽셀 차이·투명 테두리·접지·모든 카드 일치", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("body")).toHaveAttribute("data-sprites-ready", "true");
   const report = await page.evaluate(async () => {
-    const { SPRITE_URLS, SPRITE_CELL, loadSprites } = await import("./src/sprites.js");
+    const { SPRITE_URLS, GEAR_URLS, SPRITE_CELL, loadSprites } = await import("./src/sprites.js");
     const { plantIcon, drawPlant } = await import("./src/art.js");
     await loadSprites();
     const results = [];
-    for (const [type, url] of Object.entries(SPRITE_URLS)) {
+    const sheets = { ...SPRITE_URLS, ...Object.fromEntries(Object.entries(GEAR_URLS).filter(([type]) => type.endsWith("-bare"))) };
+    for (const [type, url] of Object.entries(sheets)) {
       const img = new Image(); img.src = url; await img.decode();
       const canvas = document.createElement("canvas"); canvas.width = 320; canvas.height = 224;
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -63,18 +64,18 @@ test("15종 180개 프레임의 픽셀 차이·투명 테두리·접지·모든 
     });
     return { results, anchorY: SPRITE_CELL.anchorY, cards };
   });
-  expect(report.results).toHaveLength(15);
+  expect(report.results).toHaveLength(21);
   for (const card of report.cards) {
     expect(card.sameIcon).toBe(true);
     expect(card.card).toBe(true);
   }
   for (const sheet of report.results) {
     expect([sheet.width, sheet.height]).toEqual([1280, 672]);
-    expect(new Set(sheet.frames.map(f => f.hash)).size).toBe(12);
+    expect(new Set(sheet.frames.map(f => f.hash)).size, sheet.type).toBe(12);
     for (const frame of sheet.frames) {
       expect(frame.minX).toBeGreaterThan(2); expect(frame.minY).toBeGreaterThan(2);
       expect(frame.maxX).toBeLessThan(317);
-      expect(Math.abs(frame.maxY + 1 - report.anchorY)).toBeLessThanOrEqual(1);
+      expect(Math.abs(frame.maxY + 1 - report.anchorY), `${sheet.type} row ${frame.row}`).toBeLessThanOrEqual(1);
       // Explosion light and scattered leaves have intentionally more soft edge pixels.
       if (sheet.type === "bomb" && frame.row === 2) expect(frame.strayAlpha).toBe(0);
       else expect(frame.translucent).toBeLessThan(.2);
@@ -173,16 +174,17 @@ test("실제 전투에서 나머지 7종의 생성·방어·균열·발사·폭�
     ["sun", 0, 1, 100, .2], ["pea", 1, 1, 120, 1.6], ["wall", 2, 1, 650, 0],
     ["wall", 2, 0, 200, 0], ["frost", 3, 1, 100, .2], ["bomb", 4, 5, 150, .2],
   ]) game.plants.push({ id: game.nextId++, type, row, col, hp, timer, age: 0 });
-  for (const [row, type] of Object.keys(ENEMIES).entries()) {
+  const originalEnemies = ["sleepy", "jelly", "roller", "umbrella"];
+  for (const [row, type] of originalEnemies.entries()) {
     for (const [lane, x] of [[row, 185], [4, 620]]) {
-      game.enemies.push({ id: game.nextId++, type, row: lane, x, hp: ENEMIES[type].hp, slow: 0, age: 0, eating: false });
+      game.enemies.push({ id: game.nextId++, type, row: lane, x, hp: lane === 4 ? Math.min(300, ENEMIES[type].hp) : ENEMIES[type].hp, slow: 0, age: 0, eating: false });
     }
   }
   await fixture(page, game);
   const needed = [
     ...["sun", "frost", "wall"].flatMap(type => [1, 2].map(row => ({ type, row }))),
     ...[0, 1, 2].map(row => ({ type: "bomb", row })),
-    ...Object.keys(ENEMIES).flatMap(type => [0, 1, 2].map(row => ({ type, row }))),
+    ...originalEnemies.flatMap(type => [0, 1, 2].map(row => ({ type, row }))),
   ];
   await expect.poll(() => page.evaluate(needed => needed.filter(({ type, row }) =>
     new Set(window.spriteDraws.filter(d => d.type === type && d.row === row).map(d => d.col)).size !== 4

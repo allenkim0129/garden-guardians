@@ -12,19 +12,26 @@ export const PUMPKIN_RADIUS = 115;
 export const FIRE_RADIUS = 105;
 export const BURN_DURATION = 3;
 export const BURN_DAMAGE = 4;
+export const BOMB_DAMAGE = 300;
+export const CHAIN_RANGE = 155;
+export const CHAIN_HITS = 5;
+export const CHAIN_GAP = .12;
+export const LASER_DURATION = .24;
 export const SKY_SUN_INTERVAL = 7;
 export const PLANTS = Object.freeze({
   sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 4, firstHarvest: 5, interval: 8, description: "첫 햇빛은 5초 뒤, 이후 8초마다 햇빛 25를 만들어요." },
-  pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 5, interval: 1.6, damage: 14, description: "1.6초마다 14 피해의 콩을 쏘는 기본 공격 식물이에요." },
+  pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 5, interval: 1.6, damage: 12, description: "1.6초마다 12 피해의 콩을 쏘는 기본 공격 식물이에요." },
   wall: { name: "도토리벽", unlockStage: 2, cost: 75, hp: 650, recharge: 7, description: "튼튼한 몸으로 좀비를 막아요." },
-  frost: { name: "서리초", unlockStage: 3, cost: 125, hp: 100, recharge: 4, interval: 1.6, damage: 7, description: "1.6초마다 7 피해와 3초 둔화! 강한 공격 식물과 함께 심어요." },
+  frost: { name: "서리초", unlockStage: 3, cost: 125, hp: 100, recharge: 4, interval: 1.6, damage: 6, description: "1.6초마다 6 피해와 3초 둔화! 강한 공격 식물과 함께 심어요." },
   bomb: { name: "방울폭탄", unlockStage: 4, cost: 125, hp: 150, recharge: 14, description: "1초 뒤 주변 좀비에게 큰 피해!" },
-  twin: { name: "쌍콩이", unlockStage: 5, cost: 225, hp: 120, recharge: 8, interval: 2, damage: 24, description: "2초마다 24 피해의 콩 두 발을 0.2초 간격으로 쏘는 주력 공격 식물이에요." },
-  thorn: { name: "가시풀", unlockStage: 6, cost: 200, hp: 100, recharge: 8, interval: 2.8, damage: 26, description: "2.8초마다 같은 줄의 좀비를 최대 3명 관통하는 가시를 쏴요." },
-  pumpkin: { name: "호박포", unlockStage: 7, cost: 300, hp: 130, recharge: 9, interval: 4.5, damage: 70, description: "4.5초마다 반경 약 한 칸에 70 피해! 비싸고 발사가 느리니 방어·둔화 식물로 지켜 주세요." },
+  twin: { name: "쌍콩이", unlockStage: 5, cost: 225, hp: 120, recharge: 8, interval: 2, damage: 22, description: "2초마다 22 피해의 콩 두 발을 0.2초 간격으로 쏘는 주력 공격 식물이에요." },
+  thorn: { name: "가시풀", unlockStage: 6, cost: 200, hp: 100, recharge: 8, interval: 2.8, damage: 24, description: "2.8초마다 같은 줄의 좀비를 최대 3명 관통하는 가시를 쏴요." },
+  pumpkin: { name: "호박포", unlockStage: 7, cost: 300, hp: 130, recharge: 9, interval: 4.5, damage: 64, description: "4.5초마다 반경 약 한 칸에 64 피해! 비싸고 발사가 느리니 방어·둔화 식물로 지켜 주세요." },
   lantern: { name: "해등나무", unlockStage: 8, cost: 125, hp: 140, recharge: 9, firstHarvest: 8, interval: 10, description: "첫 햇빛은 8초 뒤, 이후 10초마다 햇빛 50을 만들어요." },
   iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 12, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 12초!" },
-  ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 12, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 12 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요." },
+  ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 10, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 10 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요." },
+  storm: { name: "번개가시", unlockStage: 25, cost: 275, hp: 110, recharge: 10, interval: 4.2, damage: 32, description: "가시풀의 상위형! 4.2초마다 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 32 피해!" },
+  cactus: { name: "선인장", unlockStage: 28, cost: 400, hp: 160, recharge: 6, firstAttack: 6, interval: 6, description: "심고 6초 뒤부터 6초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 좀비를 모두 처치해요. 뒤쪽과 다른 줄은 공격하지 않아요." },
 });
 const LEGACY_RECHARGES = Object.freeze({ sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 });
 export const ENEMIES = Object.freeze({
@@ -32,7 +39,14 @@ export const ENEMIES = Object.freeze({
   jelly: { name: "젤리좀비", hp: 340, speed: 13, bite: 25, description: "느리지만 아주 튼튼해요." },
   roller: { name: "롤러좀비", hp: 95, speed: 31, bite: 18, description: "롤러스케이트로 빠르게 와요." },
   umbrella: { name: "우산좀비", hp: 175, speed: 18, bite: 23, description: "65 피해를 받으면 우산을 놓치고 보통 걸음과 추위 저항으로 바뀌어요." },
+  barrel: { name: "통나무좀비", hp: 400, speed: 12, bite: 32, description: "튼튼한 나무통을 입었어요. 체력이 절반이 되면 통이 깨져 걸음이 18로 빨라져요." },
+  courier: { name: "배달좀비", hp: 120, speed: 34, bite: 20, description: "오아시스의 물통 상자를 들고 달려와요. 체력이 절반이 되면 상자를 떨어뜨리고 속도가 22로 줄어요." },
 });
+export const THEMES = Object.freeze([
+  { id: "garden", title: "1~10 · 햇살 정원" },
+  { id: "moon", title: "11~20 · 달빛 온실 · 도전" },
+  { id: "desert", title: "21~30 · 모래 사막 · 격전" },
+]);
 export const STAGES = [
   { name: "첫 번째 새싹", count: 8, gap: 6.5, types: ["sleepy"], rows: [2, 1, 3, 0, 4], startSun: 250, tip: "햇살봉으로 햇빛을 모으고, 좀비가 오는 줄에 콩별이를 심어요." },
   { name: "아침 산책", count: 12, gap: 5.2, types: ["sleepy"], rows: [0, 4, 2, 1, 3], startSun: 250, tip: "새 친구 도토리벽! 콩별이 앞에 심어 좀비를 붙잡아요." },
@@ -55,9 +69,20 @@ export const STAGES = [
   { name: "한밤의 분수", count: 112, gap: 1.75, types: ["roller", "jelly", "umbrella", "jelly", "roller", "umbrella"], tip: "몰려오는 무리를 철잎보루로 붙잡고 호박포와 불꽃봉오리로 함께 맞혀요." },
   { name: "새벽 전의 그림자", count: 118, gap: 1.7, types: ["jelly", "umbrella", "jelly", "roller", "jelly", "umbrella"], tip: "마지막 무리가 아주 커요. 방울폭탄을 쓸 햇빛과 빈 칸을 남겨 두세요." },
   { name: "온실의 마지막 밤", count: 124, gap: 1.65, types: ["jelly", "roller", "umbrella", "jelly", "umbrella", "roller", "jelly"], tip: "달빛 온실의 마지막 도전! 여덟 친구의 역할을 나누고 무너진 줄을 바로 보강해요." },
-].map(stage => ({ ...stage, theme: "moon", startSun: 350 })))
+].map(stage => ({ ...stage, theme: "moon", startSun: 350 }))).concat([
+  { name: "사막의 문", count: 126, gap: 1.6, types: ["barrel", "sleepy", "umbrella", "jelly", "roller"], tip: "모래 사막에 오신 걸 환영해요! 통나무좀비를 집중 공격하고 통이 깨진 뒤 빨라진 걸음에 대비해요." },
+  { name: "오아시스 배달길", count: 132, gap: 1.56, types: ["courier", "barrel", "roller", "jelly", "umbrella"], tip: "오아시스에서 배달좀비가 달려와요! 서리초로 늦추고 방어 식물 뒤에서 물통 상자를 떨어뜨려요." },
+  { name: "사암 협곡", count: 138, gap: 1.52, types: ["barrel", "jelly", "umbrella", "courier", "barrel"], tip: "나무통 무리가 길을 막아요. 쌍콩이로 집중 공격하고 가시풀로 뒤쪽 적까지 맞혀요." },
+  { name: "모래 소용돌이", count: 144, gap: 1.48, types: ["courier", "roller", "barrel", "umbrella", "jelly"], tip: "빠른 적과 느린 적이 섞여 와요. 방어선을 세우고 방울폭탄을 준비해요." },
+  { name: "번개가시 언덕", count: 150, gap: 1.44, types: ["barrel", "courier", "jelly", "umbrella", "courier"], tip: "가시풀의 상위형 번개가시! 붙어 있는 옆줄의 좀비까지 번개를 이어 보내요." },
+  { name: "모래바람 다리", count: 156, gap: 1.4, types: ["courier", "barrel", "jelly", "barrel", "roller"], tip: "앞줄은 방어, 뒷줄은 집중 공격! 번개가시는 모인 적을 상대하게 해요." },
+  { name: "붉은 바위 미로", count: 162, gap: 1.36, types: ["barrel", "umbrella", "courier", "jelly", "barrel"], tip: "통이 깨지면 적이 빨라져요. 빈 방어 칸을 바로 채워 주세요." },
+  { name: "신기루 오아시스", count: 168, gap: 1.32, types: ["courier", "roller", "barrel", "courier", "umbrella"], tip: "선인장은 앞쪽 같은 줄을 쓸어내요. 첫 공격까지 6초! 다른 줄과 뒤쪽은 친구들로 지켜요." },
+  { name: "마지막 모래언덕", count: 174, gap: 1.28, types: ["barrel", "jelly", "courier", "barrel", "umbrella"], tip: "튼튼한 무리 뒤에 빠른 적이 숨어 있어요. 집중 공격과 범위 공격을 함께 써요." },
+  { name: "사막의 수호자", count: 180, gap: 1.24, types: ["barrel", "courier", "jelly", "umbrella", "barrel", "courier"], tip: "사막의 마지막 도전! 여덟 친구를 조합하고 비상용 햇빛을 남겨 두세요." },
+].map(stage => ({ ...stage, theme: "desert", startSun: 350 })))
   .map((stage, i) => Object.freeze({ ...stage, theme: stage.theme ?? "garden", legacyRows: i === 0 ? [2, 1, 3] : stage.rows,
-    legacyCount: stage.count, count: stage.theme === "moon" ? stage.count : Math.ceil(stage.count * 1.4), id: i + 1 }));
+    legacyCount: stage.count, count: stage.theme ? stage.count : Math.ceil(stage.count * 1.4), id: i + 1 }));
 
 export const boardColumns = game => game.columns ?? 9;
 export const boardWidth = game => boardColumns(game) * 100;
@@ -73,18 +98,20 @@ export function scheduleFor(stageNumber, pacingVersion = 5) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   const rows = (pacingVersion < 3 ? stage.legacyRows : stage.rows) ?? [2, 0, 4, 1, 3];
-  if (stage.theme === "moon") {
+  if (stage.theme === "moon" || stage.theme === "desert") {
+    const desert = stage.theme === "desert";
+    const offset = stageNumber - (desert ? 21 : 11);
     const first = 3;
     const second = Math.ceil(stage.count * .28);
-    const middleAt = 48 - (stageNumber - 11) * 2 / 3;
+    const middleAt = (desert ? 54 : 48) - offset * 2 / 3;
     const finalAt = middleAt + (second - 1) * stage.gap + 10;
-    const finalGap = .65 - (stageNumber - 11) * .03;
+    const finalGap = desert ? .36 - offset * .01 : .65 - offset * .03;
     return Array.from({ length: stage.count }, (_, i) => {
       const wave = i < first ? 1 : i < first + second ? 2 : 3;
       return {
         at: wave === 1 ? [10, 24, 36][i] : wave === 2 ? middleAt + (i - first) * stage.gap : finalAt + (i - first - second) * finalGap,
         row: rows[(i + Math.floor(i / rows.length)) % rows.length],
-        type: wave === 1 ? (i === 2 ? "roller" : "sleepy") : stage.types[i % stage.types.length],
+        type: wave === 1 ? (i === 2 ? (desert ? "barrel" : "roller") : "sleepy") : stage.types[i % stage.types.length],
         wave,
       };
     });
@@ -146,7 +173,7 @@ export function createGame(stageNumber, loadout) {
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 5, pacingVersion: 5, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 6, pacingVersion: 5, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -171,7 +198,7 @@ export function plantAt(game, type, row, col) {
   if (game.cooldowns[type] > 0) return { ok: false, reason: "친구가 준비 중이에요. 조금만 기다려 주세요." };
   game.sun -= info.cost;
   game.cooldowns[type] = info.recharge;
-  game.plants.push({ id: id(game), type, row, col, hp: info.hp, timer: info.firstHarvest ?? .2, age: 0 });
+  game.plants.push({ id: id(game), type, row, col, hp: info.hp, timer: info.firstHarvest ?? info.firstAttack ?? .2, age: 0 });
   game.stats.planted++;
   game.effects.push({ id: id(game), kind: "plant", x: cellX(col), y: cellY(row), age: 0 });
   return { ok: true };
@@ -196,6 +223,11 @@ function fireShot(game, plant, target, muzzle = 0) {
   if (plant.type === "twin") Object.assign(shot, { kind: "twin", muzzle });
   if (plant.type === "thorn") Object.assign(shot, { kind: "thorn", hitIds: [] });
   if (plant.type === "ember") shot.kind = "ember";
+  if (plant.type === "storm") {
+    damageEnemy(game, target, info.damage);
+    game.effects.push({ id: id(game), kind: "chain", x: shot.x, y: cellY(plant.row), toX: target.x, toY: cellY(target.row), age: 0 });
+    Object.assign(shot, { kind: "storm", hitIds: [target.id], chainAt: game.time + CHAIN_GAP, x: target.x, row: target.row });
+  }
   if (plant.type === "pumpkin") Object.assign(shot, {
     kind: "pumpkin", originX: shot.x, targetX: target.x, age: 0,
     duration: Math.max(.45, Math.min(1.6, Math.abs(target.x - shot.x) / 260)),
@@ -236,6 +268,21 @@ function damageEnemy(game, enemy, damage, frost = false, impact = true) {
   }
 }
 
+function advanceChain(game, shot) {
+  if (game.time + 1e-9 < shot.chainAt) return;
+  const origin = game.enemies.find(e => e.id === shot.hitIds.at(-1) && e.hp > 0) ?? shot;
+  const distance = enemy => Math.hypot(enemy.x - origin.x, (enemy.row - origin.row) * 100);
+  const target = game.enemies.filter(e => e.hp > 0 && !shot.hitIds.includes(e.id) && distance(e) <= CHAIN_RANGE + 1e-8)
+    .sort((a, b) => distance(a) - distance(b) || a.id - b.id)[0];
+  if (!target) { shot.x = boardWidth(game) + 200; return; }
+  game.effects.push({ id: id(game), kind: "chain", x: origin.x, y: cellY(origin.row), toX: target.x, toY: cellY(target.row), age: 0 });
+  damageEnemy(game, target, shot.damage);
+  shot.hitIds.push(target.id);
+  shot.x = shot.hitIds.length === CHAIN_HITS ? boardWidth(game) + 200 : target.x;
+  shot.row = target.row;
+  shot.chainAt += CHAIN_GAP;
+}
+
 export function tick(game, dt) {
   if (game.status !== "playing" || !Number.isFinite(dt) || dt <= 0) return;
   // Large wall-clock gaps must never make enemies jump past a plant.
@@ -244,7 +291,10 @@ export function tick(game, dt) {
   // Keep traversal pace stable; old nine-column saves retain their exact speed.
   const movementScale = width / 900;
   game.time += dt;
-  for (const type of Object.keys(PLANTS)) game.cooldowns[type] = Math.max(0, game.cooldowns[type] - dt);
+  for (const type of Object.keys(PLANTS)) {
+    const remaining = Math.max(0, game.cooldowns[type] - dt);
+    game.cooldowns[type] = type === "cactus" && remaining < 1e-9 ? 0 : remaining;
+  }
   const schedule = scheduleFor(game.stage, game.pacingVersion ?? 1);
   while (game.nextSpawn < schedule.length && game.time >= schedule[game.nextSpawn].at) {
     const spawn = schedule[game.nextSpawn++];
@@ -280,7 +330,7 @@ export function tick(game, dt) {
     }
     if (plant.type === "bomb" && plant.age >= 1) {
       for (const enemy of game.enemies) {
-        if (Math.hypot(enemy.x - cellX(plant.col), cellY(enemy.row) - cellY(plant.row)) <= 175) damageEnemy(game, enemy, 340);
+        if (Math.hypot(enemy.x - cellX(plant.col), cellY(enemy.row) - cellY(plant.row)) <= 175) damageEnemy(game, enemy, BOMB_DAMAGE);
       }
       game.effects.push({ id: id(game), kind: "burst", x: cellX(plant.col), y: cellY(plant.row), age: 0 });
       plant.hp = 0;
@@ -289,11 +339,17 @@ export function tick(game, dt) {
       fireShot(game, plant, null, 1);
       delete plant.pendingShotAt;
     }
-    if (info.damage && plant.timer <= 0) {
-      const target = game.enemies.filter(e => e.hp > 0 && e.row === plant.row && e.x >= cellX(plant.col) - 10)
+    if ((info.damage || plant.type === "cactus") && plant.timer <= (plant.type === "cactus" ? 1e-9 : 0)) {
+      const target = game.enemies.filter(e => e.hp > 0 && e.row === plant.row
+        && (plant.type === "cactus" ? e.x > cellX(plant.col) : e.x >= cellX(plant.col) - 10))
         .sort((a, b) => a.x - b.x)[0];
       if (target) {
-        fireShot(game, plant, target);
+        if (plant.type === "cactus") {
+          for (const enemy of game.enemies) {
+            if (enemy.row === plant.row && enemy.x > cellX(plant.col)) damageEnemy(game, enemy, enemy.hp);
+          }
+          game.effects.push({ id: id(game), kind: "laser", plantId: plant.id, x: cellX(plant.col), y: cellY(plant.row), age: 0 });
+        } else fireShot(game, plant, target);
         if (plant.type === "twin") plant.pendingShotAt = game.time + TWIN_GAP;
         plant.shotAt = game.time;
         plant.timer = info.interval;
@@ -303,6 +359,10 @@ export function tick(game, dt) {
     }
   }
   for (const shot of game.shots) {
+    if (shot.kind === "storm" && shot.hitIds) {
+      advanceChain(game, shot);
+      continue;
+    }
     if (shot.kind === "pumpkin") {
       shot.age += dt;
       shot.x = shot.originX + (shot.targetX - shot.originX) * Math.min(1, shot.age / shot.duration);
@@ -329,6 +389,10 @@ export function tick(game, dt) {
           }
         }
         game.effects.push({ id: id(game), kind: "flame", x: target.x, y: cellY(target.row), age: 0 });
+      } else if (shot.kind === "storm") {
+        damageEnemy(game, target, shot.damage);
+        Object.assign(shot, { hitIds: [target.id], chainAt: game.time + CHAIN_GAP, x: target.x, row: target.row });
+        break;
       } else damageEnemy(game, target, shot.damage, shot.frost);
       if (shot.kind === "thorn") shot.hitIds.push(target.id);
       if (shot.kind !== "thorn" || shot.hitIds.length >= THORN_HITS) { shot.x = width + 200; break; }
@@ -353,8 +417,11 @@ export function tick(game, dt) {
       if (meal.hurtAt === undefined || game.time - meal.hurtAt >= .48) meal.hurtAt = game.time;
     } else {
       const bareUmbrella = enemy.type === "umbrella" && enemy.equipmentDropped;
+      const baseSpeed = bareUmbrella ? ENEMIES.sleepy.speed
+        : enemy.equipmentDropped && enemy.type === "barrel" ? 18
+          : enemy.equipmentDropped && enemy.type === "courier" ? 22 : info.speed;
       const speed = enemy.slow > 0 ? (enemy.type === "umbrella" && !bareUmbrella ? .8 : .48) : 1;
-      enemy.x -= (bareUmbrella ? ENEMIES.sleepy.speed : info.speed) * movementScale * speed * dt;
+      enemy.x -= baseSpeed * movementScale * speed * dt;
     }
     if (enemy.x < -25) {
       game.lives = Math.max(0, game.lives - 1);
@@ -374,7 +441,7 @@ export function tick(game, dt) {
 export function advanceEffects(game, dt) {
   if (!Number.isFinite(dt) || dt <= 0) return;
   for (const effect of game.effects) effect.age += Math.min(dt, .1);
-  game.effects = game.effects.filter(e => e.age < (e.kind === "gear" ? GEAR_DURATION : e.kind === "fall" ? FALL_DURATION : e.kind === "burst" ? BURST_DURATION : .5));
+  game.effects = game.effects.filter(e => e.age < (e.kind === "laser" ? LASER_DURATION : e.kind === "gear" ? GEAR_DURATION : e.kind === "fall" ? FALL_DURATION : e.kind === "burst" ? BURST_DURATION : .5));
 }
 
 const finite = (n, min, max) => Number.isFinite(n) && n >= min && n <= max;
@@ -386,13 +453,13 @@ export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, STAGES.length) || g.status !== "playing") return false;
   if (g.columns !== undefined && ![9, COLS].includes(g.columns)) return false;
   const columns = boardColumns(g), width = boardWidth(g);
-  if (g.rulesVersion !== undefined && ![2, 3, 4, 5].includes(g.rulesVersion)) return false;
+  if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6].includes(g.rulesVersion)) return false;
   if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5].includes(g.pacingVersion)) return false;
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
   if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, (g.rulesVersion ?? 1) < 5 ? 6 : SKY_SUN_INTERVAL) || !integer(g.wave, 0, 3)) return false;
-  if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, (g.rulesVersion ?? 1) < 5 ? LEGACY_RECHARGES[t] : PLANTS[t].recharge)
-    || ((g.rulesVersion ?? 1) < (t === "ember" ? 4 : PLANTS[t].unlockStage >= 5 ? 3 : 1) && g.cooldowns[t] === undefined))) return false;
+  if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, (g.rulesVersion ?? 1) < 5 ? LEGACY_RECHARGES[t] ?? PLANTS[t].recharge : PLANTS[t].recharge)
+    || ((g.rulesVersion ?? 1) < (PLANTS[t].unlockStage > 20 ? 6 : t === "ember" ? 4 : PLANTS[t].unlockStage >= 5 ? 3 : 1) && g.cooldowns[t] === undefined))) return false;
   if (!object(g.stats) || !["planted", "defeated", "collected"].every(k => integer(g.stats[k], 0, 1000000))) return false;
   const hasId = p => object(p) && integer(p.id, 1, g.nextId - 1);
   const eventTime = value => value === undefined || finite(value, 0, g.time);
@@ -406,15 +473,18 @@ export function validSnapshot(g) {
     && (e.equipmentDropped === undefined || (typeof e.equipmentDropped === "boolean"
       && (!e.equipmentDropped || e.hp <= equipmentThreshold(e.type)))))) return false;
   if (!list(g.shots, 500, s => {
-    if (!hasId(s) || !integer(s.row, 0, 4) || !finite(s.x, 0, width + 100) || typeof s.frost !== "boolean") return false;
+    if (!hasId(s) || !integer(s.row, 0, 4) || !finite(s.x, s.kind === "storm" && s.hitIds ? -25 : 0, width + 100) || typeof s.frost !== "boolean") return false;
     // Already-fired projectiles retain their damage across balance updates.
-    if (s.kind === undefined) return [PLANTS.pea.damage, PLANTS.frost.damage, 15, 18, 22].includes(s.damage);
+    if (s.kind === undefined) return [PLANTS.pea.damage, PLANTS.frost.damage, 7, 14, 15, 18, 22].includes(s.damage);
     if (s.frost) return false;
-    if (s.kind === "ember") return [24, PLANTS.ember.damage].includes(s.damage);
-    if (s.kind === "twin") return [18, PLANTS.twin.damage].includes(s.damage) && integer(s.muzzle, 0, 1);
-    if (s.kind === "thorn") return s.damage === PLANTS.thorn.damage && list(s.hitIds, THORN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id)
+    if (s.kind === "storm") return s.damage === PLANTS.storm.damage && (s.hitIds === undefined ? s.chainAt === undefined
+      : list(s.hitIds, CHAIN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id) && s.hitIds.length > 0
+        && new Set(s.hitIds).size === s.hitIds.length && finite(s.chainAt, g.time - 1e-9, g.time + CHAIN_GAP + 1e-9));
+    if (s.kind === "ember") return [12, 24, PLANTS.ember.damage].includes(s.damage);
+    if (s.kind === "twin") return [18, 24, PLANTS.twin.damage].includes(s.damage) && integer(s.muzzle, 0, 1);
+    if (s.kind === "thorn") return [26, PLANTS.thorn.damage].includes(s.damage) && list(s.hitIds, THORN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id)
       && new Set(s.hitIds).size === s.hitIds.length;
-    return s.kind === "pumpkin" && [55, PLANTS.pumpkin.damage].includes(s.damage) && finite(s.originX, 78, width - 22)
+    return s.kind === "pumpkin" && [55, 70, PLANTS.pumpkin.damage].includes(s.damage) && finite(s.originX, 78, width - 22)
       && finite(s.targetX, 0, width + 100) && finite(s.duration, .45, 1.6) && finite(s.age, 0, s.duration)
       && Math.abs(s.x - (s.originX + (s.targetX - s.originX) * s.age / s.duration)) < 1e-7;
   })) return false;

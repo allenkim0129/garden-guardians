@@ -1,5 +1,11 @@
 import { expect } from "@playwright/test";
 
+export async function selectStage(page, stage) {
+  const theme = stage > 20 ? "desert" : stage > 10 ? "moon" : "garden";
+  await page.locator(`.theme-tab[data-theme="${theme}"]`).tap();
+  await page.locator(`.stage-button[data-stage="${stage}"]`).tap();
+}
+
 export async function confirmTeam(page, include) {
   await expect(page.locator("#modal")).toHaveAttribute("data-kind", "loadout");
   if (include) {

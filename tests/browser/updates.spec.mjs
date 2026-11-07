@@ -96,7 +96,82 @@ async function installNext(page, server) {
   await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration()).waiting))).toBe(true);
 }
 
-test("v21의 첫 콩·불씨 피해와 예약·화상·냉기를 보존하고 두 번째 콩부터 v22 피해 적용", async ({ page }) => {
+test("기존 쌍콩이 예약과 사막 저장은 명시적 업데이트·오프라인 뒤 한 번씩 이어짐", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(25, ["sun", "twin", "storm"]);
+    plantAt(game, "twin", 2, 0);
+    game.enemies.push({ id: game.nextId++, type: "barrel", row: 2, x: 900, hp: ENEMIES.barrel.hp, age: 0, slow: 0, eating: false });
+    tick(game, .1); tick(game, .1);
+    game.effects = [];
+    const data = { ...freshSave(), unlocked: 25, tutorialSeen: true, language: "en", volume: 67,
+      teamSlots: ["sun", null, "twin", "storm", null, null, null, null], current: game };
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await installNext(page, server);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await server.stop();
+    await page.reload();
+    await page.locator("#resume-button").tap();
+    await page.waitForTimeout(500);
+    await page.locator("#pause-button").tap();
+    const after = await saved(page);
+    expect(after.current.shots.map(s => s.muzzle)).toEqual([0, 1]);
+    expect(after.current.shots.map(s => s.damage)).toEqual([22, 22]);
+    expect(after.current.plants[0].pendingShotAt).toBeUndefined();
+    expect(after.current.plants[0].shotAt).toBe(game.plants[0].shotAt);
+    expect(after.teamSlots).toEqual(data.teamSlots);
+    expect(after.volume).toBe(67);
+    expect(after.language).toBe("en");
+  } finally { await server.stop(); }
+});
+
+test("순차 번개·선인장 충전은 업데이트와 서버 종료 후 중복 없이 이어짐", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(28, ["cactus", "storm"]);
+    game.sun = 1000;
+    plantAt(game, "cactus", 1, 0);
+    for (let step = 0; step < 54; step++) tick(game, .1);
+    const chainedIds = [];
+    for (let index = 0; index < 6; index++) {
+      const id = game.nextId++;
+      chainedIds.push(id);
+      game.enemies.push({ id, type: "barrel", row: 2, x: 500 + index * 35, hp: 400, age: 0, slow: 0, eating: false });
+    }
+    game.enemies.push({ id: game.nextId++, type: "barrel", row: 1, x: 900, hp: 400, age: 0, slow: 0, eating: false });
+    game.shots.push({ id: game.nextId++, kind: "storm", row: 2, x: 470, damage: 32, frost: false });
+    tick(game, .1);
+    game.effects = [];
+    const data = { ...freshSave(), unlocked: 28, tutorialSeen: true, language: "en", current: game };
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await installNext(page, server);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await server.stop();
+    await page.reload();
+    await page.locator("#resume-button").tap();
+    await page.waitForTimeout(1000);
+    await page.locator("#pause-button").tap();
+    const after = (await saved(page)).current;
+    expect(after.shots).toEqual([]);
+    expect(chainedIds.map(id => after.enemies.find(e => e.id === id)?.hp)).toEqual([368, 368, 368, 368, 368, 400]);
+    expect(after.enemies.filter(e => e.row === 1)).toEqual([]);
+    expect(after.plants[0].shotAt).toBeGreaterThanOrEqual(6 - 1e-8);
+    expect(after.plants[0].hp).toBe(160);
+    expect(after.stats.defeated).toBe(1);
+  } finally { await server.stop(); }
+});
+
+test("v21의 첫 콩·불씨 피해와 예약·화상·냉기를 보존하고 두 번째 콩부터 v24 피해 적용", async ({ page }) => {
   const server = await releaseServer();
   try {
     const game = createGame(10, ["sun", "pea", "wall", "frost", "twin", "ember", "lantern", "iron"]);
@@ -122,7 +197,7 @@ test("v21의 첫 콩·불씨 피해와 예약·화상·냉기를 보존하고 �
     const restored = await saved(page);
     expect(restored.current.plants[0].pendingShotAt).toBeUndefined();
     expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.muzzle)).toEqual([0, 1]);
-    expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.damage)).toEqual([18, 24]);
+    expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.damage)).toEqual([18, 22]);
     expect(restored.current.shots.filter(s => s.kind === "ember")).toHaveLength(1);
     expect(restored.current.shots.find(s => s.kind === "ember").damage).toBe(24);
     expect(restored.current.enemies[1].burn).toBeLessThan(game.enemies[1].burn);
@@ -145,8 +220,8 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     game.plants.push({ id: game.nextId++, type: "lantern", row: 0, col: 1, hp: 140, timer: 9.5, age: 12 });
     const data = { ...freshSave(), unlocked: 10, stars: freshSave().stars.fill(3), language: "en", volume: 65, tutorialSeen: true, current: game };
     const expected = structuredClone(data);
-    expected.current.rulesVersion = 5;
-    expected.current.cooldowns = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9 };
+    expected.current.rulesVersion = 6;
+    expected.current.cooldowns = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9, storm: 0, cactus: 0 };
     expected.current.skyTimer = 5;
     expected.current.plants[0].timer = 6;
     expected.current.plants[1].timer = 8;
@@ -175,7 +250,7 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     await expect(sun.locator(".cooldown")).toHaveText("4s");
     await page.locator("#pause-button").tap();
     const after = await saved(page);
-    expect(after.current.rulesVersion).toBe(5);
+    expect(after.current.rulesVersion).toBe(6);
     expect(after.current.cooldowns.sun).toBeGreaterThan(0);
     expect(after.current.cooldowns.sun).toBeLessThanOrEqual(4);
     expect(after.current.plants.at(-1).timer).toBeLessThanOrEqual(5);
@@ -201,7 +276,7 @@ test("10칸 별 저장은 명시적 업데이트 뒤 현재 판을 유지하며 
     await server.stop();
     await page.reload();
     await page.locator("#resume-button").tap();
-    expect(await saved(page)).toEqual({ ...data, unlocked: 11, stars: [...data.stars, ...Array(10).fill(0)] });
+    expect(await saved(page)).toEqual({ ...data, unlocked: 11, stars: [...data.stars, ...Array(20).fill(0)] });
     await expect(page.locator("#game")).toHaveAttribute("data-theme", "garden");
   } finally { await server.stop(); }
 });

@@ -11,6 +11,7 @@ export function playStrategy(api, stage, mode = "mixed", attacker = "pea") {
     return true;
   }
   const rows = api.STAGES[stage - 1].rows ?? [2, 0, 4, 1, 3];
+  const grouped = available("storm") ? "storm" : "thorn";
   if (mode === "expanded" && stage === 5) attempt("twin", rows[0], 2);
   if (mode === "expanded" && stage === 7) attempt("pumpkin", rows[0], 3);
   for (let step = 0; step < 4000 && game.status === "playing"; step++) {
@@ -43,9 +44,14 @@ export function playStrategy(api, stage, mode = "mixed", attacker = "pea") {
       }
       if (!acted && mode === "expanded" && game.time > 35 && !has("lantern", 2, 1)) acted = attempt("lantern", 2, 1);
       if (!acted && mode === "expanded" && game.time > 45 && !has("lantern", 1, 1)) acted = attempt("lantern", 1, 1);
+      if (!acted && mode === "expanded" && stage > 20) {
+        for (const [index, row] of [0, 3, 4].entries()) {
+          if (game.time > 55 + index * 10 && !has("lantern", row, 1) && attempt("lantern", row, 1)) { acted = true; break; }
+        }
+      }
       if (!acted && mode !== "pea") {
         for (const row of priorityRows) {
-          const upgrade = { 0: "twin", 1: "thorn", 3: "pumpkin" }[row];
+          const upgrade = { 0: "twin", 1: grouped, 3: "pumpkin" }[row];
           const type = mode === "expanded" && upgrade && available(upgrade) ? upgrade : "frost";
           if (!game.plants.some(p => p.row === row && p.col === 3) && attempt(type, row, 3)) { acted = true; break; }
         }
@@ -53,7 +59,7 @@ export function playStrategy(api, stage, mode = "mixed", attacker = "pea") {
       if (!acted) {
         for (const col of (mode === "pea" ? [3, 4, 1] : [1, 4, 3])) {
           for (const row of rows) {
-            const upgrade = col === 1 ? "twin" : row % 2 ? "pumpkin" : "thorn";
+            const upgrade = col === 1 ? "twin" : row % 2 ? "pumpkin" : grouped;
             const type = mode === "expanded" && available(upgrade) ? upgrade : attacker;
             if (!game.plants.some(p => p.row === row && p.col === col) && attempt(type, row, col)) { acted = true; break; }
           }
