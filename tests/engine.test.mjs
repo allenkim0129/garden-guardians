@@ -367,89 +367,89 @@ test("이전 6종 시간표는 모든 30단계에서 각각 v25·v29와 바이�
   hashes.forEach((hash, index) => {
     assert.equal(createHash("sha256").update(JSON.stringify(STAGES.map(stage => scheduleFor(stage.id, index + 1)))).digest("hex"), hash);
   });
-  test("v30은 테마 안에서 체력을 고정하고 물량을 증가시키며 다음 테마에서 물량·간격을 리셋", () => {
-    for (const [start, count, step, multiplier] of [[11, 28, 4, 1.3], [21, 36, 6, 1.6]]) {
-      const previous = scheduleFor(start - 1);
-      const first = scheduleFor(start);
-      assert.ok(first.length < previous.length);
-      const gap = plan => {
-        const final = plan.filter(s => s.wave === 3);
-        return final[1].at - final[0].at;
-      };
-      assert.ok(gap(first) > gap(previous));
-      for (let offset = 0; offset < 10; offset++) {
-        const stage = start + offset, plan = scheduleFor(stage);
-        assert.equal(createGame(stage).pacingVersion, 7);
-        assert.equal(plan.length, count + step * offset);
-        assert.equal(STAGES[stage - 1].hpMultiplier, multiplier);
-        for (const type of Object.keys(ENEMIES)) {
-          assert.equal(engine.enemyHealth(type, stage), Math.round(ENEMIES[type].hp * multiplier));
-          assert.equal(engine.enemyHealth(type, stage, 6), ENEMIES[type].hp);
-        }
-        const final = plan.findIndex(s => s.wave === 3);
-        assert.ok(Math.abs(plan[final].at - plan[final - 1].at - 30) < 1e-8);
-        for (const type of new Set(plan.map(s => s.type))) {
-          const game = createGame(stage), index = plan.findIndex(s => s.type === type);
-          game.nextSpawn = index; game.time = plan[index].at - .05;
-          tick(game, .1);
-          assert.equal(game.enemies.length, 1);
-          assert.equal(game.enemies[0].hp, engine.enemyHealth(type, stage));
-          assert.equal(engine.enemyMaxHp(game.enemies[0]), game.enemies[0].hp);
-          assert.ok(validSnapshot(snapshot(game)));
-        }
+});
+test("v30은 테마 안에서 체력을 고정하고 물량을 증가시키며 다음 테마에서 물량·간격을 리셋", () => {
+  for (const [start, count, step, multiplier] of [[11, 28, 4, 1.3], [21, 36, 6, 1.6]]) {
+    const previous = scheduleFor(start - 1);
+    const first = scheduleFor(start);
+    assert.ok(first.length < previous.length);
+    const gap = plan => {
+      const final = plan.filter(s => s.wave === 3);
+      return final[1].at - final[0].at;
+    };
+    assert.ok(gap(first) > gap(previous));
+    for (let offset = 0; offset < 10; offset++) {
+      const stage = start + offset, plan = scheduleFor(stage);
+      assert.equal(createGame(stage).pacingVersion, 7);
+      assert.equal(plan.length, count + step * offset);
+      assert.equal(STAGES[stage - 1].hpMultiplier, multiplier);
+      for (const type of Object.keys(ENEMIES)) {
+        assert.equal(engine.enemyHealth(type, stage), Math.round(ENEMIES[type].hp * multiplier));
+        assert.equal(engine.enemyHealth(type, stage, 6), ENEMIES[type].hp);
       }
-    }
-    for (let stage = 1; stage <= 10; stage++) {
-      assert.deepEqual(scheduleFor(stage), scheduleFor(stage, 6));
-      for (const type of Object.keys(ENEMIES)) assert.equal(engine.enemyHealth(type, stage), ENEMIES[type].hp);
-    }
-  });
-
-  test("v30 실제 출현 체력·장비 기준·저장 검증과 이전 판의 높은 적 수를 보존", () => {
-    for (const [stage, type] of [[20, "umbrella"], [30, "barrel"], [30, "courier"]]) {
-      const game = createGame(stage), plan = scheduleFor(stage);
-      game.nextSpawn = plan.findIndex(s => s.type === type);
-      game.time = plan[game.nextSpawn].at - .05;
-      tick(game, .1);
-      const target = game.enemies[0], maxHp = engine.enemyHealth(type, stage);
-      const threshold = type === "umbrella" ? maxHp - 65 : maxHp / 2;
-      target.hp = threshold + 1; target.x = 500;
-      const hit = () => {
-        game.shots.push({ id: game.nextId++, row: target.row, x: target.x - 30, damage: 1, frost: false });
+      const final = plan.findIndex(s => s.wave === 3);
+      assert.ok(Math.abs(plan[final].at - plan[final - 1].at - 30) < 1e-8);
+      for (const type of new Set(plan.map(s => s.type))) {
+        const game = createGame(stage), index = plan.findIndex(s => s.type === type);
+        game.nextSpawn = index; game.time = plan[index].at - .05;
         tick(game, .1);
-      };
-      assert.equal(target.equipmentDropped, undefined);
-      hit();
-      assert.equal(target.hp, threshold);
-      assert.equal(target.equipmentDropped, true);
-      assert.equal(game.effects.filter(e => e.kind === "gear").length, 1);
-      const saved = snapshot(game);
-      const loaded = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: stage, current: saved }) });
-      assert.equal(loaded.error, null);
-      assert.deepEqual(loaded.data.current, saved);
-      game.effects = [];
-      tick(game, .1); tick(loaded.data.current, .1);
-      assert.deepEqual(loaded.data.current, game);
-      hit();
-      assert.equal(game.effects.filter(e => e.kind === "gear").length, 0);
-      for (const change of [e => e.maxHp++, e => e.maxHp = null, e => e.hp = maxHp + 1]) {
-        const invalid = snapshot(game); change(invalid.enemies[0]);
-        assert.equal(validSnapshot(invalid), false);
+        assert.equal(game.enemies.length, 1);
+        assert.equal(game.enemies[0].hp, engine.enemyHealth(type, stage));
+        assert.equal(engine.enemyMaxHp(game.enemies[0]), game.enemies[0].hp);
+        assert.ok(validSnapshot(snapshot(game)));
       }
     }
-    for (const pacingVersion of [1, 2, 3, 4, 5, 6]) {
-      const old = createGame(30); old.pacingVersion = pacingVersion;
-      const plan = scheduleFor(30, pacingVersion);
-      old.time = plan.at(-1).at;
-      tick(old, .1);
-      assert.equal(old.enemies.length, plan.length);
-      assert.ok(old.enemies.length > STAGES[29].count);
-      assert.ok(old.enemies.every(e => e.hp === ENEMIES[e.type].hp && e.maxHp === undefined));
-      assert.ok(validSnapshot(old));
-      const data = { ...freshSave(), unlocked: 30, current: snapshot(old) };
-      assert.deepEqual(readSave({ getItem: () => JSON.stringify(data) }).data, data);
+  }
+  for (let stage = 1; stage <= 10; stage++) {
+    assert.deepEqual(scheduleFor(stage), scheduleFor(stage, 6));
+    for (const type of Object.keys(ENEMIES)) assert.equal(engine.enemyHealth(type, stage), ENEMIES[type].hp);
+  }
+});
+
+test("v30 실제 출현 체력·장비 기준·저장 검증과 이전 판의 높은 적 수를 보존", () => {
+  for (const [stage, type] of [[20, "umbrella"], [30, "barrel"], [30, "courier"]]) {
+    const game = createGame(stage), plan = scheduleFor(stage);
+    game.nextSpawn = plan.findIndex(s => s.type === type);
+    game.time = plan[game.nextSpawn].at - .05;
+    tick(game, .1);
+    const target = game.enemies[0], maxHp = engine.enemyHealth(type, stage);
+    const threshold = type === "umbrella" ? maxHp - 65 : maxHp / 2;
+    target.hp = threshold + 1; target.x = 500;
+    const hit = () => {
+      game.shots.push({ id: game.nextId++, row: target.row, x: target.x - 30, damage: 1, frost: false });
+      tick(game, .1);
+    };
+    assert.equal(target.equipmentDropped, undefined);
+    hit();
+    assert.equal(target.hp, threshold);
+    assert.equal(target.equipmentDropped, true);
+    assert.equal(game.effects.filter(e => e.kind === "gear").length, 1);
+    const saved = snapshot(game);
+    const loaded = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: stage, current: saved }) });
+    assert.equal(loaded.error, null);
+    assert.deepEqual(loaded.data.current, saved);
+    game.effects = [];
+    tick(game, .1); tick(loaded.data.current, .1);
+    assert.deepEqual(loaded.data.current, game);
+    hit();
+    assert.equal(game.effects.filter(e => e.kind === "gear").length, 0);
+    for (const change of [e => e.maxHp++, e => e.maxHp = null, e => e.hp = maxHp + 1]) {
+      const invalid = snapshot(game); change(invalid.enemies[0]);
+      assert.equal(validSnapshot(invalid), false);
     }
-  });
+  }
+  for (const pacingVersion of [1, 2, 3, 4, 5, 6]) {
+    const old = createGame(30); old.pacingVersion = pacingVersion;
+    const plan = scheduleFor(30, pacingVersion);
+    old.time = plan.at(-1).at;
+    tick(old, .1);
+    assert.equal(old.enemies.length, plan.length);
+    assert.ok(old.enemies.length > STAGES[29].count);
+    assert.ok(old.enemies.every(e => e.hp === ENEMIES[e.type].hp && e.maxHp === undefined));
+    assert.ok(validSnapshot(old));
+    const data = { ...freshSave(), unlocked: 30, current: snapshot(old) };
+    assert.deepEqual(readSave({ getItem: () => JSON.stringify(data) }).data, data);
+  }
 });
 test("정비 중 출현·조기 승리 없이 전투와 생산은 계속되고 정지·복구 뒤 최종 첫 적은 한 번만 등장", () => {
   for (const stage of [1, 10, 19, 22, 30]) {
