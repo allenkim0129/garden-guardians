@@ -12,9 +12,9 @@ export const PUMPKIN_RADIUS = 115;
 export const FIRE_RADIUS = 105;
 export const BURN_DURATION = 3;
 export const BURN_DAMAGE = 6;
-export const SKY_SUN_INTERVAL = 5;
+export const SKY_SUN_INTERVAL = 7;
 export const PLANTS = Object.freeze({
-  sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 4, firstHarvest: 5, interval: 6, description: "첫 햇빛은 5초 뒤, 이후 6초마다 햇빛 25를 만들어요." },
+  sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 4, firstHarvest: 5, interval: 8, description: "첫 햇빛은 5초 뒤, 이후 8초마다 햇빛 25를 만들어요." },
   pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 5, interval: 1.6, damage: 18, description: "앞으로 초록 완두콩을 톡톡 쏘아요." },
   wall: { name: "도토리벽", unlockStage: 2, cost: 75, hp: 650, recharge: 7, description: "튼튼한 몸으로 좀비를 막아요." },
   frost: { name: "서리초", unlockStage: 3, cost: 125, hp: 100, recharge: 4, interval: 1.6, damage: 15, description: "얼음 결정을 쏴 좀비를 3초 동안 느리게 해요." },
@@ -22,7 +22,7 @@ export const PLANTS = Object.freeze({
   twin: { name: "쌍콩이", unlockStage: 5, cost: 225, hp: 120, recharge: 8, interval: 2, damage: 18, description: "2초마다 위아래 꼬투리에서 콩을 0.2초 간격으로 두 번 쏴요." },
   thorn: { name: "가시풀", unlockStage: 6, cost: 200, hp: 100, recharge: 8, interval: 2.8, damage: 26, description: "2.8초마다 같은 줄의 좀비를 최대 3명 관통하는 가시를 쏴요." },
   pumpkin: { name: "호박포", unlockStage: 7, cost: 225, hp: 130, recharge: 9, interval: 3.8, damage: 55, description: "3.8초마다 호박탄을 던져 착지점 반경 약 한 칸에 피해를 줘요." },
-  lantern: { name: "해등나무", unlockStage: 8, cost: 125, hp: 140, recharge: 9, firstHarvest: 8, interval: 8, description: "8초마다 햇빛 50을 만들어요. 첫 햇빛도 8초 뒤에 나와요." },
+  lantern: { name: "해등나무", unlockStage: 8, cost: 125, hp: 140, recharge: 9, firstHarvest: 8, interval: 10, description: "첫 햇빛은 8초 뒤, 이후 10초마다 햇빛 50을 만들어요." },
   iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 12, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 12초!" },
   ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 24, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 24 피해, 3초 동안 초당 6 화상 피해를 줘요. 화상은 중첩되지 않아요." },
 });

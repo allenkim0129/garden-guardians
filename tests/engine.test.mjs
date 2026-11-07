@@ -565,7 +565,7 @@ test("v18 모든 식물의 배치 대기가 1~2초 줄고 실제 재배치 경�
     assert.ok(validSnapshot(snapshot(game)), type);
   }
 });
-test("v18 햇살봉은 첫 5초·이후 6초, 하늘 햇빛은 첫 4초·이후 5초", () => {
+test("v21 햇살봉은 첫 5초·이후 8초, 하늘 햇빛은 첫 4초·이후 7초", () => {
   const game = createGame(1);
   plantAt(game, "sun", 0, 0);
   const own = () => game.suns.filter(s => s.x === 72 && s.y === 50);
@@ -580,7 +580,7 @@ test("v18 햇살봉은 첫 5초·이후 6초, 하늘 햇빛은 첫 4초·이후 
   assert.equal(own().length, 1);
   const first = own()[0];
   assert.equal(collectSun(game, first.id), true);
-  advance(game, 3.8);
+  advance(game, 5.8);
   assert.equal(game.suns.length, 1);
   advance(game, .2);
   assert.equal(game.suns.length, 2);
@@ -589,4 +589,22 @@ test("v18 햇살봉은 첫 5초·이후 6초, 하늘 햇빛은 첫 4초·이후 
   advance(game, .2);
   assert.equal(own().length, 1);
   assert.equal(own()[0].value, 25);
+});
+
+test("v21 첫 1분 생산량은 햇살봉 175·해등나무 300·하늘 225로 총 700", () => {
+  const game = createGame(10);
+  plantAt(game, "sun", 0, 0); plantAt(game, "lantern", 1, 0);
+  const production = { sun: 0, lantern: 0, sky: 0 };
+  for (let i = 0; i < 601; i++) {
+    tick(game, .1);
+    for (const sun of [...game.suns]) {
+      const source = sun.value === 50 ? "lantern" : sun.x === 72 && sun.y === 50 ? "sun" : "sky";
+      production[source] += sun.value;
+      collectSun(game, sun.id);
+    }
+  }
+  assert.equal(game.status, "playing");
+  assert.deepEqual(production, { sun: 175, lantern: 300, sky: 225 });
+  assert.equal(game.stats.collected, 700);
+  assert.ok(validSnapshot(snapshot(game)));
 });

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGame, plantAt, snapshot, validSnapshot, STAGES } from "../src/engine.js";
+import { createGame, plantAt, snapshot, validSnapshot, tick, STAGES } from "../src/engine.js";
 import { freshSave, readSave, writeSave, validateSave, updateProgress } from "../src/storage.js";
 const memory = () => {
   let value = null;
@@ -177,8 +177,28 @@ test("v17의 긴 대기도 저장을 거부하지 않고 새 상한으로 한 �
   const corrupt = structuredClone(expected);
   corrupt.current.cooldowns.bomb = 14.1;
   assert.equal(validateSave(corrupt), false);
-  corrupt.current.cooldowns.bomb = 14; corrupt.current.skyTimer = 5.1;
+  corrupt.current.cooldowns.bomb = 14; corrupt.current.skyTimer = 7.1;
   assert.equal(validateSave(corrupt), false);
+});
+
+test("v20 저장의 남은 생산 대기는 그대로, 다음 생산부터 v21 간격으로 저장·복원", () => {
+  const game = createGame(20, ["sun", "lantern", "pea"]);
+  plantAt(game, "sun", 0, 0); plantAt(game, "lantern", 1, 0);
+  for (const plant of game.plants) plant.timer = .1;
+  game.skyTimer = .1;
+  const data = { ...freshSave(), unlocked: 20, language: "en", volume: 65, current: snapshot(game) };
+  const restored = readSave({ getItem: () => JSON.stringify(data) });
+  assert.equal(restored.error, null);
+  assert.deepEqual(restored.data, data);
+  tick(restored.data.current, .1);
+  assert.equal(restored.data.current.skyTimer, 7);
+  assert.equal(restored.data.current.plants[0].timer, 8);
+  assert.equal(restored.data.current.plants[1].timer, 10);
+  assert.equal(restored.data.current.suns.length, 3);
+  assert.equal(restored.data.current.sun, game.sun);
+  updateProgress(restored.data, restored.data.current);
+  assert.ok(validateSave(restored.data));
+  assert.deepEqual(readSave({ getItem: () => JSON.stringify(restored.data) }).data, restored.data);
 });
 
 test("기존 1단계 저장도 진행 손실 없이 햇살봉·콩별이를 바로 배치 가능", () => {

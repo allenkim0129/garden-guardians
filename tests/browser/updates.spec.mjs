@@ -157,8 +157,8 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     await page.locator("#resume-button").tap();
     expect(await saved(page)).toEqual(expected);
     const sun = page.locator('.seed-card[data-type="sun"]');
-    await expect(sun).toHaveAttribute("aria-label", /First harvest after 5s, then 25 sunlight every 6s/);
-    await expect(page.locator('.seed-card[data-type="lantern"]')).toHaveAttribute("aria-label", /50 sunlight every 8s/);
+    await expect(sun).toHaveAttribute("aria-label", /First harvest after 5s, then 25 sunlight every 8s/);
+    await expect(page.locator('.seed-card[data-type="lantern"]')).toHaveAttribute("aria-label", /First harvest after 8s, then 50 sunlight every 10s/);
     await expect(sun.locator(".cooldown")).toHaveText("4s");
     await expect(sun.locator(".cooldown")).toBeHidden({ timeout: 6000 });
     await sun.tap();

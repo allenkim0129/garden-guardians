@@ -131,7 +131,7 @@ test("햇살봉 생성 프레임은 실제 햇빛 생성과 일치하고 타임�
   tick(game, .1);
   assert.equal(game.suns.length, 1);
   assert.equal(game.suns[0].value, 25);
-  assert.equal(sun.timer, 6);
+  assert.equal(sun.timer, 8);
   assert.equal(sun.producedAt, game.time);
   assert.deepEqual(plantFrame(sun, game), { state: "produce", row: 1, col: 2 });
   tick(game, .1); tick(game, .05);

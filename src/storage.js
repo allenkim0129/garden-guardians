@@ -1,4 +1,4 @@
-import { validSnapshot, snapshot, PLANTS, SKY_SUN_INTERVAL, STAGES } from "./engine.js";
+import { validSnapshot, snapshot, PLANTS, STAGES } from "./engine.js";
 
 export const SAVE_KEY = "garden-guardians-save-v1";
 export const freshSave = () => ({ version: 1, unlocked: 1, stars: Array(STAGES.length).fill(0), sound: false, volume: 45, tutorialSeen: false, language: "ko", current: null });
@@ -33,10 +33,12 @@ export function readSave(storage) {
       for (const type of Object.keys(PLANTS)) data.current.cooldowns[type] ??= 0;
       if ((data.current.rulesVersion ?? 1) < 5) {
         for (const type of Object.keys(PLANTS)) data.current.cooldowns[type] = Math.min(data.current.cooldowns[type], PLANTS[type].recharge);
+        // Keep the v18 migration stable when later releases rebalance production.
         for (const plant of data.current.plants) {
-          if (PLANTS[plant.type].firstHarvest !== undefined) plant.timer = Math.min(plant.timer, PLANTS[plant.type].interval);
+          const limit = { sun: 6, lantern: 8 }[plant.type];
+          if (limit !== undefined) plant.timer = Math.min(plant.timer, limit);
         }
-        data.current.skyTimer = Math.min(data.current.skyTimer, SKY_SUN_INTERVAL);
+        data.current.skyTimer = Math.min(data.current.skyTimer, 5);
       }
       data.current.rulesVersion = 5;
     }

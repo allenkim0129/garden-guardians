@@ -136,7 +136,7 @@ test("포물선 비행·착지 피해는 저장 복구 후 동일하고 그리�
   advance(game, 2); advance(saved, 2);
   assert.deepEqual(saved, game);
 });
-test("해등나무는 첫 8초와 이후 8초마다 50, 수집은 한 번·자동수집 8초", () => {
+test("해등나무는 첫 8초와 이후 10초마다 50, 수집은 한 번·자동수집 8초", () => {
   const game = createGame(8);
   plantAt(game, "lantern", 0, 0);
   const plant = game.plants[0];
@@ -149,7 +149,7 @@ test("해등나무는 첫 8초와 이후 8초마다 50, 수집은 한 번·자�
   const token = ownSuns()[0];
   assert.equal(engine.collectSun(game, token.id), true);
   assert.equal(engine.collectSun(game, token.id), false);
-  advance(game, 7.8);
+  advance(game, 9.8);
   assert.equal(ownSuns().length, 0);
   advance(game, .2);
   const second = ownSuns()[0];
