@@ -1,7 +1,10 @@
-import { validSnapshot, snapshot, PLANTS, STAGES } from "./engine.js";
+import { validSnapshot, snapshot, PLANTS, STAGES, loadoutLimit, validLoadout } from "./engine.js";
 
 export const SAVE_KEY = "garden-guardians-save-v1";
 export const freshSave = () => ({ version: 1, unlocked: 1, stars: Array(STAGES.length).fill(0), sound: false, volume: 45, tutorialSeen: false, language: "ko", current: null });
+const validTeamSlots = slots => Array.isArray(slots) && [6, 8].includes(slots.length)
+  && slots.every(type => type === null || typeof type === "string")
+  && validLoadout(slots.filter(type => type !== null), STAGES.length);
 export function validateSave(value) {
   return value !== null && typeof value === "object" && value.version === 1
     && Array.isArray(value.stars) && [10, STAGES.length].includes(value.stars.length) && value.stars.every(n => Number.isInteger(n) && n >= 0 && n <= 3)
@@ -9,6 +12,7 @@ export function validateSave(value) {
     && typeof value.sound === "boolean" && typeof value.tutorialSeen === "boolean"
     && (value.volume === undefined || (Number.isInteger(value.volume) && value.volume >= 0 && value.volume <= 100))
     && (value.language === undefined || ["ko", "en"].includes(value.language))
+    && (value.teamSlots === undefined || validTeamSlots(value.teamSlots))
     && (value.current === null || (validSnapshot(value.current) && value.current.stage <= value.unlocked));
 }
 export function readSave(storage) {
@@ -56,6 +60,9 @@ export function writeSave(storage, data) {
   }
 }
 export function updateProgress(data, game) {
+  if (game.status !== "playing" && data.teamSlots === undefined && game.loadout) {
+    data.teamSlots = Array.from({ length: loadoutLimit(game.stage) }, (_, index) => game.loadout[index] ?? null);
+  }
   if (game.status === "won") {
     data.stars[game.stage - 1] = Math.max(data.stars[game.stage - 1], game.lives);
     data.unlocked = Math.max(data.unlocked, Math.min(STAGES.length, game.stage + 1));

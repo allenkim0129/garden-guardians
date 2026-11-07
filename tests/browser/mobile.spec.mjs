@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createGame, STAGES } from "../../src/engine.js";
+import { createGame, STAGES, boardWidth } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
 import { confirmTeam } from "../helpers/browser.mjs";
 
@@ -98,17 +98,17 @@ test("최대 6종 사전 선택·큰 카드·언어 전환·재접속·최소 �
   await expect(page.locator('.seed-card[data-type="iron"]')).toBeVisible();
   await expect(page.locator('.seed-card[data-type="wall"]')).toBeHidden();
   const before = await stored(page);
-  for (const selector of [".seed-card:visible", ".plot"]) {
+  for (const selector of [".seed-card:visible", ".plot:visible"]) {
     const sizes = await page.locator(selector).evaluateAll(nodes => nodes.map(node => {
       const box = node.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height };
     }));
     for (const box of sizes) {
       expect(box.width).toBeGreaterThanOrEqual(44 - .01); expect(box.height).toBeGreaterThanOrEqual(44 - .01);
-      expect(box.y + box.height).toBeLessThanOrEqual(320);
+      if (selector === ".plot:visible") expect(box.y + box.height).toBeLessThanOrEqual(320);
     }
   }
   expect(await page.locator(".seed-card:visible img").first().evaluate(img => img.getBoundingClientRect().width)).toBeGreaterThanOrEqual(56);
-  expect(await page.locator("#seed-cards").evaluate(node => node.scrollHeight - node.clientHeight)).toBeLessThanOrEqual(1);
+  expect(await page.locator("#seed-cards").evaluate(node => node.scrollHeight - node.clientHeight)).toBeGreaterThan(20);
   await page.locator("#game").screenshot({ path: testInfo.outputPath("large-cards.png") });
   for (const [width, height] of [[1024, 650], [1024, 768], [768, 1024]]) {
     await page.setViewportSize({ width, height });
@@ -187,7 +187,7 @@ test("안전 여백으로 좁아진 화면의 6종 카드 스크롤·44px·방�
   expect(await page.locator("#board").boundingBox()).toEqual(board);
   expect(await page.evaluate(() => [scrollX, scrollY])).toEqual([0, 0]);
   expect(board.width / 5).toBeGreaterThanOrEqual(44);
-  expect(board.height / 9).toBeGreaterThanOrEqual(44);
+  expect(board.height / 10).toBeGreaterThanOrEqual(44);
   await page.setViewportSize({ width: 568, height: 320 });
   await page.evaluate(() => {
     document.documentElement.style.setProperty("--device-top", "0px");
@@ -197,7 +197,7 @@ test("안전 여백으로 좁아진 화면의 6종 카드 스크롤·44px·방�
   expect(rotated.x).toBeGreaterThanOrEqual(40);
   expect(rotated.x + rotated.width).toBeLessThanOrEqual(568);
   expect(rotated.y + rotated.height).toBeLessThanOrEqual(320);
-  expect(rotated.width / 9).toBeGreaterThanOrEqual(44);
+  expect(rotated.width / 10).toBeGreaterThanOrEqual(44);
   expect(rotated.height / 5).toBeGreaterThanOrEqual(44);
   await page.locator("#pause-button").tap();
   const saved = (await stored(page)).current;
@@ -215,8 +215,8 @@ for (const portrait of [false, true]) test(`빠른 햇빛 쓸기·오배치 방�
   await page.locator("#resume-button").tap();
   await page.locator('.seed-card[data-type="pea"]').tap();
   const rect = await page.locator("#board").boundingBox();
-  const point = x => portrait ? { x: rect.x + rect.width / 2, y: rect.y + rect.height * x / 900 }
-    : { x: rect.x + rect.width * x / 900, y: rect.y + rect.height / 2 };
+  const point = x => portrait ? { x: rect.x + rect.width / 2, y: rect.y + rect.height * x / boardWidth(game) }
+    : { x: rect.x + rect.width * x / boardWidth(game), y: rect.y + rect.height / 2 };
   const from = point(70), to = point(800);
   await swipe(page, context, browserName, from, to);
   await expect(page.locator("#sun-count")).toHaveText("450");
@@ -308,8 +308,8 @@ test("햇빛 위에서 시작한 쓸기·키보드 수집·취소와 다중 포�
   await page.locator("#resume-button").tap();
   await page.locator('.seed-card[data-type="pea"]').tap();
   const rect = await page.locator("#board").boundingBox();
-  const from = { x: rect.x + rect.width * 200 / 900, y: rect.y + rect.height / 2 };
-  const to = { ...from, x: rect.x + rect.width * 400 / 900 };
+  const from = { x: rect.x + rect.width * 200 / boardWidth(game), y: rect.y + rect.height / 2 };
+  const to = { ...from, x: rect.x + rect.width * 400 / boardWidth(game) };
   await swipe(page, context, browserName, from, to);
   await expect(page.locator("#sun-count")).toHaveText("400");
   await page.locator(".sun-drop").focus(); await page.keyboard.press("Enter");

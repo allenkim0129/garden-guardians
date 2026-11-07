@@ -4,7 +4,7 @@
 :root {
   --device-top: env(safe-area-inset-top, 0px); --device-right: env(safe-area-inset-right, 0px);
   --device-bottom: env(safe-area-inset-bottom, 0px); --device-left: env(safe-area-inset-left, 0px);
-  --view-width: 100dvw; --view-height: 100dvh;
+  --view-width: 100dvw; --view-height: 100dvh; --board-columns: 10; --board-ratio: 2;
   --safe-top: var(--device-top); --safe-right: var(--device-right); --safe-bottom: var(--device-bottom);
   --safe-left: calc(var(--device-left) + min(24px, var(--device-left)));
   --usable-width: calc(var(--view-width) - var(--safe-left) - var(--safe-right));
@@ -89,10 +89,10 @@ h1 i { position: absolute; font-style: normal; font-size: .5em; color: #dcaa44; 
 .seed-card .cooldown { position: absolute; right: 4px; top: 3px; font-size: 10px; font-weight: 800; padding: 1px 3px; border-radius: 5px; background: #e9bd7d; color: #614518; }
 .seed-hint { font-size: 12px; color: #7c856c; line-height: 1.7; margin: 0; }
 .garden-wrap { flex: 1; min-width: 0; display: flex; align-items: center; flex-direction: column; justify-content: center; height: 100%; }
-.board { position: relative; width: min(100%, calc((var(--view-height) - 130px - var(--safe-top) - var(--safe-bottom)) * 1.8)); aspect-ratio: 9 / 5; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 0 #d9debd, 0 18px 35px #50603916; background: #b7cd89; isolation: isolate; }
+.board { position: relative; width: min(100%, calc((var(--view-height) - 130px - var(--safe-top) - var(--safe-bottom)) * var(--board-ratio))); aspect-ratio: var(--board-columns) / 5; border-radius: 18px; overflow: hidden; box-shadow: 0 10px 0 #d9debd, 0 18px 35px #50603916; background: #b7cd89; isolation: isolate; }
 .board > canvas { width: 100%; height: 100%; display: block; }
 .board, .board * { touch-action: none; user-select: none; -webkit-user-select: none; }
-.board-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(5, 1fr); }
+.board-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--board-columns), 1fr); grid-template-rows: repeat(5, 1fr); }
 .plot { border: 0; background: transparent; border-radius: 10px; padding: 0; touch-action: manipulation; }
 .plot:focus-visible { outline: 3px solid #235e47; outline-offset: -4px; background: #fff9b73d; }
 @media (hover: hover) { .plot:hover { background: #fff9b72b; } }
@@ -217,7 +217,7 @@ dialog[data-kind="loadout"] .modal-top, dialog[data-kind="loadout"] h2, dialog[d
   dialog[data-kind="loadout"] p { font-size: 12px; margin: 6px 0; }
   dialog[data-kind="loadout"] .modal-actions { margin-top: 6px; }
   .loadout-choice img { width: 64px; height: 64px; }
-  .board { width: min(100%, calc((var(--view-height) - 100px - var(--safe-top) - var(--safe-bottom)) * 1.8)); border-radius: 12px; box-shadow: 0 5px 0 #d9debd; }
+  .board { width: min(100%, calc((var(--view-height) - 100px - var(--safe-top) - var(--safe-bottom)) * var(--board-ratio))); border-radius: 12px; box-shadow: 0 5px 0 #d9debd; }
   .garden-caption { display: none; }
   .wave-progress { margin-top: 4px; }
   .board-banner { font-size: 12px; top: 7px; padding: 7px 12px; }
@@ -242,7 +242,7 @@ dialog[data-kind="loadout"] .modal-top, dialog[data-kind="loadout"] h2, dialog[d
   .stage-heading strong { font-size: 11px; }
   .hearts { font-size: 13px; letter-spacing: -1px; }
   .shovel { padding: 8px 12px; }
-  .board { width: min(100%, calc((var(--view-height) - 98px - var(--safe-top) - var(--safe-bottom)) * 1.8)); }
+  .board { width: min(100%, calc((var(--view-height) - 98px - var(--safe-top) - var(--safe-bottom)) * var(--board-ratio))); }
   .garden-caption { font-size: 9px; }
   .garden-caption > span:last-child { display: none; }
   .home-footer { flex-wrap: wrap; }
@@ -269,5 +269,15 @@ dialog[data-kind="loadout"] .modal-top, dialog[data-kind="loadout"] h2, dialog[d
   .sun-counter { min-width: 64px; padding-inline: 6px; }
   .hearts { font-size: 13px; letter-spacing: -1px; }
   .shovel { padding-inline: 10px; }
+}
+@container (max-width: 650px) {
+  .game[data-columns="10"] .seed-bank { flex-basis: 80px; }
+  .game[data-columns="10"] .seed-cards { grid-template-columns: 1fr; overflow-y: auto; }
+  .game[data-columns="10"] .seed-cards,
+  .game[data-columns="10"] .seed-cards .seed-card { touch-action: manipulation; }
+  .game[data-columns="10"] .seed-scroll-hint { display: block; }
+}
+@container (max-width: 547px) {
+  .game[data-columns="10"] .game-layout { padding-inline: 2px; gap: 4px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }

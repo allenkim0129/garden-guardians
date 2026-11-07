@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGame, plantAt, tick, snapshot, validSnapshot, advanceEffects, PLANTS, ENEMIES, STAGES } from "../src/engine.js";
+import { createGame, plantAt, tick, snapshot, validSnapshot, advanceEffects, PLANTS, ENEMIES, STAGES, boardWidth } from "../src/engine.js";
 import { plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION } from "../src/sprites.js";
 import { projectilePosition } from "../src/art.js";
 
@@ -65,7 +65,7 @@ test("걷기·공격은 네 프레임을 사용하고 상태 전환 때 처음�
   assert.deepEqual([0, .17, .34, .51].map(time => enemyFrame({ ...enemy, age: time }, time).col), [0, 1, 2, 3]);
   const start = enemy.x;
   tick(game, .1);
-  assert.ok(Math.abs(enemy.x - (start - 17 * .1)) < 1e-8);
+  assert.ok(Math.abs(enemy.x - (start - 17 * .1 * boardWidth(game) / 900)) < 1e-8);
   enemy.x = 490;
   tick(game, .1);
   assert.deepEqual(enemyFrame(enemy, game.time), { state: "attack", row: 1, col: 0 });
@@ -199,13 +199,14 @@ test("완두콩·얼음 결정의 시각 원점만 보정하고 속도·충돌·
     const target = addEnemy(game, 0, 750);
     tick(game, .1); tick(game, .1);
     const shot = game.shots[0];
-    assert.equal(shot.x, 150 + 28 + 330 * .1);
+    const distance = 330 * boardWidth(game) / 900 * .1;
+    assert.equal(shot.x, 150 + 28 + distance);
     const savedShot = structuredClone(shot);
     assert.deepEqual(projectilePosition(shot), { x: shot.x + (shot.frost ? 7 : 0), y: shot.frost ? 26 : 42 });
     assert.deepEqual(shot, savedShot);
     assert.ok(validSnapshot(snapshot(game)));
     tick(game, .1);
-    assert.equal(shot.x - savedShot.x, 33);
+    assert.ok(Math.abs(shot.x - savedShot.x - distance) < 1e-8);
     target.x = shot.x + 35;
     tick(game, .1);
     assert.equal(game.shots.length, 0);

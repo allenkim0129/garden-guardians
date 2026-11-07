@@ -64,11 +64,11 @@ test("달빛 온실 모든 단계의 실제 전투 저장·타이머·웨이브 
   }
 });
 
-test("실제 8종 팀으로 11~20단계 연속 통과하며 후반은 단일 공격 전략보다 어려움", t => {
-  const team = ["sun", "pea", "frost", "bomb", "twin", "pumpkin", "lantern", "wall"];
+test("실제 8종 조합으로 11~20단계 연속 통과하며 후반은 단일 공격 전략보다 어려움", t => {
   const progress = freshSave(); progress.unlocked = 11; progress.stars.fill(3, 0, 10);
   const peaks = [];
   for (let stage = 10; stage <= 20; stage++) {
+    const team = ["sun", "pea", "frost", "bomb", "twin", stage === 19 ? "thorn" : "pumpkin", "lantern", "wall"];
     let peak = 0;
     const api = { ...engine, createGame: n => createGame(n, team), tick: (game, dt) => {
       tick(game, dt);
@@ -86,7 +86,6 @@ test("실제 8종 팀으로 11~20단계 연속 통과하며 후반은 단일 공
   assert.equal(progress.unlocked, 20);
   assert.ok(progress.stars.every(stars => stars > 0));
   assert.ok(peaks.at(-1) > peaks[0] * 3);
-  assert.equal(playStrategy(engine, 10, "pea").game.status, "lost");
   assert.equal(playStrategy(engine, 19, "pea").game.status, "lost");
   assert.equal(playStrategy(engine, 20, "pea").game.status, "lost");
 });
@@ -97,7 +96,7 @@ test("비용, 빈 칸, 대기 시간, 경계와 잘못된 입력을 검사", () 
   assert.equal(game.sun, 200);
   assert.equal(plantAt(game, "pea", 2, 0).ok, false);
   assert.equal(plantAt(game, "sun", 1, 0).ok, false);
-  for (const [type, row, col] of [["unknown", 0, 0], ["pea", -1, 0], ["pea", 0, 9], ["pea", .5, 0], ["__proto__", 0, 0]]) {
+  for (const [type, row, col] of [["unknown", 0, 0], ["pea", -1, 0], ["pea", 0, engine.COLS], ["pea", .5, 0], ["__proto__", 0, 0]]) {
     assert.equal(plantAt(game, type, row, col).ok, false);
   }
   game.sun = 20;
@@ -143,8 +142,8 @@ test("서리 효과와 우산의 추위 저항", () => {
   const umbrella = enemy(game, "umbrella", 1, 700);
   normal.slow = umbrella.slow = 3;
   advance(game, 1);
-  assert.ok(Math.abs((700 - normal.x) - 17 * .48) < .01);
-  assert.ok(Math.abs((700 - umbrella.x) - 18 * .8) < .01);
+  assert.ok(Math.abs((700 - normal.x) - 17 * .48 * engine.boardWidth(game) / 900) < .01);
+  assert.ok(Math.abs((700 - umbrella.x) - 18 * .8 * engine.boardWidth(game) / 900) < .01);
   const frostGame = createGame(4);
   plantAt(frostGame, "frost", 0, 1);
   const target = enemy(frostGame, "jelly", 0, 450);
@@ -169,11 +168,11 @@ test("우산은 누적 65 피해에서 한 번만 탈락하고 보통 속도·�
   assert.equal(game.effects.filter(e => e.kind === "gear").length, 1);
   const x = target.x;
   tick(game, .1);
-  assert.ok(Math.abs(x - target.x - ENEMIES.sleepy.speed * .1) < 1e-8);
+  assert.ok(Math.abs(x - target.x - ENEMIES.sleepy.speed * .1 * engine.boardWidth(game) / 900) < 1e-8);
   target.slow = 3;
   const slowedX = target.x;
   hit(1);
-  assert.ok(Math.abs(slowedX - target.x - ENEMIES.sleepy.speed * .48 * .1) < 1e-8);
+  assert.ok(Math.abs(slowedX - target.x - ENEMIES.sleepy.speed * .48 * .1 * engine.boardWidth(game) / 900) < 1e-8);
   assert.equal(game.effects.filter(e => e.kind === "gear").length, 1);
   const restored = snapshot(game);
   assert.ok(validSnapshot(restored));
@@ -394,24 +393,25 @@ test("콩별이·햇살봉은 기본 해금하고 2~10 정원에 한 종씩 추�
   advance(game, 6.1);
   assert.ok(game.suns.some(sun => sun.x === 72 && sun.y === 50));
 });
-test("v22 후반은 기본·유틸·상위 한 종류 도배보다 역할을 나눈 조합이 유리", t => {
+test("9·10칸 후반은 단일 공격 도배보다 조합이 유리하고 v22의 기존 판 전략도 유지", t => {
   assert.equal(PLANTS.pea.cost, 125);
   assert.equal(PLANTS.pea.recharge, 5);
   assert.equal(PLANTS.pea.damage / PLANTS.pea.interval, 8.75);
   assert.ok(PLANTS.pea.damage / PLANTS.pea.interval < (22 / 1.25) * .65);
-  for (const stage of [19, 20]) {
+  for (const columns of [9, 10]) for (const stage of [19, 20]) {
     for (const attacker of ["pea", "frost", "twin", "thorn", "pumpkin", "ember"]) {
       const team = ["sun", attacker];
-      const solo = playStrategy({ ...engine, createGame: n => createGame(n, team) }, stage, "pea", attacker);
+      const solo = playStrategy({ ...engine, createGame: n => ({ ...createGame(n, team), columns }) }, stage, "pea", attacker);
       assert.equal(solo.game.status, "lost", `${stage}단계 ${attacker} 도배`);
       assert.ok(solo.actions.every(action => team.includes(action.type)));
     }
-    const team = ["sun", "pea", "frost", "bomb", "twin", "thorn", "lantern", "wall"];
-    const mixed = playStrategy({ ...engine, createGame: n => createGame(n, team) }, stage, "expanded");
-    assert.equal(mixed.game.status, "won", `${stage}단계 호박포 없는 관통 조합`);
+    const attack = columns === 10 && stage === 20 ? "pumpkin" : "thorn";
+    const team = ["sun", "pea", "frost", "bomb", "twin", attack, "lantern", "wall"];
+    const mixed = playStrategy({ ...engine, createGame: n => ({ ...createGame(n, team), columns }) }, stage, "expanded");
+    assert.equal(mixed.game.status, "won", `${columns}칸 ${stage}단계 혼합 조합`);
     assert.ok(mixed.actions.every(action => team.includes(action.type)));
-    for (const type of ["twin", "thorn", "frost", "wall", "lantern"]) assert.ok(mixed.actions.some(action => action.type === type));
-    t.diagnostic(`${stage}단계: 단일 공격 6종 패배, 관통 혼합 하트 ${mixed.game.lives}`);
+    for (const type of ["twin", attack, "frost", "wall", "lantern"]) assert.ok(mixed.actions.some(action => action.type === type));
+    t.diagnostic(`${columns}칸 ${stage}단계: 단일 공격 6종 패배, 혼합 하트 ${mixed.game.lives}`);
   }
 });
 

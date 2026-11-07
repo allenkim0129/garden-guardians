@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION } from "./engine.js";
+import { PLANTS, ENEMIES, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, boardColumns, boardWidth } from "./engine.js";
 import { drawSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION } from "./sprites.js";
 
 const ink = "#304b3d";
@@ -178,10 +178,11 @@ function grass(c, x, y, color) {
   line(c, [[x + 3, y], [x + 5, y - 3]], color, 1.6);
 }
 export function drawBoard(c, game, selected, shovel) {
-  c.clearRect(0, 0, 900, 500);
+  const columns = boardColumns(game);
+  c.clearRect(0, 0, boardWidth(game), 500);
   const moon = STAGES[game.stage - 1].theme === "moon";
   for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 9; col++) {
+    for (let col = 0; col < columns; col++) {
       c.fillStyle = moon ? ((row + col) % 2 ? "#728b9b" : "#819eaa") : ((row + col) % 2 ? "#bcd496" : "#c5dda0");
       c.fillRect(col * 100, row * 100, 100, 100);
       grass(c, col * 100 + 17 + (row * 7) % 15, row * 100 + 86, moon ? "#b9c9e880" : "#89ac6a70");
@@ -195,7 +196,7 @@ export function drawBoard(c, game, selected, shovel) {
           c.restore();
         }
       }
-      if ((row * 9 + col) % 11 === 0) {
+      if ((row * columns + col) % 11 === 0) {
         ellipse(c, col * 100 + 82, row * 100 + 76, 3, 3, moon ? "#e1c5ff" : "#f7f1be");
         ellipse(c, col * 100 + 86, row * 100 + 79, 3, 3, moon ? "#e1c5ff" : "#f7f1be");
         ellipse(c, col * 100 + 82, row * 100 + 81, 3, 3, moon ? "#e1c5ff" : "#f7f1be");

@@ -1,6 +1,6 @@
 export const ROWS = 5;
-export const COLS = 9;
-export const WIDTH = 900;
+export const COLS = 10;
+export const WIDTH = COLS * 100;
 export const HEIGHT = 500;
 export const FALL_DURATION = .88;
 export const BURST_DURATION = .75;
@@ -58,6 +58,9 @@ export const STAGES = [
 ].map(stage => ({ ...stage, theme: "moon", startSun: 350 })))
   .map((stage, i) => Object.freeze({ ...stage, theme: stage.theme ?? "garden", legacyRows: i === 0 ? [2, 1, 3] : stage.rows,
     legacyCount: stage.count, count: stage.theme === "moon" ? stage.count : Math.ceil(stage.count * 1.4), id: i + 1 }));
+
+export const boardColumns = game => game.columns ?? 9;
+export const boardWidth = game => boardColumns(game) * 100;
 
 export function isPlantUnlocked(type, stage) {
   return Object.hasOwn(PLANTS, type) && Number.isInteger(stage) && stage >= PLANTS[type].unlockStage && stage <= STAGES.length;
@@ -143,7 +146,7 @@ export function createGame(stageNumber, loadout) {
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 5, pacingVersion: 5, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 5, pacingVersion: 5, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -157,7 +160,7 @@ const cellY = row => row * 100 + 50;
 
 export function plantAt(game, type, row, col) {
   if (game.status !== "playing") return { ok: false, reason: "지금은 심을 수 없어요." };
-  if (!Object.hasOwn(PLANTS, type) || !Number.isInteger(row) || !Number.isInteger(col) || row < 0 || row >= ROWS || col < 0 || col >= COLS) {
+  if (!Object.hasOwn(PLANTS, type) || !Number.isInteger(row) || !Number.isInteger(col) || row < 0 || row >= ROWS || col < 0 || col >= boardColumns(game)) {
     return { ok: false, reason: "정원 안의 빈 땅을 골라 주세요." };
   }
   const info = PLANTS[type];
@@ -185,7 +188,7 @@ export function removePlant(game, row, col) {
 }
 
 function dropSun(game, x, y, value = 25) {
-  game.suns.push({ id: id(game), x: Math.max(50, Math.min(850, x)), y: Math.max(50, Math.min(450, y)), age: 0, value });
+  game.suns.push({ id: id(game), x: Math.max(50, Math.min(boardWidth(game) - 50, x)), y: Math.max(50, Math.min(450, y)), age: 0, value });
 }
 function fireShot(game, plant, target, muzzle = 0) {
   const info = PLANTS[plant.type];
@@ -237,19 +240,22 @@ export function tick(game, dt) {
   if (game.status !== "playing" || !Number.isFinite(dt) || dt <= 0) return;
   // Large wall-clock gaps must never make enemies jump past a plant.
   dt = Math.min(dt, .1);
+  const width = boardWidth(game);
+  // Keep traversal pace stable; old nine-column saves retain their exact speed.
+  const movementScale = width / 900;
   game.time += dt;
   for (const type of Object.keys(PLANTS)) game.cooldowns[type] = Math.max(0, game.cooldowns[type] - dt);
   const schedule = scheduleFor(game.stage, game.pacingVersion ?? 1);
   while (game.nextSpawn < schedule.length && game.time >= schedule[game.nextSpawn].at) {
     const spawn = schedule[game.nextSpawn++];
     const info = ENEMIES[spawn.type];
-    game.enemies.push({ id: id(game), type: spawn.type, row: spawn.row, x: 936, hp: info.hp, slow: 0, age: 0, eating: false, motionAt: game.time });
+    game.enemies.push({ id: id(game), type: spawn.type, row: spawn.row, x: width + 36, hp: info.hp, slow: 0, age: 0, eating: false, motionAt: game.time });
     game.wave = spawn.wave;
   }
   game.skyTimer -= dt;
   if (game.skyTimer <= 0) {
     const n = Math.floor(game.time / SKY_SUN_INTERVAL);
-    dropSun(game, 90 + ((n * 173) % 720), 60 + ((n * 97) % 380));
+    dropSun(game, 90 + ((n * 173) % (width - 180)), 60 + ((n * 97) % 380));
     game.skyTimer += SKY_SUN_INTERVAL;
   }
   for (const sun of [...game.suns]) {
@@ -305,12 +311,12 @@ export function tick(game, dt) {
           if (Math.hypot(enemy.x - shot.targetX, (enemy.row - shot.row) * 100) <= PUMPKIN_RADIUS) damageEnemy(game, enemy, shot.damage);
         }
         game.effects.push({ id: id(game), kind: "splash", x: shot.targetX, y: cellY(shot.row), age: 0 });
-        shot.x = 1100;
+        shot.x = width + 200;
       }
       continue;
     }
     const previousX = shot.x;
-    shot.x += 330 * dt;
+    shot.x += 330 * movementScale * dt;
     const targets = game.enemies
       .filter(e => e.hp > 0 && e.row === shot.row && e.x + 25 >= previousX && e.x - 25 <= shot.x && (shot.kind !== "thorn" || !shot.hitIds.includes(e.id)))
       .sort((a, b) => a.x - b.x);
@@ -325,7 +331,7 @@ export function tick(game, dt) {
         game.effects.push({ id: id(game), kind: "flame", x: target.x, y: cellY(target.row), age: 0 });
       } else damageEnemy(game, target, shot.damage, shot.frost);
       if (shot.kind === "thorn") shot.hitIds.push(target.id);
-      if (shot.kind !== "thorn" || shot.hitIds.length >= THORN_HITS) { shot.x = 1100; break; }
+      if (shot.kind !== "thorn" || shot.hitIds.length >= THORN_HITS) { shot.x = width + 200; break; }
     }
   }
   for (const enemy of game.enemies) {
@@ -348,7 +354,7 @@ export function tick(game, dt) {
     } else {
       const bareUmbrella = enemy.type === "umbrella" && enemy.equipmentDropped;
       const speed = enemy.slow > 0 ? (enemy.type === "umbrella" && !bareUmbrella ? .8 : .48) : 1;
-      enemy.x -= (bareUmbrella ? ENEMIES.sleepy.speed : info.speed) * speed * dt;
+      enemy.x -= (bareUmbrella ? ENEMIES.sleepy.speed : info.speed) * movementScale * speed * dt;
     }
     if (enemy.x < -25) {
       game.lives = Math.max(0, game.lives - 1);
@@ -358,7 +364,7 @@ export function tick(game, dt) {
   }
   game.plants = game.plants.filter(p => p.hp > 0);
   game.enemies = game.enemies.filter(e => e.hp > 0 && !e.escaped);
-  game.shots = game.shots.filter(s => s.x < 1000);
+  game.shots = game.shots.filter(s => s.x < width + 100);
   advanceEffects(game, dt);
   if (game.lives <= 0) game.status = "lost";
   else if (game.nextSpawn === schedule.length && game.enemies.length === 0) game.status = "won";
@@ -374,10 +380,12 @@ export function advanceEffects(game, dt) {
 const finite = (n, min, max) => Number.isFinite(n) && n >= min && n <= max;
 const integer = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const list = (value, max, check) => Array.isArray(value) && value.length <= max && value.every(check);
-const position = p => integer(p.row, 0, 4) && integer(p.col, 0, 8);
+const position = (p, columns) => integer(p.row, 0, ROWS - 1) && integer(p.col, 0, columns - 1);
 const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
 export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, STAGES.length) || g.status !== "playing") return false;
+  if (g.columns !== undefined && ![9, COLS].includes(g.columns)) return false;
+  const columns = boardColumns(g), width = boardWidth(g);
   if (g.rulesVersion !== undefined && ![2, 3, 4, 5].includes(g.rulesVersion)) return false;
   if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5].includes(g.pacingVersion)) return false;
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
@@ -388,17 +396,17 @@ export function validSnapshot(g) {
   if (!object(g.stats) || !["planted", "defeated", "collected"].every(k => integer(g.stats[k], 0, 1000000))) return false;
   const hasId = p => object(p) && integer(p.id, 1, g.nextId - 1);
   const eventTime = value => value === undefined || finite(value, 0, g.time);
-  if (!list(g.plants, 45, p => hasId(p) && Object.hasOwn(PLANTS, p.type) && position(p) && finite(p.hp, .000001, PLANTS[p.type].hp) && finite(p.timer, -100000, 10) && finite(p.age, 0, 100000))) return false;
+  if (!list(g.plants, ROWS * columns, p => hasId(p) && Object.hasOwn(PLANTS, p.type) && position(p, columns) && finite(p.hp, .000001, PLANTS[p.type].hp) && finite(p.timer, -100000, 10) && finite(p.age, 0, 100000))) return false;
   if (new Set(g.plants.map(p => `${p.row}:${p.col}`)).size !== g.plants.length) return false;
   if (!g.plants.every(p => eventTime(p.shotAt) && eventTime(p.hurtAt) && eventTime(p.producedAt))) return false;
   if (!g.plants.every(p => p.pendingShotAt === undefined || (p.type === "twin" && finite(p.shotAt, 0, g.time)
     && finite(p.pendingShotAt, g.time, g.time + TWIN_GAP) && Math.abs(p.pendingShotAt - p.shotAt - TWIN_GAP) < 1e-8))) return false;
-  if (!list(g.enemies, STAGES[g.stage - 1].count, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4) && finite(e.x, -25, 1000) && finite(e.hp, .000001, ENEMIES[e.type].hp) && finite(e.slow, 0, 3) && finite(e.age, 0, 100000) && typeof e.eating === "boolean")) return false;
+  if (!list(g.enemies, STAGES[g.stage - 1].count, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4) && finite(e.x, -25, width + 100) && finite(e.hp, .000001, ENEMIES[e.type].hp) && finite(e.slow, 0, 3) && finite(e.age, 0, 100000) && typeof e.eating === "boolean")) return false;
   if (!g.enemies.every(e => eventTime(e.motionAt) && eventTime(e.hurtAt) && (e.burn === undefined || finite(e.burn, 0, BURN_DURATION))
     && (e.equipmentDropped === undefined || (typeof e.equipmentDropped === "boolean"
       && (!e.equipmentDropped || e.hp <= equipmentThreshold(e.type)))))) return false;
   if (!list(g.shots, 500, s => {
-    if (!hasId(s) || !integer(s.row, 0, 4) || !finite(s.x, 0, 1000) || typeof s.frost !== "boolean") return false;
+    if (!hasId(s) || !integer(s.row, 0, 4) || !finite(s.x, 0, width + 100) || typeof s.frost !== "boolean") return false;
     // Already-fired projectiles retain their damage across balance updates.
     if (s.kind === undefined) return [PLANTS.pea.damage, PLANTS.frost.damage, 15, 18, 22].includes(s.damage);
     if (s.frost) return false;
@@ -406,11 +414,11 @@ export function validSnapshot(g) {
     if (s.kind === "twin") return [18, PLANTS.twin.damage].includes(s.damage) && integer(s.muzzle, 0, 1);
     if (s.kind === "thorn") return s.damage === PLANTS.thorn.damage && list(s.hitIds, THORN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id)
       && new Set(s.hitIds).size === s.hitIds.length;
-    return s.kind === "pumpkin" && [55, PLANTS.pumpkin.damage].includes(s.damage) && finite(s.originX, 78, 878)
-      && finite(s.targetX, 0, 1000) && finite(s.duration, .45, 1.6) && finite(s.age, 0, s.duration)
+    return s.kind === "pumpkin" && [55, PLANTS.pumpkin.damage].includes(s.damage) && finite(s.originX, 78, width - 22)
+      && finite(s.targetX, 0, width + 100) && finite(s.duration, .45, 1.6) && finite(s.age, 0, s.duration)
       && Math.abs(s.x - (s.originX + (s.targetX - s.originX) * s.age / s.duration)) < 1e-7;
   })) return false;
-  if (!list(g.suns, 100, s => hasId(s) && finite(s.x, 50, 850) && finite(s.y, 50, 450) && finite(s.age, 0, 8) && [25, 50].includes(s.value))) return false;
+  if (!list(g.suns, 100, s => hasId(s) && finite(s.x, 50, width - 50) && finite(s.y, 50, 450) && finite(s.age, 0, 8) && [25, 50].includes(s.value))) return false;
   const ids = [...g.plants, ...g.enemies, ...g.shots, ...g.suns].map(p => p.id);
   return new Set(ids).size === ids.length;
 }

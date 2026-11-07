@@ -15,6 +15,8 @@ test("한국어 기본값과 전체 캐릭터·스테이지·동적 상태 영�
       }
     }
     assert.equal(t("3줄 2칸, 콩별이"), "Row 3, column 2, Peabud");
+    assert.equal(t("5줄 10칸 정원"), "Garden with 5 rows and 10 columns");
+    assert.equal(t("2번째 선택 칸: 비어 있음"), "Team slot 2: empty");
     assert.equal(t("햇빛 75 · 2번째 정원부터 사용"), "75 sunlight · From garden 2");
     assert.equal(t("1. 첫 번째 새싹, 별 3개"), "1. First Sprouts, 3 stars");
     assert.equal(t("캐릭터 그림 준비 실패 · sun 프레임 그림을 불러오지 못했어요. 온라인 상태에서 다시 시도해 주세요."),

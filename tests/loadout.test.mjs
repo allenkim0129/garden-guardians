@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as engine from "../src/engine.js";
-import { freshSave, readSave } from "../src/storage.js";
+import { freshSave, readSave, validateSave, updateProgress } from "../src/storage.js";
 import { playStrategy } from "./helpers/strategy.mjs";
 
 test("1단계 새 판은 5줄에 골고루 등장하고 v10~v13의 진행 중 판은 원래 줄 유지", () => {
@@ -63,5 +63,85 @@ test("6종 이하의 실제 출전 식물로 열 정원 통과", t => {
     assert.ok(result.game.lives >= 2);
     assert.ok(result.actions.every(action => team.includes(action.type)));
     t.diagnostic(`${stage}단계: ${team.length}종, 하트 ${result.game.lives}`);
+  }
+});
+
+test("확정한 팀은 빈칸·순서 그대로 저장하고 승패 후에도 유지", () => {
+  const teamSlots = ["sun", null, "twin", null, "frost", "pumpkin", "lantern", "wall"];
+  const data = { ...freshSave(), unlocked: 20, teamSlots };
+  assert.deepEqual(readSave({ getItem: () => JSON.stringify(data) }).data, data);
+  for (const status of ["won", "lost"]) {
+    const game = engine.createGame(20, teamSlots.filter(type => type !== null));
+    game.status = status;
+    updateProgress(data, game);
+    assert.deepEqual(data.teamSlots, teamSlots);
+  }
+  const legacy = freshSave();
+  const game = engine.createGame(9, ["sun", "pea", "frost"]);
+  game.status = "won";
+  updateProgress(legacy, game);
+  assert.deepEqual(legacy.teamSlots, ["sun", "pea", "frost", null, null, null]);
+  assert.ok(validateSave(legacy));
+  assert.equal(freshSave().teamSlots, undefined);
+  for (const invalid of [null, [], Array(8).fill(null), ["sun"], ["sun", "sun", null, null, null, null],
+    ["sun", "__proto__", null, null, null, null], ["sun", 42, null, null, null, null]]) {
+    assert.equal(validateSave({ ...freshSave(), teamSlots: invalid }), false);
+  }
+});
+
+test("새 정원은 50칸, 이전 저장은 45칸·기존 좌표를 그대로 유지", () => {
+  for (const columns of [9, 10]) {
+    const game = engine.createGame(20);
+    if (columns === 9) delete game.columns;
+    assert.equal(engine.boardColumns(game), columns);
+    assert.equal(engine.boardWidth(game), columns * 100);
+    assert.equal(engine.plantAt(game, "pea", 4, columns - 1).ok, true);
+    assert.equal(engine.plantAt(game, "wall", 4, columns).ok, false);
+    const data = { ...freshSave(), unlocked: 20, current: engine.snapshot(game) };
+    assert.deepEqual(readSave({ getItem: () => JSON.stringify(data) }).data, data);
+    assert.equal(engine.removePlant(game, 4, columns - 1).ok, true);
+    game.plants = Array.from({ length: columns * engine.ROWS }, (_, index) => ({
+      id: game.nextId++, type: "sun", row: Math.floor(index / columns), col: index % columns, hp: 100, age: 0, timer: 5,
+    }));
+    assert.ok(engine.validSnapshot(engine.snapshot(game)));
+    game.plants[0].col = columns;
+    assert.equal(engine.validSnapshot(engine.snapshot(game)), false);
+  }
+  for (const columns of [0, 8, 11, 9.5, "10", null]) assert.equal(engine.validSnapshot({ ...engine.createGame(1), columns }), false);
+});
+
+test("9·10칸 모두 오른쪽 바깥에서 등장하고 정원 폭 대비 이동 속도는 동일", () => {
+  for (const columns of [9, 10]) {
+    const game = engine.createGame(1); game.columns = columns; game.time = 9.9;
+    engine.tick(game, .1);
+    const width = engine.boardWidth(game);
+    assert.equal(game.nextSpawn, 1);
+    assert.ok(game.enemies[0].x > width);
+    assert.ok(Math.abs((width + 36 - game.enemies[0].x) / width - engine.ENEMIES.sleepy.speed * .1 / 900) < 1e-8);
+    assert.ok(engine.validSnapshot(engine.snapshot(game)));
+  }
+});
+
+test("새 마지막 칸에서 모든 공격·생산·발사체 경계와 저장 복원이 동작", () => {
+  for (const type of ["pea", "frost", "twin", "thorn", "pumpkin", "ember", "sun", "lantern"]) {
+    const game = engine.createGame(20, [type]);
+    assert.ok(engine.plantAt(game, type, 2, 9).ok);
+    game.enemies.push({ id: game.nextId++, type: "jelly", row: 2, x: 1090, hp: 340, slow: 0, age: 0, eating: false });
+    for (let i = 0; i < 10; i++) {
+      engine.tick(game, .1);
+      assert.ok(engine.validSnapshot(engine.snapshot(game)), type);
+    }
+    if (engine.PLANTS[type].damage) assert.ok(game.enemies[0].hp < 340 || game.shots.length > 0, type);
+    else {
+      game.plants[0].timer = .1;
+      engine.tick(game, .1);
+      assert.equal(game.suns.at(-1).x, 950);
+    }
+    const saved = engine.snapshot(game);
+    assert.ok(engine.validSnapshot(saved), type);
+    const restored = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: 20, current: saved }) }).data.current;
+    game.effects = [];
+    engine.tick(game, .1); engine.tick(restored, .1);
+    assert.deepEqual(restored, game, type);
   }
 });

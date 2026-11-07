@@ -89,7 +89,7 @@ test("작은 화면의 카드 스크롤·드래그는 선택/배치/수집을 �
   await expect(page.locator('.seed-card[data-type="pea"]')).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#sun-count")).toHaveText("350");
   await expect(page.locator(".sun-drop")).toHaveCount(1);
-  await expect(page.locator(".plot[aria-label$='Empty plot']")).toHaveCount(45);
+  await expect(page.locator(".plot[aria-label$='Empty plot']")).toHaveCount(50);
   for (const type of types) {
     const card = page.locator(`.seed-card[data-type="${type}"]`);
     await card.tap();

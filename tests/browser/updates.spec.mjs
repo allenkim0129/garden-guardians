@@ -70,7 +70,13 @@ async function releaseServer(legacy = false) {
   return {
     url: `http://127.0.0.1:${server.address().port}/`, current, next,
     deploy: (failAsset = false) => { version = legacy ? current : next; broken = failAsset; },
-    stop: () => new Promise(resolve => server.close(resolve)),
+    async stop() {
+      if (!server.listening) return;
+      await new Promise((resolve, reject) => {
+        server.close(error => error ? reject(error) : resolve());
+        server.closeAllConnections();
+      });
+    },
   };
 }
 async function seed(page, url) {

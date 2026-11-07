@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, STAGES, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress } from "./engine.js";
+import { PLANTS, ENEMIES, STAGES, ROWS, COLS, HEIGHT, boardColumns, boardWidth, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress } from "./engine.js";
 import { drawTitle, drawBoard, plantIcon, drawSunToken } from "./art.js";
 import { loadSprites } from "./sprites.js";
 import { GardenAudio } from "./audio.js";
@@ -198,8 +198,8 @@ function prepareStage(stageNumber) {
 function showLoadout(stageNumber) {
   const limit = loadoutLimit(stageNumber);
   const available = Object.keys(PLANTS).filter(type => isPlantUnlocked(type, stageNumber));
-  const previous = game?.loadout?.filter(type => available.includes(type)).slice(0, limit);
-  const picked = new Set(previous?.length ? previous : available.slice(0, limit));
+  const previous = save.teamSlots ?? game?.loadout ?? save.current?.loadout ?? available;
+  const picked = Array.from({ length: limit }, (_, index) => available.includes(previous[index]) ? previous[index] : null);
   const content = document.createElement("div");
   content.innerHTML = `<p>함께할 식물을 최대 ${limit}종 골라 주세요. 선택한 카드를 다시 누르면 뺄 수 있어요.</p>
     <strong id="loadout-count" role="status"></strong><div class="loadout-slots"></div><div class="loadout-grid"></div>`;
@@ -214,8 +214,9 @@ function showLoadout(stageNumber) {
       text(button.querySelector("small"), `${plant.unlockStage}정원 해금`);
     }
     button.onclick = () => {
-      if (picked.has(type)) picked.delete(type);
-      else if (picked.size < limit) picked.add(type);
+      const current = picked.indexOf(type), empty = picked.indexOf(null);
+      if (current >= 0) picked[current] = null;
+      else if (empty >= 0) picked[empty] = type;
       updateChoices();
     };
     grid.append(button);
@@ -230,42 +231,56 @@ function showLoadout(stageNumber) {
   ], back);
   modal.dataset.kind = "loadout";
   function updateChoices() {
-    text(content.querySelector("#loadout-count"), `선택한 식물 ${picked.size} / ${limit}종`);
+    const count = picked.filter(type => type !== null).length;
+    text(content.querySelector("#loadout-count"), `선택한 식물 ${count} / ${limit}종`);
     for (const button of grid.children) {
-      const chosen = picked.has(button.dataset.type);
+      const chosen = picked.includes(button.dataset.type);
       button.setAttribute("aria-pressed", String(chosen));
-      button.disabled = !available.includes(button.dataset.type) || (!chosen && picked.size === limit);
+      button.disabled = !available.includes(button.dataset.type) || (!chosen && count === limit);
     }
     const slots = content.querySelector(".loadout-slots");
     slots.style.gridTemplateColumns = `repeat(${limit}, minmax(0, 1fr))`;
     slots.replaceChildren();
     for (let i = 0; i < limit; i++) {
-      const type = [...picked][i];
+      const type = picked[i];
       const slot = document.createElement(type ? "button" : "span");
       slot.className = "loadout-slot";
+      slot.dataset.index = i;
       if (type) {
+        slot.dataset.type = type;
         setLabel(slot, `${PLANTS[type].name}: 선택 취소`);
         slot.innerHTML = `<img src="${icons[type]}" alt="">`;
-        slot.onclick = () => { picked.delete(type); updateChoices(); };
-      } else slot.textContent = "+";
+        slot.onclick = () => { picked[i] = null; updateChoices(); };
+      } else {
+        slot.textContent = "+";
+        setLabel(slot, `${i + 1}번째 선택 칸: 비어 있음`);
+      }
       slots.append(slot);
     }
-    $("#modal-actions .primary").disabled = picked.size === 0;
+    $("#modal-actions .primary").disabled = count === 0;
   }
   updateChoices();
 }
-function startStage(stageNumber, resume = false, loadout) {
-  game = resume ? structuredClone(save.current) : createGame(stageNumber, loadout);
+function startStage(stageNumber, resume = false, teamSlots) {
+  game = resume ? structuredClone(save.current) : createGame(stageNumber, teamSlots.filter(type => type !== null));
+  if (!resume) save.teamSlots = [...teamSlots];
   game.effects = [];
   pendingResult = null; boardPointers.clear();
   selected = null; shovel = false; paused = false; sunGesture = false;
   lastWave = -1; lastSaveAt = game.time; accumulator = 0; lastFrame = performance.now();
   home.hidden = true; gameScreen.hidden = false;
   gameScreen.dataset.theme = STAGES[stageNumber - 1].theme;
+  const columns = boardColumns(game);
+  gameScreen.dataset.columns = columns;
+  gameScreen.style.setProperty("--board-columns", columns);
+  gameScreen.style.setProperty("--board-ratio", columns / ROWS);
+  canvas.width = boardWidth(game);
+  setLabel($("#board-grid"), `${ROWS}줄 ${columns}칸 정원`);
+  for (const plot of plots) plot.hidden = Number(plot.dataset.col) >= columns;
   document.body.classList.add("game-active");
   seedCards.classList.toggle("legacy", game.loadout === undefined);
   seedCards.classList.toggle("extended", (game.loadout?.length ?? 0) > 6);
-  const scrollCards = game.loadout === undefined || game.loadout.length > 6;
+  const scrollCards = columns > 9 || game.loadout === undefined || game.loadout.length > 6;
   setLabel(seedCards, scrollCards ? "식물 카드 목록 · 위아래로 스크롤" : "선택한 식물 카드");
   text($("#stage-title"), `${game.stage}. ${STAGES[game.stage - 1].name}`);
   text($("#selection-hint"), STAGES[game.stage - 1].tip);
@@ -375,11 +390,12 @@ function collectAlongPointer(from, to) {
   if (paused || !game || game.status !== "playing") return false;
   const bounds = board.getBoundingClientRect();
   const rotated = window.matchMedia("(orientation: portrait)").matches;
+  const width = boardWidth(game);
   const point = p => rotated
-    ? { x: (p.y - bounds.top) * 900 / bounds.height, y: (bounds.right - p.x) * 500 / bounds.width }
-    : { x: (p.x - bounds.left) * 900 / bounds.width, y: (p.y - bounds.top) * 500 / bounds.height };
+    ? { x: (p.y - bounds.top) * width / bounds.height, y: (bounds.right - p.x) * HEIGHT / bounds.width }
+    : { x: (p.x - bounds.left) * width / bounds.width, y: (p.y - bounds.top) * HEIGHT / bounds.height };
   let collected = false;
-  for (const id of sunsAlongPath(game, point(from), point(to), 26 * 900 / (rotated ? bounds.height : bounds.width))) {
+  for (const id of sunsAlongPath(game, point(from), point(to), 26 * width / (rotated ? bounds.height : bounds.width))) {
     if (collectSun(game, id)) collected = true;
   }
   if (collected) { sunGesture = true; audio.play("sun"); persist(); render(); }
@@ -424,7 +440,7 @@ board.addEventListener("click", event => {
     event.stopImmediatePropagation();
   }
 }, true);
-for (let row = 0; row < 5; row++) for (let col = 0; col < 9; col++) {
+for (let row = 0; row < ROWS; row++) for (let col = 0; col < COLS; col++) {
   const button = document.createElement("button");
   button.className = "plot"; button.dataset.row = row; button.dataset.col = col;
   setLabel(button, `${row + 1}줄 ${col + 1}칸, 빈 땅`);
@@ -615,7 +631,7 @@ function render() {
         value.className = "sun-value"; value.textContent = "50"; value.setAttribute("aria-hidden", "true");
         button.append(value);
       }
-      button.style.left = `${sun.x / 9}%`; button.style.top = `${sun.y / 5}%`;
+      button.style.left = `${sun.x / boardWidth(game) * 100}%`; button.style.top = `${sun.y / HEIGHT * 100}%`;
       button.onclick = event => {
         event.stopPropagation();
         if (paused) return;

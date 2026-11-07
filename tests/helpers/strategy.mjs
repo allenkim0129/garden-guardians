@@ -17,7 +17,7 @@ export function playStrategy(api, stage, mode = "mixed", attacker = "pea") {
     if (step % 10 === 0 && (step > 0 || !actions.length)) {
       for (const sun of [...game.suns]) collectSun(game, sun.id);
       let acted = false;
-      const threats = game.enemies.filter(e => e.x < 930).sort((a, b) => a.x - b.x);
+      const threats = game.enemies.filter(e => e.x < (api.boardWidth?.(game) ?? 900) + 30).sort((a, b) => a.x - b.x);
       const priorityRows = [...new Set([...threats.map(e => e.row), ...rows])];
       for (const enemy of threats) {
         if (!has(attacker, enemy.row) && attempt(attacker, enemy.row, 2)) { acted = true; break; }
@@ -26,7 +26,7 @@ export function playStrategy(api, stage, mode = "mixed", attacker = "pea") {
         for (const enemy of threats) {
           const nearby = threats.filter(e => Math.hypot(e.x - enemy.x, (e.row - enemy.row) * 100) < 150);
           if ((nearby.reduce((sum, e) => sum + e.hp, 0) >= 450 || enemy.x < 330)
-            && attempt("bomb", enemy.row, Math.max(0, Math.min(8, Math.floor(enemy.x / 100))))) { acted = true; break; }
+            && attempt("bomb", enemy.row, Math.max(0, Math.min((api.boardColumns?.(game) ?? 9) - 1, Math.floor(enemy.x / 100))))) { acted = true; break; }
         }
       }
       if (!acted && mode !== "pea") {

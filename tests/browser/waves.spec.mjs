@@ -84,7 +84,15 @@ test("진행 바와 모든 조작은 작은 가로·회전 화면·태블릿 안
   await page.locator("#resume-button").tap();
   for (const [width, height] of [[568, 320], [667, 320], [844, 390], [320, 568], [390, 844], [1024, 768]]) {
     await page.setViewportSize({ width, height });
-    for (const selector of [".plot", ".seed-card:visible", ".game-header button", ".wave-progress", ".wave-marker"]) {
+    for (const card of await page.locator(".seed-card:visible").all()) {
+      await card.scrollIntoViewIfNeeded();
+      const box = await card.boundingBox();
+      expect(box.width).toBeGreaterThanOrEqual(43.99); expect(box.height).toBeGreaterThanOrEqual(43.99);
+      expect(box.x).toBeGreaterThanOrEqual(0); expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(width);
+      expect(box.y + box.height).toBeLessThanOrEqual(height);
+    }
+    for (const selector of [".plot", ".game-header button", ".wave-progress", ".wave-marker"]) {
       const bounds = await page.locator(selector).evaluateAll(nodes => nodes.map(node => {
         const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height };
       }));
