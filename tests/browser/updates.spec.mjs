@@ -90,7 +90,7 @@ async function installNext(page, server) {
   await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration()).waiting))).toBe(true);
 }
 
-test("두 번째 콩 예약·불씨·화상·냉기도 업데이트 후 동일하게 이어짐", async ({ page }) => {
+test("v21의 첫 콩·불씨 피해와 예약·화상·냉기를 보존하고 두 번째 콩부터 v22 피해 적용", async ({ page }) => {
   const server = await releaseServer();
   try {
     const game = createGame(10, ["sun", "pea", "wall", "frost", "twin", "ember", "lantern", "iron"]);
@@ -98,6 +98,7 @@ test("두 번째 콩 예약·불씨·화상·냉기도 업데이트 후 동일�
     game.enemies.push({ id: game.nextId++, type: "jelly", row: 2, x: 900, hp: ENEMIES.jelly.hp, age: 0, slow: 0, eating: false });
     game.enemies.push({ id: game.nextId++, type: "umbrella", row: 4, x: 800, hp: 100, age: 1, slow: 2, burn: 2, eating: false, equipmentDropped: true });
     tick(game, .1); tick(game, .1);
+    game.shots[0].damage = 18;
     game.shots.push({ id: game.nextId++, kind: "ember", row: 1, x: 300, damage: 24, frost: false });
     game.effects = [];
     const data = { ...freshSave(), unlocked: 10, language: "en", volume: 80, tutorialSeen: true, current: game };
@@ -115,7 +116,9 @@ test("두 번째 콩 예약·불씨·화상·냉기도 업데이트 후 동일�
     const restored = await saved(page);
     expect(restored.current.plants[0].pendingShotAt).toBeUndefined();
     expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.muzzle)).toEqual([0, 1]);
+    expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.damage)).toEqual([18, 24]);
     expect(restored.current.shots.filter(s => s.kind === "ember")).toHaveLength(1);
+    expect(restored.current.shots.find(s => s.kind === "ember").damage).toBe(24);
     expect(restored.current.enemies[1].burn).toBeLessThan(game.enemies[1].burn);
     expect(restored.current.enemies[1].slow).toBeLessThan(game.enemies[1].slow);
     expect(restored.current.enemies[1].hp).toBeLessThan(game.enemies[1].hp);

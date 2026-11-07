@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGame, plantAt, snapshot, validSnapshot, tick, STAGES } from "../src/engine.js";
+import { createGame, plantAt, snapshot, validSnapshot, tick, STAGES, PLANTS } from "../src/engine.js";
 import { freshSave, readSave, writeSave, validateSave, updateProgress } from "../src/storage.js";
 const memory = () => {
   let value = null;
@@ -118,12 +118,37 @@ test("이전 저장의 별·진행·잠긴 식물은 유지하고 발사체를 �
   assert.deepEqual(result.data.stars, [...data.stars, ...Array(10).fill(0)]);
   assert.equal(result.data.current.rulesVersion, 5);
   assert.deepEqual(result.data.current.plants, old.plants);
-  assert.equal(result.data.current.shots[0].damage, 18);
+  assert.equal(result.data.current.shots[0].damage, 14);
   assert.equal(plantAt(result.data.current, "sun", 1, 0).ok, true);
   assert.equal(plantAt(result.data.current, "wall", 1, 1).ok, false);
   writeSave(storage, result.data);
   assert.equal(readSave(storage).notice, null);
   assert.ok(validateSave(readSave(storage).data));
+});
+
+test("v21의 여섯 발사체·예약·타이머·자원은 그대로 복원하고 다음 발사부터 새 피해 적용", () => {
+  for (const [type, damage] of Object.entries({ pea: 18, frost: 15, twin: 18, thorn: 26, pumpkin: 55, ember: 24 })) {
+    const game = createGame(20, [type]);
+    assert.ok(plantAt(game, type, 2, 0).ok);
+    game.enemies.push({ id: game.nextId++, type: "jelly", row: 2, x: 850, hp: 340, slow: 2, burn: 2, age: 0, eating: false });
+    tick(game, .1); tick(game, .1);
+    game.shots[0].damage = damage;
+    if (type === "pumpkin") { game.plants[0].timer = 3.8; game.sun += 75; }
+    const data = { ...freshSave(), current: snapshot(game), unlocked: 20, stars: freshSave().stars.fill(3), language: "en", sound: true, volume: 65 };
+    const restored = readSave({ getItem: () => JSON.stringify(data) });
+    assert.equal(restored.error, null, type);
+    assert.deepEqual(restored.data, data, type);
+    const bad = structuredClone(data); bad.current.shots[0].damage = 999;
+    assert.equal(validateSave(bad), false, type);
+    const initialId = game.shots[0].id;
+    for (let step = 0; step < Math.ceil(PLANTS[type].interval * 10) + 2; step++) {
+      tick(restored.data.current, .1);
+      assert.ok(validSnapshot(snapshot(restored.data.current)), type);
+    }
+    assert.ok(restored.data.current.shots.some(s => s.id > initialId && s.damage === PLANTS[type].damage), type);
+    updateProgress(restored.data, restored.data.current);
+    assert.deepEqual(readSave({ getItem: () => JSON.stringify(restored.data) }).data, restored.data, type);
+  }
 });
 
 test("v16 저장은 불꽃봉오리 쿨다운만 추가하고 팀·25초 시간표·설정을 보존", () => {

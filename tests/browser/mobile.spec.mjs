@@ -29,6 +29,55 @@ async function swipe(page, context, browserName, from, to) {
   }
 }
 
+for (const portrait of [false, true]) test(`더블탭은 홈·설정·출전 선택·카드·정원을 확대하지 않음 (${portrait ? "세로" : "가로"})`, async ({ page }) => {
+  await page.setViewportSize(portrait ? { width: 320, height: 568 } : { width: 568, height: 320 });
+  await seed(page, null);
+  const viewport = () => page.evaluate(() => ({
+    scale: visualViewport.scale, width: visualViewport.width, height: visualViewport.height,
+    left: visualViewport.offsetLeft, top: visualViewport.offsetTop, x: scrollX, y: scrollY,
+  }));
+  async function doubleTap(selector) {
+    const target = page.locator(selector);
+    await target.scrollIntoViewIfNeeded();
+    await expect(target).toBeInViewport();
+    await target.evaluate(node => {
+      node.dataset.tapCheck = "0";
+      node.addEventListener("click", () => { node.dataset.tapCheck = String(Number(node.dataset.tapCheck) + 1); });
+    });
+    const box = await target.boundingBox();
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const before = await viewport();
+    expect(before.scale).toBe(1);
+    await page.touchscreen.tap(point.x, point.y);
+    await page.waitForTimeout(80);
+    await page.touchscreen.tap(point.x, point.y);
+    await page.waitForTimeout(300);
+    await expect(target).toHaveAttribute("data-tap-check", "2");
+    expect(await viewport()).toEqual(before);
+  }
+  await doubleTap(".hero h1");
+  await page.locator("#home [data-sound-settings]").tap();
+  await doubleTap("#modal-title");
+  await expect(page.locator("#modal")).toHaveCSS("touch-action", "manipulation");
+  await page.locator("#modal-close").tap();
+  await page.locator("#play-button").tap();
+  await page.locator('.stage-button[data-stage="10"]').tap();
+  await doubleTap('.loadout-choice[data-type="sun"]');
+  await expect(page.locator('.loadout-choice[data-type="sun"]')).toHaveAttribute("aria-pressed", "true");
+  await confirmTeam(page);
+  const board = await page.locator("#board").boundingBox();
+  await doubleTap(".stage-heading");
+  await doubleTap('.seed-card[data-type="sun"]');
+  await expect(page.locator('.seed-card[data-type="sun"]')).toHaveAttribute("aria-pressed", "false");
+  await doubleTap('.plot[data-row="2"][data-col="4"]');
+  expect(await page.locator("#board").boundingBox()).toEqual(board);
+  expect((await stored(page)).current.plants).toEqual([]);
+  await expect(page.locator("body")).toHaveCSS("touch-action", "manipulation");
+  if (portrait) await expect(page.locator("#seed-cards")).toHaveCSS("touch-action", "manipulation");
+  const meta = await page.locator('meta[name="viewport"]').getAttribute("content");
+  expect(meta).not.toMatch(/user-scalable\s*=\s*no|maximum-scale\s*=\s*1/);
+});
+
 test("최대 6종 사전 선택·큰 카드·언어 전환·재접속·최소 화면", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 568, height: 320 });
   await seed(page, null);

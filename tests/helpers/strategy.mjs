@@ -1,4 +1,4 @@
-export function playStrategy(api, stage, mode = "mixed") {
+export function playStrategy(api, stage, mode = "mixed", attacker = "pea") {
   const { createGame, plantAt, collectSun, tick } = api;
   const game = createGame(stage);
   const available = type => (!api.isPlantUnlocked || api.isPlantUnlocked(type, stage)) && (!game.loadout || game.loadout.includes(type));
@@ -20,7 +20,7 @@ export function playStrategy(api, stage, mode = "mixed") {
       const threats = game.enemies.filter(e => e.x < 930).sort((a, b) => a.x - b.x);
       const priorityRows = [...new Set([...threats.map(e => e.row), ...rows])];
       for (const enemy of threats) {
-        if (!has("pea", enemy.row) && attempt("pea", enemy.row, 2)) { acted = true; break; }
+        if (!has(attacker, enemy.row) && attempt(attacker, enemy.row, 2)) { acted = true; break; }
       }
       if (!acted && mode !== "pea") {
         for (const enemy of threats) {
@@ -39,9 +39,10 @@ export function playStrategy(api, stage, mode = "mixed") {
         for (const row of [2, 1, 3, 0, 4]) if (!has("sun", row, 0) && attempt("sun", row, 0)) { acted = true; break; }
       }
       if (!acted) {
-        for (const row of rows) if (!has("pea", row, 2) && attempt("pea", row, 2)) { acted = true; break; }
+        for (const row of rows) if (!has(attacker, row, 2) && attempt(attacker, row, 2)) { acted = true; break; }
       }
       if (!acted && mode === "expanded" && game.time > 35 && !has("lantern", 2, 1)) acted = attempt("lantern", 2, 1);
+      if (!acted && mode === "expanded" && game.time > 45 && !has("lantern", 1, 1)) acted = attempt("lantern", 1, 1);
       if (!acted && mode !== "pea") {
         for (const row of priorityRows) {
           const upgrade = { 0: "twin", 1: "thorn", 3: "pumpkin" }[row];
@@ -53,7 +54,7 @@ export function playStrategy(api, stage, mode = "mixed") {
         for (const col of (mode === "pea" ? [3, 4, 1] : [1, 4, 3])) {
           for (const row of rows) {
             const upgrade = col === 1 ? "twin" : row % 2 ? "pumpkin" : "thorn";
-            const type = mode === "expanded" && available(upgrade) ? upgrade : "pea";
+            const type = mode === "expanded" && available(upgrade) ? upgrade : attacker;
             if (!game.plants.some(p => p.row === row && p.col === col) && attempt(type, row, col)) { acted = true; break; }
           }
           if (acted) break;
