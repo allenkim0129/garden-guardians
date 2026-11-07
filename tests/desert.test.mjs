@@ -23,9 +23,10 @@ test("v24 기본 공격은 8~17% 감소하고 새 식물은 별도 해금되는 
   assert.equal(PLANTS.storm.cost, 275);
   assert.ok(PLANTS.storm.damage * engine.CHAIN_HITS / PLANTS.storm.interval > PLANTS.thorn.damage * engine.THORN_HITS / PLANTS.thorn.interval * 1.3);
   assert.deepEqual(engine.introducedPlants(21), []);
-  assert.deepEqual(engine.introducedPlants(25), ["storm"]);
-  assert.equal(plantAt(createGame(24), "storm", 0, 0).ok, false);
-  assert.ok(engine.validLoadout(["twin", "thorn", "storm"], 25));
+  assert.deepEqual(engine.introducedPlants(19), ["storm"]);
+  assert.deepEqual(engine.introducedPlants(25), []);
+  assert.equal(plantAt(createGame(18), "storm", 0, 0).ok, false);
+  assert.ok(engine.validLoadout(["twin", "thorn", "storm"], 19));
   assert.equal(engine.loadoutLimit(30), 8);
 });
 
@@ -156,11 +157,12 @@ test("연쇄는 적이 범위 밖으로 나가면 끊기고 발사 후 식물 �
   }
 });
 
-test("선인장은 400햇빛·6초 재배치·28해금이며 첫6초와 매6초 전방 같은 줄만 즉사", () => {
-  assert.deepEqual(engine.introducedPlants(28), ["cactus"]);
-  assert.equal(plantAt(createGame(27), "cactus", 2, 5).ok, false);
-  const game = createGame(28, ["cactus"]);
-  game.nextSpawn = engine.STAGES[27].count;
+test("선인장은 400햇빛·6초 재배치·22해금이며 첫6초와 매6초 전방 같은 줄만 즉사", () => {
+  assert.deepEqual(engine.introducedPlants(22), ["cactus"]);
+  assert.deepEqual(engine.introducedPlants(28), []);
+  assert.equal(plantAt(createGame(21), "cactus", 2, 5).ok, false);
+  const game = createGame(22, ["cactus"]);
+  game.nextSpawn = engine.STAGES[21].count;
   game.sun = 1000;
   assert.ok(plantAt(game, "cactus", 2, 5).ok);
   assert.equal(game.sun, 600);
@@ -214,6 +216,23 @@ test("선인장 충전은 정지·복구에 보존되고 첫 공격 전에 제�
       assert.equal(target.hp, 0);
       assert.deepEqual(game, loaded.data.current);
     }
+  }
+});
+
+test("v25에서 기존 19·22단계 진행과 팀은 보존하고 새 선택에 해금을 적용", () => {
+  for (const [type, stage] of [["storm", 19], ["cactus", 22]]) {
+    const data = { ...freshSave(), unlocked: stage, stars: [...Array(stage - 1).fill(3), ...Array(31 - stage).fill(0)],
+      language: "en", volume: 67, teamSlots: ["sun", null, "twin", null, null, null, null, null],
+      current: createGame(stage, ["sun", "twin"]) };
+    const loaded = readSave({ getItem: () => JSON.stringify(data) });
+    assert.equal(loaded.error, null);
+    assert.deepEqual(loaded.data, data);
+    assert.equal(engine.validLoadout([type], stage - 1), false);
+    assert.equal(engine.validLoadout([type], stage), true);
+    const game = createGame(stage, [type]);
+    game.sun = PLANTS[type].cost;
+    assert.ok(plantAt(game, type, 0, 0).ok);
+    assert.ok(validSnapshot(snapshot(game)));
   }
 });
 

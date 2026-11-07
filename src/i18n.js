@@ -61,7 +61,7 @@ const messages = {
   "오아시스의 물통 상자를 들고 달려와요. 체력이 절반이 되면 상자를 떨어뜨리고 속도가 22로 줄어요.": "Runs with a crate of water from the oasis. At half health it drops the crate and slows to 22.",
   "정원 테마": "Garden themes",
   "21~30 · 모래 사막 · 격전": "21–30 · Sandy Desert · Expert",
-  "20번째 정원을 지키면 모래 사막이 열려요. 테마 탭으로 10단계씩 골라요. 25단계의 번개가시는 가시풀의 상위형이고, 28단계의 선인장은 앞쪽 같은 줄을 쓸어내요. 기존 식물과 별도로 선택하며 최대 8종 제한은 같아요.": "Win garden 20 to unlock Sandy Desert. Use theme tabs to browse 10 stages at a time. Stormthorn at stage 25 upgrades Thornleaf; Cactus at stage 28 sweeps enemies ahead in its lane. Choose them separately, with the same 8-plant limit.",
+  "20번째 정원을 지키면 모래 사막이 열려요. 테마 탭으로 10단계씩 골라요. 19단계의 번개가시는 가시풀의 상위형이고, 22단계의 선인장은 앞쪽 같은 줄을 쓸어내요. 기존 식물과 별도로 선택하며 최대 8종 제한은 같아요.": "Win garden 20 to unlock Sandy Desert. Use theme tabs to browse 10 stages at a time. Stormthorn at stage 19 upgrades Thornleaf; Cactus at stage 22 sweeps enemies ahead in its lane. Choose them separately, with the same 8-plant limit.",
   "사막의 문": "Desert Gate",
   "오아시스 배달길": "Oasis Delivery Lane",
   "사암 협곡": "Sandstone Canyon",

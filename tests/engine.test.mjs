@@ -45,7 +45,7 @@ test("달빛 온실은 10개 단계·5줄·초반 3명·더 빠른 중후반과 
     assert.ok(final.length > plan.length * .6);
     assert.equal(stage.startSun, STAGES[9].startSun);
     assert.equal(engine.loadoutLimit(stage.id), 8);
-    assert.deepEqual(engine.introducedPlants(stage.id), []);
+    assert.deepEqual(engine.introducedPlants(stage.id), stage.id === 19 ? ["storm"] : []);
   }
 });
 

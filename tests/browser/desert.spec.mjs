@@ -96,8 +96,8 @@ test("사막 배경은 모래색이고 기존 햇살·달빛 정원의 색과 �
   expect(colors[2][1]).toBeGreaterThan(colors[2][2]);
 });
 
-test("24·27 첫 클리어만 새 식물 획득, 재도전 중복 없음", async ({ page }) => {
-  for (const [stage, type, name] of [[24, "storm", "번개가시"], [27, "cactus", "선인장"]]) {
+test("18·21 첫 클리어만 새 식물 획득, 재도전 중복 없음", async ({ page }) => {
+  for (const [stage, type, name] of [[18, "storm", "번개가시"], [21, "cactus", "선인장"]]) {
     for (const replay of [false, true]) {
       const game = createGame(stage); game.nextSpawn = STAGES[stage - 1].count; game.time = 210;
       const stars = freshSave().stars;
@@ -116,6 +116,41 @@ test("24·27 첫 클리어만 새 식물 획득, 재도전 중복 없음", async
     }
   }
 });
+
+for (const language of ["ko", "en"]) {
+  test(`v25 해금 19·22는 기존 진행에 즉시 적용하고 이전 단계 재도전은 잠금 (${language})`, async ({ page }) => {
+    for (const [type, unlock] of [["storm", 19], ["cactus", 22]]) {
+      for (const stage of [unlock - 1, unlock]) {
+        const data = { ...freshSave(), unlocked: unlock, language, tutorialSeen: true,
+          teamSlots: ["sun", null, null, null, null, null, null, null] };
+        await seed(page, data);
+        if (type === "storm" && stage === unlock - 1) {
+          await page.locator("#help-button").tap();
+          await expect(page.locator(".plant-guide")).toContainText(language === "ko" ? "번개가시 · 19번째 정원 해금" : "Stormthorn · Garden 19");
+          await expect(page.locator(".plant-guide")).toContainText(language === "ko" ? "선인장 · 22번째 정원 해금" : "Cactus · Garden 22");
+          await expect(page.locator("#modal-body")).toContainText(language === "ko" ? "19단계의 번개가시" : "Stormthorn at stage 19");
+          await expect(page.locator("#modal-body")).toContainText(language === "ko" ? "22단계의 선인장" : "Cactus at stage 22");
+          await page.locator("#modal-actions .primary").tap();
+        }
+        await page.locator("#play-button").tap();
+        await expect(page.locator(`.stage-button[data-stage="${unlock}"] .stage-reward`)).toContainText(type === "storm" ? /번개가시|Stormthorn/ : /선인장|Cactus/);
+        for (const oldUnlock of [25, 28]) await expect(page.locator(`.stage-button[data-stage="${oldUnlock}"] .stage-reward`)).toHaveCount(0);
+        await selectStage(page, stage);
+        await expect(page.locator(`.loadout-choice[data-type="${type}"]`)).toBeEnabled({ enabled: stage === unlock });
+        expect(await stored(page)).toEqual(data);
+        if (stage !== unlock) continue;
+        await confirmTeam(page, type);
+        await expect(page.locator(`.seed-card[data-type="${type}"]`)).toHaveCount(1);
+        await page.locator("#pause-button").tap();
+        const after = await stored(page);
+        expect(after.current.loadout).toEqual(["sun", type]);
+        expect(after.unlocked).toBe(unlock);
+        expect(after.stars).toEqual(data.stars);
+        expect(after.language).toBe(language);
+      }
+    }
+  });
+}
 
 test("사막 새 캐릭터·장비·기존 쌍콩이 예약·연쇄 그림·소리·실제 서버 종료 후 복원", async ({ page }, testInfo) => {
   const server = await isolatedServer();
