@@ -12,9 +12,43 @@ function rounded(c, x, y, w, h, r, fill, stroke = null) {
   c.fillStyle = fill; c.fill();
   if (stroke) { c.strokeStyle = stroke; c.lineWidth = 3; c.stroke(); }
 }
-function line(c, points, color = ink, width = 3) {
+function line(c, points, color = ink, width = 3, join = "round") {
   c.beginPath(); c.moveTo(...points[0]); points.slice(1).forEach(p => c.lineTo(...p));
-  c.strokeStyle = color; c.lineWidth = width; c.lineCap = "round"; c.lineJoin = "round"; c.stroke();
+  c.strokeStyle = color; c.lineWidth = width; c.lineCap = "round"; c.lineJoin = join; c.stroke();
+}
+function drawLightning(c, effect) {
+  const dx = effect.toX - effect.x, dy = effect.toY - effect.y;
+  const length = Math.hypot(dx, dy), ux = dx / (length || 1), uy = dy / (length || 1);
+  const segments = Math.max(6, Math.min(20, Math.ceil(length / 24)));
+  const amplitude = Math.min(16, length * .12);
+  const seed = effect.id * 1.73;
+  const point = (along, across) => [effect.x + ux * along - uy * across, effect.y + uy * along + ux * across];
+  const points = [[effect.x, effect.y]];
+  // The same effect keeps its shape while fading or paused; no frame-by-frame random flicker.
+  for (let i = 1; i < segments; i++) {
+    const along = length * (i + Math.sin(seed + i * 2.3) * .2) / segments;
+    const across = (i % 2 ? 1 : -1) * amplitude * (.65 + Math.sin(seed + i * 3.7) * .25);
+    points.push(point(along, across));
+  }
+  points.push([effect.toX, effect.toY]);
+  c.save();
+  c.globalAlpha *= .18;
+  line(c, points, "#ffd43b", 24);
+  c.restore();
+  line(c, points, "#ad7109", 14, "miter");
+  line(c, points, "#ffe234", 8, "miter");
+  line(c, points, "#fff5ae", 2.5, "miter");
+  if (length < 40) return;
+  for (const [fraction, side] of [[.35, -1], [.7, 1]]) {
+    const root = points[Math.floor(segments * fraction)];
+    const reach = Math.min(26, length * .16);
+    const branch = [root,
+      [root[0] + ux * reach * .3 - uy * side * 11, root[1] + uy * reach * .3 + ux * side * 11],
+      [root[0] + ux * reach * .65 - uy * side * 7, root[1] + uy * reach * .65 + ux * side * 7],
+      [root[0] + ux * reach - uy * side * 18, root[1] + uy * reach + ux * side * 18]];
+    line(c, branch, "#ad7109", 6, "miter");
+    line(c, branch, "#ffe234", 3, "miter");
+  }
 }
 function star(c, x, y, outer, inner, color, points = 5) {
   c.beginPath();
@@ -108,7 +142,7 @@ export function drawProjectile(c, shot) {
   const { x, y } = projectilePosition(shot);
   c.save(); c.translate(x, y);
   if (shot.kind === "storm") {
-    shape(c, "M-15 -3 L-2 -5 L-5 -12 L15 0 L2 3 L5 11Z", "#ff3838", "#a71929", 4);
+    shape(c, "M-15 -3 L-2 -5 L-5 -12 L15 0 L2 3 L5 11Z", "#ffe234", "#ad7109", 4);
   } else if (shot.kind === "ember") {
     c.rotate(Math.PI / 2);
     drawFlame(c, 0, 0, .65, shot.x / 100);
@@ -267,8 +301,7 @@ export function drawBoard(c, game, selected, shovel) {
       c.globalAlpha = 1;
       drawDroppedGear(c, effect);
     } else if (effect.kind === "chain") {
-      line(c, [[effect.x, effect.y], [(effect.x + effect.toX) / 2 + 8, (effect.y + effect.toY) / 2 - 8], [effect.toX, effect.toY]], "#a71929", 14);
-      line(c, [[effect.x, effect.y], [(effect.x + effect.toX) / 2 + 8, (effect.y + effect.toY) / 2 - 8], [effect.toX, effect.toY]], "#ff3838", 8);
+      drawLightning(c, effect);
     } else if (effect.kind === "fall") {
       c.globalAlpha = Math.min(1, Math.max(0, (FALL_DURATION - effect.age) / .24));
       drawEnemy(c, effect.type ?? "sleepy", effect.x, effect.y + 4, .87, 0, false, false, fallFrame(effect.age), effect.equipmentDropped);

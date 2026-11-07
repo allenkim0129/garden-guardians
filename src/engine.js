@@ -31,7 +31,7 @@ export const PLANTS = Object.freeze({
   lantern: { name: "해등나무", unlockStage: 8, cost: 125, hp: 140, recharge: 9, firstHarvest: 8, interval: 10, description: "첫 햇빛은 8초 뒤, 이후 10초마다 햇빛 50을 만들어요." },
   iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 12, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 12초!" },
   ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 15, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 15 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요." },
-  storm: { name: "번개가시", unlockStage: 19, cost: 275, hp: 110, recharge: 10, interval: 4.2, damage: 64, description: "가시풀의 상위형! 4.2초마다 빨간 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!" },
+  storm: { name: "번개가시", unlockStage: 19, cost: 275, hp: 110, recharge: 10, interval: 4.2, damage: 64, description: "가시풀의 상위형! 4.2초마다 노란 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!" },
   cactus: { name: "선인장", unlockStage: 22, cost: 400, hp: 160, recharge: 6, firstAttack: 6, interval: 6, description: "심고 6초 뒤부터 6초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 좀비를 모두 처치해요. 뒤쪽과 다른 줄은 공격하지 않아요." },
 });
 const LEGACY_RECHARGES = Object.freeze({ sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 });

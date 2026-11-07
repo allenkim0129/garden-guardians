@@ -1,18 +1,28 @@
 import { test, expect } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 
-test("v27 번개는 굵은 빨간 중심선과 외곽선이며 축소·정지·연출 종료에도 피해를 추가하지 않음", async ({ page }, testInfo) => {
+test("v28 노란 번개는 여러 꺾임·짧은 가지·굵기를 갖고 축소·정지·연출 종료에도 피해를 추가하지 않음", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.locator("body")).toHaveAttribute("data-sprites-ready", "true");
   const report = await page.evaluate(async () => {
     const { drawBoard } = await import("./src/art.js");
-    const { createGame } = await import("./src/engine.js");
+    const { createGame, plantAt, tick, snapshot } = await import("./src/engine.js");
     const game = createGame(22);
     const canvas = document.createElement("canvas");
     canvas.width = 1000; canvas.height = 500;
     const context = canvas.getContext("2d", { willReadFrequently: true });
     const strokes = [], stroke = context.stroke.bind(context);
+    let points = [];
+    for (const method of ["beginPath", "moveTo", "lineTo"]) {
+      const original = context[method].bind(context);
+      context[method] = (...args) => {
+        if (method === "beginPath") points = [];
+        else points.push(args);
+        return original(...args);
+      };
+    }
     context.stroke = function(...args) {
-      if (["#a71929", "#ff3838"].includes(this.strokeStyle)) strokes.push([this.strokeStyle, this.lineWidth]);
+      if (["#ad7109", "#ffe234", "#fff5ae", "#ffd43b"].includes(this.strokeStyle)) strokes.push({ color: this.strokeStyle, width: this.lineWidth, points: [...points] });
       return stroke(...args);
     };
     game.effects = [{ id: game.nextId++, kind: "chain", x: 200, y: 250, toX: 700, toY: 250, age: 0 }];
@@ -24,26 +34,65 @@ test("v27 번개는 굵은 빨간 중심선과 외곽선이며 축소·정지·�
     const small = document.createElement("canvas"); small.width = 400; small.height = 200;
     const brush = small.getContext("2d");
     brush.drawImage(canvas, 0, 0, 400, 200);
-    const red = pixels => {
+    const yellow = pixels => {
       let count = 0;
-      for (let i = 0; i < pixels.length; i += 4) if (pixels[i] > 140 && pixels[i] > pixels[i + 1] * 1.8 && pixels[i] > pixels[i + 2] * 1.8) count++;
+      for (let i = 0; i < pixels.length; i += 4) if (pixels[i] > 220 && pixels[i + 1] > 195 && pixels[i + 2] < 185) count++;
       return count;
     };
-    const fullWidth = red(context.getImageData(300, 225, 1, 50).data);
-    const smallWidth = red(brush.getImageData(120, 90, 1, 20).data);
+    const fullWidth = yellow(context.getImageData(300, 210, 1, 80).data);
+    const smallWidth = yellow(brush.getImageData(120, 84, 1, 32).data);
+    const main = strokes.find(s => s.color === "#ffe234" && s.width === 8);
+    const branches = strokes.filter(s => s.color === "#ffe234" && s.width === 3).slice(0, 2);
     game.effects[0].age = .5;
     drawBoard(context, game);
     const faded = canvas.toDataURL();
     game.effects = [];
     drawBoard(context, game);
-    return { strokes, fullWidth, smallWidth, unchanged, ended: faded === canvas.toDataURL(), image };
+    const ended = faded === canvas.toDataURL();
+    const directions = [];
+    for (const [toX, toY] of [[200, 400], [300, 350], [201, 250], [200, 250]]) {
+      game.effects = [{ id: 11, kind: "chain", x: 200, y: 250, toX, toY, age: 0 }];
+      strokes.length = 0; drawBoard(context, game);
+      directions.push({ to: [toX, toY], points: strokes.find(s => s.color === "#ffe234" && s.width === 8).points });
+    }
+    const battle = createGame(22, ["storm"]);
+    plantAt(battle, "storm", 2, 0);
+    for (const [row, x] of [[2, 400], [2, 500], [3, 500], [3, 600], [4, 650], [4, 740]]) {
+      battle.enemies.push({ id: battle.nextId++, type: "barrel", row, x, hp: 400, age: 0, slow: 0, eating: false });
+    }
+    for (let i = 0; i < 5; i++) tick(battle, .1);
+    const state = snapshot(battle);
+    drawBoard(context, battle);
+    const combatImage = canvas.toDataURL();
+    const pure = JSON.stringify(state) === JSON.stringify(snapshot(battle));
+    tick(battle, .1); tick(battle, .1);
+    return { main, branches, directions, fullWidth, smallWidth, unchanged, ended,
+      hp: battle.enemies.map(e => e.hp), pure, combatImage };
   });
-  expect(report.strokes).toEqual(expect.arrayContaining([["#a71929", 14], ["#ff3838", 8]]));
-  expect(report.fullWidth).toBeGreaterThanOrEqual(13);
-  expect(report.smallWidth).toBeGreaterThanOrEqual(4);
+  expect(report.main.points.length).toBeGreaterThanOrEqual(7);
+  expect(report.main.points[0]).toEqual([200, 250]);
+  expect(report.main.points.at(-1)).toEqual([700, 250]);
+  const bends = report.main.points.slice(1, -1).map(point => point[1] - 250);
+  expect(bends.every((value, i) => !i || value * bends[i - 1] < 0)).toBe(true);
+  expect(new Set(bends.map(Math.abs)).size).toBeGreaterThan(3);
+  expect(report.branches).toHaveLength(2);
+  for (const branch of report.branches) {
+    expect(report.main.points).toContainEqual(branch.points[0]);
+    expect(branch.points).toHaveLength(4);
+    expect(Math.hypot(branch.points.at(-1)[0] - branch.points[0][0], branch.points.at(-1)[1] - branch.points[0][1])).toBeLessThan(35);
+  }
+  for (const direction of report.directions) {
+    expect(direction.points[0]).toEqual([200, 250]);
+    expect(direction.points.at(-1)).toEqual(direction.to);
+    expect(direction.points.flat().every(Number.isFinite)).toBe(true);
+  }
+  expect(report.fullWidth).toBeGreaterThanOrEqual(8);
+  expect(report.smallWidth).toBeGreaterThanOrEqual(3);
   expect(report.unchanged).toBe(true);
   expect(report.ended).toBe(true);
-  await testInfo.attach("red-lightning", { body: Buffer.from(report.image.split(",")[1], "base64"), contentType: "image/png" });
+  expect(report.hp).toEqual([336, 336, 336, 336, 336, 400]);
+  expect(report.pure).toBe(true);
+  await writeFile(testInfo.outputPath("yellow-lightning.png"), Buffer.from(report.combatImage.split(",")[1], "base64"));
 });
 
 test("선인장 빨간 레이저는 실제 구슬에서 같은 줄 안으로 발사되고 정지·복구·승리 때 일관됨", async ({ page }) => {

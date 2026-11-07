@@ -5,7 +5,7 @@ export function setLanguage(value) { language = value === "en" ? "en" : "ko"; }
 const messages = {
   "공격 없음": "No attack",
   "전방 한 줄 즉사": "Lane KO",
-  "가시풀의 상위형! 4.2초마다 빨간 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!": "Thornleaf's upgrade! Every 4.2s, red lightning jumps across rows to up to 5 enemies, each within 1.55 tiles of the last, dealing 64 damage once per enemy.",
+  "가시풀의 상위형! 4.2초마다 노란 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!": "Thornleaf's upgrade! Every 4.2s, yellow lightning jumps across rows to up to 5 enemies, each within 1.55 tiles of the last, dealing 64 damage once per enemy.",
   "2초마다 33 피해의 콩 두 발을 0.2초 간격으로 쏘는 주력 공격 식물이에요.": "A main attacker: every 2s, fires two 33-damage peas, 0.2s apart.",
   "2.8초마다 같은 줄의 좀비를 최대 3명 관통하며 각각 36 피해를 주는 가시를 쏴요.": "Every 2.8s, fires a thorn through up to 3 zombies in the same row, dealing 36 damage per enemy.",
   "4.5초마다 반경 약 한 칸에 96 피해! 비싸고 발사가 느리니 방어·둔화 식물로 지켜 주세요.": "Deals 96 splash damage within about one tile every 4.5s. Expensive and slow to fire: protect it with defenders and slowing plants.",
