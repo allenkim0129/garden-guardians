@@ -111,7 +111,7 @@ test("영어 획득·승패·잠금·HUD는 작은 가로 화면에서 번역되
     await page.getByRole("button", { name: "Next garden", exact: true }).tap();
     await noKoreanUI(page);
     for (const card of await page.locator(".seed-card").all()) {
-      expect(await card.locator("strong").evaluate(n => n.scrollWidth <= n.clientWidth)).toBe(true);
+      expect(await card.locator(".compact-damage").evaluate(n => n.scrollWidth <= n.clientWidth)).toBe(true);
       expect(await card.locator(".cost").evaluate(n => n.getBoundingClientRect().bottom <= n.closest("button").getBoundingClientRect().bottom - 1)).toBe(true);
     }
   }

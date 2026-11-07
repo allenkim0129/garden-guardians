@@ -95,8 +95,15 @@ export function introducedPlants(stage) {
   return Object.entries(PLANTS).filter(([, plant]) => plant.unlockStage === stage).map(([type]) => type);
 }
 
-export function plantDamageLabel(type) {
+export function plantDamageLabel(type, compact = false) {
   const plant = PLANTS[type];
+  if (compact) {
+    if (type === "cactus") return "즉사";
+    if (type === "bomb") return String(BOMB_DAMAGE);
+    if (type === "twin") return `${plant.damage}×2`;
+    if (type === "ember") return `${plant.damage}+${BURN_DAMAGE}/s`;
+    return plant.damage ? String(plant.damage) : "—";
+  }
   if (type === "cactus") return "전방 한 줄 즉사";
   if (type === "bomb") return `범위 피해 ${BOMB_DAMAGE}`;
   if (type === "twin") return `피해 ${plant.damage} × 2`;

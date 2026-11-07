@@ -15,7 +15,7 @@ async function seed(page, game, extra = {}, url = "/") {
 }
 const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
 
-test("v27 피해 표시 13종은 양언어 도감·출전 선택·작은 전투 카드에 잘림 없이 표시", async ({ page }, testInfo) => {
+test("v29 피해 표시 13종은 도감·출전 선택과 간결한 전투 카드에 양언어로 표시", async ({ page }, testInfo) => {
   for (const language of ["ko", "en"]) {
     setLanguage(language);
     const labels = Object.fromEntries(Object.keys(PLANTS).map(type => [type, t(plantDamageLabel(type))]));
@@ -44,7 +44,7 @@ test("v27 피해 표시 13종은 양언어 도감·출전 선택·작은 전투 
         await expect(card).toHaveAccessibleDescription(label);
         const fits = await card.evaluate(node => {
           const box = node.getBoundingClientRect();
-          return [...node.querySelectorAll("strong, .damage, .cost")].every(child => {
+          return [...node.querySelectorAll(".compact-damage, .cost")].every(child => {
             const rect = child.getBoundingClientRect();
             return rect.left >= box.left && rect.right <= box.right + .1
               && rect.top >= box.top && rect.bottom <= box.bottom + .1
@@ -57,6 +57,42 @@ test("v27 피해 표시 13종은 양언어 도감·출전 선택·작은 전투 
     await page.setViewportSize({ width: 568, height: 320 });
     await page.locator('.seed-card[data-type="storm"]').scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath(`damage-${language}.png`) });
+  }
+});
+
+test("v29 카드 열 장은 스크롤 없이 동시에 보이며 회전·안전 여백에서도 44px 유지", async ({ page }, testInfo) => {
+  for (const language of ["ko", "en"]) {
+    await page.setViewportSize({ width: 568, height: 320 });
+    await seed(page, createGame(30), { language });
+    await page.locator("#resume-button").tap();
+    for (const [width, height, inset] of [[568, 320, 0], [320, 568, 0], [320, 568, 20], [844, 390, 59], [1024, 768, 0]]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate(({ portrait, inset }) => {
+        document.documentElement.style.setProperty("--device-top", `${portrait ? inset : 0}px`);
+        document.documentElement.style.setProperty("--device-left", `${portrait ? 0 : inset}px`);
+        document.querySelector("#seed-cards").scrollTop = 0;
+      }, { portrait: height > width, inset });
+      const report = await page.locator("#seed-cards").evaluate(bank => {
+        const bounds = bank.getBoundingClientRect();
+        return [...bank.querySelectorAll(".seed-card")].slice(0, 10).map(card => {
+          const r = card.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return { width: r.width, height: r.height, inside: r.left >= bounds.left - .1 && r.top >= bounds.top - .1
+            && r.right <= bounds.right + .1 && r.bottom <= bounds.bottom + .1, hit: card === hit || card.contains(hit) };
+        });
+      });
+      expect(report).toHaveLength(10);
+      for (const card of report) {
+        expect(card.width).toBeGreaterThanOrEqual(43.99);
+        expect(card.height).toBeGreaterThanOrEqual(43.99);
+        expect(card.inside).toBe(true);
+        expect(card.hit).toBe(true);
+      }
+      await expect(page.locator("#seed-cards")).toHaveJSProperty("scrollTop", 0);
+      await page.screenshot({ path: testInfo.outputPath(`compact-${language}-${width}-${inset}.png`) });
+    }
+    await page.locator('.seed-card[data-type="cactus"]').scrollIntoViewIfNeeded();
+    await expect(page.locator('.seed-card[data-type="cactus"] .compact-damage')).toHaveText(language === "en" ? "KO" : "즉사");
   }
 });
 

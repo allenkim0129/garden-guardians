@@ -3,6 +3,8 @@ export const getLanguage = () => language;
 export function setLanguage(value) { language = value === "en" ? "en" : "ko"; }
 
 const messages = {
+  "즉사": "KO",
+  "시작 전에 최대 6종, 10번째 정원부터는 8종을 골라요. 전투 카드는 그림·햇빛 비용·빨간 피해 숫자로 간단하게 표시해요. 두 열에 열 장까지 한눈에 보여요. 자세한 능력은 출전 선택과 도감에서 확인해요. 키보드에서는 Tab으로 이동해요.": "Choose up to 6 plants, or 8 from garden 10 onward. Compact battle cards show art, sunlight cost and red damage numbers, with up to ten cards in two columns at once. Find full abilities in team selection and the guide. Use Tab to move between cards.",
   "공격 없음": "No attack",
   "전방 한 줄 즉사": "Lane KO",
   "가시풀의 상위형! 4.2초마다 노란 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!": "Thornleaf's upgrade! Every 4.2s, yellow lightning jumps across rows to up to 5 enemies, each within 1.55 tiles of the last, dealing 64 damage once per enemy.",

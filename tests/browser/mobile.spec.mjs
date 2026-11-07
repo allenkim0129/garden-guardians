@@ -78,7 +78,7 @@ for (const portrait of [false, true]) test(`더블탭은 홈·설정·출전 선
   expect(meta).not.toMatch(/user-scalable\s*=\s*no|maximum-scale\s*=\s*1/);
 });
 
-test("최대 6종 사전 선택·큰 카드·언어 전환·재접속·최소 화면", async ({ page }, testInfo) => {
+test("최대 6종 사전 선택·간결한 카드·언어 전환·재접속·최소 화면", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 568, height: 320 });
   await seed(page, null);
   await page.locator("#play-button").tap();
@@ -107,9 +107,9 @@ test("최대 6종 사전 선택·큰 카드·언어 전환·재접속·최소 �
       if (selector === ".plot:visible") expect(box.y + box.height).toBeLessThanOrEqual(320);
     }
   }
-  expect(await page.locator(".seed-card:visible img").first().evaluate(img => img.getBoundingClientRect().width)).toBeGreaterThanOrEqual(56);
-  expect(await page.locator("#seed-cards").evaluate(node => node.scrollHeight - node.clientHeight)).toBeGreaterThan(20);
-  await page.locator("#game").screenshot({ path: testInfo.outputPath("large-cards.png") });
+  expect(await page.locator(".seed-card:visible img").first().evaluate(img => img.getBoundingClientRect().width)).toBeGreaterThanOrEqual(28);
+  expect(await page.locator("#seed-cards").evaluate(node => node.scrollHeight - node.clientHeight)).toBeLessThanOrEqual(1);
+  await page.locator("#game").screenshot({ path: testInfo.outputPath("compact-cards.png") });
   for (const [width, height] of [[1024, 650], [1024, 768], [768, 1024]]) {
     await page.setViewportSize({ width, height });
     for (const card of await page.locator(".seed-card:visible").all()) {
@@ -125,7 +125,7 @@ test("최대 6종 사전 선택·큰 카드·언어 전환·재접속·최소 �
   expect((await stored(page)).language).toBe("en");
 });
 
-for (const portrait of [false, true]) test(`10단계 8종 선택·큰 카드 목록 스크롤·저장 (${portrait ? "세로" : "가로"})`, async ({ page, context, browserName }) => {
+for (const portrait of [false, true]) test(`10단계 8종 선택·모든 카드 동시 표시·저장 (${portrait ? "세로" : "가로"})`, async ({ page, context, browserName }) => {
   await page.setViewportSize(portrait ? { width: 320, height: 568 } : { width: 568, height: 320 });
   await seed(page, null, { language: "en" });
   await page.locator("#play-button").tap();
@@ -144,14 +144,14 @@ for (const portrait of [false, true]) test(`10단계 8종 선택·큰 카드 목
     const from = portrait ? { x: bank.x + 20, y: bank.y + bank.height / 2 } : { x: bank.x + bank.width / 2, y: bank.y + bank.height - 20 };
     const to = portrait ? { x: bank.x + bank.width - 20, y: from.y } : { x: from.x, y: bank.y + 20 };
     await swipe(page, context, browserName, from, to);
-    await expect.poll(() => page.locator("#seed-cards").evaluate(node => node.scrollTop)).toBeGreaterThan(20);
+    await expect(page.locator("#seed-cards")).toHaveJSProperty("scrollTop", 0);
   } else await page.locator("#seed-cards").evaluate(node => node.scrollTop = node.scrollHeight);
   await expect(page.locator('.seed-card[aria-pressed="true"]')).toHaveCount(0);
   const iron = page.locator('.seed-card[data-type="iron"]');
   await iron.tap();
   await expect(iron).toHaveAttribute("aria-pressed", "true");
   await expect(iron).toBeInViewport();
-  expect(await iron.locator("img").evaluate(node => node.getBoundingClientRect().width)).toBe(56);
+  expect(await iron.locator("img").evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThanOrEqual(28);
   expect(await page.locator("#board").boundingBox()).toEqual(board);
   expect(await page.evaluate(() => [scrollX, scrollY])).toEqual([0, 0]);
   await page.locator("#pause-button").tap();
@@ -162,12 +162,12 @@ for (const portrait of [false, true]) test(`10단계 8종 선택·큰 카드 목
   await expect(page.locator(".seed-card:visible")).toHaveCount(8);
 });
 
-test("안전 여백으로 좁아진 화면의 6종 카드 스크롤·44px·방향 전환", async ({ page, context, browserName }) => {
+test("안전 여백으로 좁아진 화면의 6종 동시 표시·44px·방향 전환", async ({ page, context, browserName }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await seed(page, createGame(10, team), { language: "en" });
   await page.evaluate(() => document.documentElement.style.setProperty("--device-top", "20px"));
   await page.locator("#resume-button").tap();
-  await expect(page.locator(".seed-scroll-hint")).toBeVisible();
+  await expect(page.locator(".seed-scroll-hint")).toBeHidden();
   expect(await page.locator("#seed-cards").evaluate(node => node.className)).toBe("seed-cards");
   const board = await page.locator("#board").boundingBox();
   const bank = await page.locator("#seed-cards").boundingBox();
@@ -176,12 +176,12 @@ test("안전 여백으로 좁아진 화면의 6종 카드 스크롤·44px·방�
       { x: bank.x + 20, y: bank.y + bank.height / 2 },
       { x: bank.x + bank.width - 20, y: bank.y + bank.height / 2 });
   } else await page.locator("#seed-cards").evaluate(node => node.scrollTop = node.scrollHeight);
-  await expect.poll(() => page.locator("#seed-cards").evaluate(node => node.scrollTop)).toBeGreaterThan(20);
+  await expect(page.locator("#seed-cards")).toHaveJSProperty("scrollTop", 0);
   await expect(page.locator('.seed-card[aria-pressed="true"]')).toHaveCount(0);
   const card = page.locator('.seed-card[data-type="twin"]');
   await expect(card).toBeInViewport();
   await card.tap();
-  expect(await card.locator("img").evaluate(node => node.getBoundingClientRect().width)).toBe(56);
+  expect(await card.locator("img").evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThanOrEqual(28);
   await page.locator('.plot[data-row="0"][data-col="0"]').tap();
   await expect(page.locator("#sun-count")).toHaveText("125");
   expect(await page.locator("#board").boundingBox()).toEqual(board);

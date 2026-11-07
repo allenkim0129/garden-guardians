@@ -24,6 +24,11 @@ test("한국어 기본값과 전체 캐릭터·스테이지·동적 상태 영�
       iron: "No attack", ember: "DMG 15 + burn 4/s", storm: "DMG 64/foe", cactus: "Lane KO",
     };
     for (const [type, label] of Object.entries(damageLabels)) assert.equal(t(plantDamageLabel(type)), label);
+    const compactDamage = {
+      sun: "—", pea: "12", wall: "—", frost: "6", bomb: "300", twin: "33×2", thorn: "36",
+      pumpkin: "96", lantern: "—", iron: "—", ember: "15+4/s", storm: "64", cactus: "KO",
+    };
+    for (const [type, label] of Object.entries(compactDamage)) assert.equal(t(plantDamageLabel(type, true)), label);
     assert.equal(t("햇빛 75 · 2번째 정원부터 사용"), "75 sunlight · From garden 2");
     assert.equal(t("1. 첫 번째 새싹, 별 3개"), "1. First Sprouts, 3 stars");
     assert.equal(t("캐릭터 그림 준비 실패 · sun 프레임 그림을 불러오지 못했어요. 온라인 상태에서 다시 시도해 주세요."),

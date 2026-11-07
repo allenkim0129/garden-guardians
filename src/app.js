@@ -219,7 +219,7 @@ function helpMarkup() {
     <div class="help-step"><b>3. 정원 지키기</b><span>좀비가 왼쪽 끝에 닿으면 하트가 하나 줄어요. 3번의 무리를 막아요!</span></div>
   </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><span class="damage">${plantDamageLabel(type)}</span><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
   <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~9번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
-  <p>시작 전에 최대 6종, 10번째 정원부터는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.</p>
+  <p>시작 전에 최대 6종, 10번째 정원부터는 8종을 골라요. 전투 카드는 그림·햇빛 비용·빨간 피해 숫자로 간단하게 표시해요. 두 열에 열 장까지 한눈에 보여요. 자세한 능력은 출전 선택과 도감에서 확인해요. 키보드에서는 Tab으로 이동해요.</p>
   <p>새 판에서는 중간 무리의 마지막 좀비가 나온 뒤 30초 동안 새 좀비가 나오지 않아요. 남은 적을 막으며 햇빛을 모으고 방어선을 정비해요. 저장된 판은 기존 시간표로 이어져요.</p>
   <p>10번째 정원을 지키면 달빛 온실이 열려요. 11~20단계를 차례로 지키며 더 큰 무리와 빠른 등장 간격에 도전해요. 밤에도 햇빛 생산은 같아요.</p>
   <p>20번째 정원을 지키면 모래 사막이 열려요. 테마 탭으로 10단계씩 골라요. 19단계의 번개가시는 가시풀의 상위형이고, 22단계의 선인장은 앞쪽 같은 줄을 쓸어내요. 기존 식물과 별도로 선택하며 최대 8종 제한은 같아요.</p>
@@ -321,8 +321,6 @@ function startStage(stageNumber, resume = false, teamSlots) {
   document.body.classList.add("game-active");
   seedCards.classList.toggle("legacy", game.loadout === undefined);
   seedCards.classList.toggle("extended", (game.loadout?.length ?? 0) > 6);
-  const scrollCards = columns > 9 || game.loadout === undefined || game.loadout.length > 6;
-  setLabel(seedCards, scrollCards ? "식물 카드 목록 · 위아래로 스크롤" : "선택한 식물 카드");
   text($("#stage-title"), `${game.stage}. ${STAGES[game.stage - 1].name}`);
   text($("#selection-hint"), STAGES[game.stage - 1].tip);
   $("#sun-layer").replaceChildren();
@@ -404,7 +402,7 @@ for (const [type, plant] of Object.entries(PLANTS).sort((a, b) => a[1].unlockSta
   button.className = "seed-card";
   button.dataset.type = type;
   setLabel(button, `${plant.name}, 햇빛 ${plant.cost}. ${plant.description}`);
-  button.innerHTML = `<img src="${icons[type]}" alt=""><span><strong>${plant.name}</strong><span class="cost">☀ ${plant.cost}</span><span class="damage">${plantDamageLabel(type)}</span></span><span class="cooldown" hidden></span>`;
+  button.innerHTML = `<img src="${icons[type]}" alt=""><strong class="visually-hidden">${plant.name}</strong><span class="cost">☀ ${plant.cost}</span><span class="damage visually-hidden">${plantDamageLabel(type)}</span><span class="compact-damage" aria-hidden="true" title="${plantDamageLabel(type)}">${plantDamageLabel(type, true)}</span><span class="cooldown" hidden></span>`;
   button.querySelector(".damage").id = `seed-damage-${type}`;
   button.setAttribute("aria-describedby", `seed-damage-${type}`);
   button.onclick = () => {
@@ -417,6 +415,11 @@ for (const [type, plant] of Object.entries(PLANTS).sort((a, b) => a[1].unlockSta
   $("#seed-cards").append(button);
 }
 const seedCards = $("#seed-cards");
+new ResizeObserver(() => {
+  const scrolling = seedCards.scrollHeight > seedCards.clientHeight + 1;
+  $(".seed-scroll-hint").hidden = !scrolling;
+  setLabel(seedCards, scrolling ? "식물 카드 목록 · 위아래로 스크롤" : "선택한 식물 카드");
+}).observe(seedCards);
 let cardPointer = null;
 let cardDragged = false;
 seedCards.addEventListener("pointerdown", event => { cardPointer = { x: event.clientX, y: event.clientY }; cardDragged = false; });
