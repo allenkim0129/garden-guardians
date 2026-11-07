@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { createGame, PLANTS, ENEMIES, STAGES, plantAt, removePlant, collectSun, tick, scheduleFor, snapshot, validSnapshot } from "../src/engine.js";
-import { freshSave, updateProgress } from "../src/storage.js";
+import { freshSave, readSave, updateProgress } from "../src/storage.js";
 import * as engine from "../src/engine.js";
 import { playStrategy } from "./helpers/strategy.mjs";
 
@@ -299,7 +300,7 @@ test("v15는 55초 전 1~2명만 천천히, 중반 증가, 최종 무리에 절�
   }
 });
 test("진행 바는 저장 버전의 시간표를 따르고 마지막 등장 이후 남은 적과 승리를 구분", () => {
-  for (const pacingVersion of [1, 2, 3, 4, 5]) {
+  for (const pacingVersion of [1, 2, 3, 4, 5, 6]) {
     const game = createGame(10); game.pacingVersion = pacingVersion;
     const plan = scheduleFor(10, pacingVersion);
     assert.ok(validSnapshot(game));
@@ -338,6 +339,79 @@ test("v10 진행 중 판은 저장·재접속 후에도 기존 등장 시점·�
     game.enemies = [];
     tick(game, .1);
     assert.equal(game.status, "won");
+  }
+});
+test("v26은 30단계 모두 중간 출현 뒤 30초 정비하고 최종 무리의 구성·간격은 보존", () => {
+  for (const stage of STAGES) {
+    const old = scheduleFor(stage.id, 5), plan = scheduleFor(stage.id);
+    const finalIndex = plan.findIndex(spawn => spawn.wave === 3);
+    assert.equal(createGame(stage.id).pacingVersion, 6);
+    assert.equal(plan.length, old.length);
+    assert.deepEqual(plan.slice(0, finalIndex), old.slice(0, finalIndex));
+    assert.ok(Math.abs(plan[finalIndex].at - plan[finalIndex - 1].at - 30) < 1e-8);
+    const delay = plan[finalIndex].at - old[finalIndex].at;
+    assert.ok(delay > 0);
+    for (let i = finalIndex; i < plan.length; i++) {
+      assert.equal(plan[i].wave, old[i].wave);
+      assert.equal(plan[i].row, old[i].row);
+      assert.equal(plan[i].type, old[i].type);
+      assert.ok(Math.abs(plan[i].at - old[i].at - delay) < 1e-8);
+    }
+  }
+});
+test("이전 5종 시간표는 모든 30단계에서 v25와 바이트 단위로 동일", () => {
+  const hashes = [
+    "502519504f38ef8ef9be8284e9b3d18949c56d36675e70b516623e4989be8305",
+    "beb1606ccb6dccb80e2dc554df4f2c9e81c72a0634ef643599e248b5dad08248",
+    "854371239061fb06aced3f90a51f12f928dc39574cb6f2ad153ede2a84e58635",
+    "70608bfac67348c74405920e7a6a3d1a164a7cf657903844d0952243d6f5fc29",
+    "da1eb158c6067a6e89c21b0e9055693734295a7b4c8d95bca439e8b47c672cc4",
+  ];
+  hashes.forEach((hash, index) => {
+    assert.equal(createHash("sha256").update(JSON.stringify(STAGES.map(stage => scheduleFor(stage.id, index + 1)))).digest("hex"), hash);
+  });
+});
+test("정비 중 출현·조기 승리 없이 전투와 생산은 계속되고 정지·복구 뒤 최종 첫 적은 한 번만 등장", () => {
+  for (const stage of [1, 10, 19, 22, 30]) {
+    const game = createGame(stage, ["sun"]);
+    const plan = scheduleFor(stage), finalIndex = plan.findIndex(spawn => spawn.wave === 3);
+    plantAt(game, "sun", 0, 0);
+    game.time = plan[finalIndex - 1].at - .05;
+    game.nextSpawn = finalIndex - 1; game.wave = 2;
+    assert.equal(engine.waveProgress(game).regroupRemaining, 0);
+    tick(game, .1);
+    assert.equal(game.nextSpawn, finalIndex);
+    assert.ok(Math.abs(engine.waveProgress(game).regroupRemaining - 29.95) < 1e-8);
+    const last = game.enemies[0], x = last.x, sun = game.sun;
+    advance(game, 15);
+    assert.ok(last.x < x);
+    assert.ok(game.sun > sun);
+    assert.equal(game.cooldowns.sun, 0);
+    assert.equal(game.nextSpawn, finalIndex);
+    game.enemies = []; game.effects = [];
+    tick(game, .1);
+    assert.equal(game.status, "playing");
+    const before = snapshot(game);
+    tick(game, 0);
+    assert.deepEqual(snapshot(game), before);
+    const loaded = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: stage, current: before }) });
+    assert.equal(loaded.error, null);
+    assert.deepEqual(loaded.data.current, before);
+    advance(game, 2); advance(loaded.data.current, 2);
+    assert.deepEqual(loaded.data.current, game);
+    assert.equal(game.nextSpawn, finalIndex);
+    game.time = plan[finalIndex].at - .15;
+    tick(game, .1);
+    assert.equal(game.nextSpawn, finalIndex);
+    assert.ok(engine.waveProgress(game).regroupRemaining > 0);
+    tick(game, .1);
+    assert.equal(game.nextSpawn, finalIndex + 1);
+    assert.equal(game.wave, 3);
+    assert.equal(engine.waveProgress(game).regroupRemaining, 0);
+    assert.ok(validSnapshot(snapshot(game)));
+    const old = createGame(stage); old.pacingVersion = 5;
+    old.time = plan[finalIndex - 1].at; old.nextSpawn = finalIndex; old.wave = 2;
+    assert.equal(engine.waveProgress(old).regroupRemaining, 0);
   }
 });
 test("저장 복구는 타이머·공격·햇빛·무리를 동일하게 이어 감", () => {
@@ -395,22 +469,23 @@ test("콩별이·햇살봉은 기본 해금하고 2~10 정원에 한 종씩 추�
   advance(game, 6.1);
   assert.ok(game.suns.some(sun => sun.x === 72 && sun.y === 50));
 });
-test("9·10칸 후반은 단일 공격 도배보다 조합이 유리함", t => {
+test("기존 9칸·새 10칸 후반은 단일 공격 도배보다 조합이 유리함", t => {
   assert.equal(PLANTS.pea.cost, 125);
   assert.equal(PLANTS.pea.recharge, 5);
   assert.equal(PLANTS.pea.damage / PLANTS.pea.interval, 7.5);
   assert.ok(PLANTS.pea.damage / PLANTS.pea.interval < (22 / 1.25) * .65);
   for (const columns of [9, 10]) for (const stage of [19, 20]) {
+    const pacingVersion = columns === 9 ? 5 : 6;
     for (const attacker of ["pea", "frost", "twin", "thorn", "pumpkin", "ember"]) {
       const team = ["sun", attacker];
-      const solo = playStrategy({ ...engine, createGame: n => ({ ...createGame(n, team), columns }) }, stage, "pea", attacker);
+      const solo = playStrategy({ ...engine, createGame: n => ({ ...createGame(n, team), columns, pacingVersion }) }, stage, "pea", attacker);
       assert.equal(solo.game.status, "lost", `${stage}단계 ${attacker} 도배`);
       assert.ok(solo.actions.every(action => team.includes(action.type)));
     }
     const attack = columns === 9 && stage === 20 ? "pumpkin" : "thorn";
     const defender = columns === 9 && stage === 19 ? "iron" : "wall";
     const team = ["sun", "pea", "frost", "bomb", "twin", attack, "lantern", defender];
-    const mixed = playStrategy({ ...engine, createGame: n => ({ ...createGame(n, team), columns }) }, stage, "expanded", "twin");
+    const mixed = playStrategy({ ...engine, createGame: n => ({ ...createGame(n, team), columns, pacingVersion }) }, stage, "expanded", "twin");
     assert.equal(mixed.game.status, "won", `${columns}칸 ${stage}단계 혼합 조합`);
     assert.ok(mixed.actions.every(action => team.includes(action.type)));
     for (const type of ["twin", "bomb", "frost", defender, "lantern"]) assert.ok(mixed.actions.some(action => action.type === type));
@@ -420,7 +495,7 @@ test("9·10칸 후반은 단일 공격 도배보다 조합이 유리함", t => {
 
 test("v17은 첫 10초 한 명만 앞당기고 두 번째 39초·55초 중반·최종 무리는 보존", () => {
   for (const stage of STAGES.slice(0, 10)) {
-    const plan = scheduleFor(stage.id);
+    const plan = scheduleFor(stage.id, 5);
     assert.equal(plan[0].at, 10);
     assert.equal(plan[0].type, "sleepy");
     assert.deepEqual(plan.slice(1), scheduleFor(stage.id, 4).slice(1));

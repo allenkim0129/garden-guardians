@@ -18,6 +18,7 @@ export const CHAIN_HITS = 5;
 export const CHAIN_GAP = .12;
 export const LASER_DURATION = .24;
 export const SKY_SUN_INTERVAL = 7;
+export const REGROUP_DURATION = 30;
 export const PLANTS = Object.freeze({
   sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 4, firstHarvest: 5, interval: 8, description: "첫 햇빛은 5초 뒤, 이후 8초마다 햇빛 25를 만들어요." },
   pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 5, interval: 1.6, damage: 12, description: "1.6초마다 12 피해의 콩을 쏘는 기본 공격 식물이에요." },
@@ -94,7 +95,7 @@ export function introducedPlants(stage) {
   return Object.entries(PLANTS).filter(([, plant]) => plant.unlockStage === stage).map(([type]) => type);
 }
 
-export function scheduleFor(stageNumber, pacingVersion = 5) {
+export function scheduleFor(stageNumber, pacingVersion = 6) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   const rows = (pacingVersion < 3 ? stage.legacyRows : stage.rows) ?? [2, 0, 4, 1, 3];
@@ -104,7 +105,7 @@ export function scheduleFor(stageNumber, pacingVersion = 5) {
     const first = 3;
     const second = Math.ceil(stage.count * .28);
     const middleAt = (desert ? 54 : 48) - offset * 2 / 3;
-    const finalAt = middleAt + (second - 1) * stage.gap + 10;
+    const finalAt = middleAt + (second - 1) * stage.gap + (pacingVersion >= 6 ? REGROUP_DURATION : 10);
     const finalGap = desert ? .36 - offset * .01 : .65 - offset * .03;
     return Array.from({ length: stage.count }, (_, i) => {
       const wave = i < first ? 1 : i < first + second ? 2 : 3;
@@ -128,7 +129,7 @@ export function scheduleFor(stageNumber, pacingVersion = 5) {
     const first = stageNumber === 1 ? 1 : 2;
     const second = Math.ceil(stage.count * .25);
     const middleGap = Math.max(3, stage.gap * .9);
-    const finalAt = Math.max(90, 55 + (second - 1) * middleGap + 12);
+    const finalAt = Math.max(90, 55 + (second - 1) * middleGap + (pacingVersion >= 6 ? REGROUP_DURATION : 12));
     return Array.from({ length: stage.count }, (_, i) => {
       const wave = i < first ? 1 : i < first + second ? 2 : 3;
       const at = wave === 1 ? (i === 0 && pacingVersion >= 5 ? 10 : 25 + i * 14)
@@ -150,7 +151,12 @@ export function scheduleFor(stageNumber, pacingVersion = 5) {
 export function waveProgress(game) {
   const schedule = scheduleFor(game.stage, game.pacingVersion ?? 1);
   const end = schedule.at(-1).at;
+  const finalIndex = schedule.findIndex(spawn => spawn.wave === 3);
+  const regroupRemaining = (game.pacingVersion ?? 1) >= 6 && game.status === "playing"
+    && game.nextSpawn === finalIndex && game.time >= schedule[finalIndex - 1].at
+    ? Math.max(0, schedule[finalIndex].at - game.time) : 0;
   return {
+    regroupRemaining,
     percent: game.status === "won" ? 100 : Math.min(100, game.time / end * 100),
     total: schedule.length,
     remaining: schedule.length - game.nextSpawn + game.enemies.length,
@@ -173,7 +179,7 @@ export function createGame(stageNumber, loadout) {
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 6, pacingVersion: 5, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 6, pacingVersion: 6, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -454,7 +460,7 @@ export function validSnapshot(g) {
   if (g.columns !== undefined && ![9, COLS].includes(g.columns)) return false;
   const columns = boardColumns(g), width = boardWidth(g);
   if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6].includes(g.rulesVersion)) return false;
-  if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5].includes(g.pacingVersion)) return false;
+  if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5, 6].includes(g.pacingVersion)) return false;
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
   if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, (g.rulesVersion ?? 1) < 5 ? 6 : SKY_SUN_INTERVAL) || !integer(g.wave, 0, 3)) return false;

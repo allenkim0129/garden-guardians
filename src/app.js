@@ -220,6 +220,7 @@ function helpMarkup() {
   </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
   <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~9번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
   <p>시작 전에 최대 6종, 10번째 정원부터는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.</p>
+  <p>새 판에서는 중간 무리의 마지막 좀비가 나온 뒤 30초 동안 새 좀비가 나오지 않아요. 남은 적을 막으며 햇빛을 모으고 방어선을 정비해요. 저장된 판은 기존 시간표로 이어져요.</p>
   <p>10번째 정원을 지키면 달빛 온실이 열려요. 11~20단계를 차례로 지키며 더 큰 무리와 빠른 등장 간격에 도전해요. 밤에도 햇빛 생산은 같아요.</p>
   <p>20번째 정원을 지키면 모래 사막이 열려요. 테마 탭으로 10단계씩 골라요. 19단계의 번개가시는 가시풀의 상위형이고, 22단계의 선인장은 앞쪽 같은 줄을 쓸어내요. 기존 식물과 별도로 선택하며 최대 8종 제한은 같아요.</p>
   <p>삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하면 자동으로 멈춰요. 세로로 들고 있어도 게임은 가로형 화면으로 표시돼요.</p>
@@ -615,12 +616,13 @@ function render() {
   $("#sun-count").textContent = game.sun;
   $("#hearts").textContent = "♥ ".repeat(game.lives) + "♡ ".repeat(3 - game.lives);
   setLabel($("#hearts"), `남은 하트 ${game.lives}개`);
-  text($("#wave-label"), game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간");
   const progress = waveProgress(game);
+  const regroupLabel = progress.regroupRemaining > 0 ? `정비 시간 · ${Math.ceil(progress.regroupRemaining)}초` : "";
+  text($("#wave-label"), regroupLabel || (game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간"));
   text($("#enemy-count"), `막아낸 좀비 ${game.stats.defeated} / ${progress.total}`);
   $("#wave-fill").style.width = `${progress.percent}%`;
   $("#wave-track").setAttribute("aria-valuenow", String(Math.round(progress.percent)));
-  $("#wave-track").setAttribute("aria-valuetext", t(`등장 진행 ${Math.round(progress.percent)}% · 남은 좀비 ${progress.remaining}명`));
+  $("#wave-track").setAttribute("aria-valuetext", (regroupLabel ? `${t(regroupLabel)} · ` : "") + t(`등장 진행 ${Math.round(progress.percent)}% · 남은 좀비 ${progress.remaining}명`));
   for (const marker of progress.markers) {
     const node = $(`#wave-marker-${marker.wave}`);
     node.style.left = `${marker.percent}%`;
@@ -628,7 +630,7 @@ function render() {
   }
   text($("#wave-status"), game.status === "won" ? "정원을 지켰어요!"
     : game.nextSpawn === progress.total ? "등장 완료 · 남은 좀비를 막아요!"
-      : game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간");
+      : regroupLabel || (game.wave ? `${game.wave} / 3번째 무리` : "친구를 심을 준비 시간"));
   text($("#wave-remaining"), `남은 좀비 ${progress.remaining}명`);
   $("#pause-button").disabled = game.status !== "playing";
   gameScreen.querySelector("[data-sound-settings]").disabled = game.status !== "playing";

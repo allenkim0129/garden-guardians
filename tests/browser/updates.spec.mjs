@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createServer } from "node:http";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { createGame, plantAt, tick, ENEMIES } from "../../src/engine.js";
+import { createGame, plantAt, tick, scheduleFor, ENEMIES } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
 
 // The old shell reproduces v5/v6's register/ready policy without an update UI.
@@ -95,6 +95,38 @@ async function installNext(page, server) {
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration()).update(); });
   await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration()).waiting))).toBe(true);
 }
+
+test("v26 업데이트는 기존 시간표와 새 정비 구간의 남은 시간을 각각 보존", async ({ page }) => {
+  for (const pacingVersion of [5, 6]) {
+    const server = await releaseServer();
+    try {
+      const game = createGame(22, ["sun", "cactus"]);
+      game.pacingVersion = pacingVersion;
+      const plan = scheduleFor(22, pacingVersion);
+      game.nextSpawn = plan.findIndex(spawn => spawn.wave === 3);
+      game.time = plan[game.nextSpawn - 1].at + 3; game.wave = 2;
+      const data = { ...freshSave(), unlocked: 22, tutorialSeen: true, language: "en", current: game };
+      await page.goto(`${server.url}manifest.webmanifest`);
+      await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+      await page.goto(server.url);
+      await expect(page.locator("#offline-status")).toContainText("Offline ready");
+      await installNext(page, server);
+      await page.locator("#update-button").tap();
+      await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+      expect(await saved(page)).toEqual(data);
+      await server.stop();
+      await page.reload();
+      await expect(page.locator("#offline-status")).toContainText("Offline ready");
+      await page.locator("#resume-button").tap();
+      await expect(page.locator("#wave-status")).toHaveText(pacingVersion === 6 ? /Regroup · 2[67]s/ : "Wave 2 / 3");
+      await page.locator("#pause-button").tap();
+      const restored = await saved(page);
+      expect(restored.current.nextSpawn).toBe(game.nextSpawn);
+      expect(restored.current.pacingVersion).toBe(pacingVersion);
+      expect(restored.current.time - game.time).toBeLessThan(1);
+    } finally { await server.stop(); }
+  }
+});
 
 test("기존 쌍콩이 예약과 사막 저장은 명시적 업데이트·오프라인 뒤 한 번씩 이어짐", async ({ page }) => {
   const server = await releaseServer();
