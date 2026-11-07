@@ -7,6 +7,14 @@ export const CACTUS_MUZZLES = Object.freeze([
   [195.01, 37.50], [212.33, 38.51], [228.69, 40.93], [196.35, 29.95],
   [191.83, 30.25], [163.91, 40.54], [178.61, 29.95], [194.90, 30.39],
 ]);
+export const SHURIKEN_HANDS = Object.freeze([
+  [259.13, 103.67], [257.17, 103.67], [258.15, 103.67], [257.17, 103.67],
+  [166.03, 96.32], [275.30, 102.20], [271.87, 102.20], [168.48, 97.30],
+  [247.37, 108.57], [250.80, 109.55], [258.64, 112], [261.58, 112],
+]);
+export const PROJECTILE_URLS = Object.freeze({
+  "shuriken-projectile": new URL("../assets/sprites/shuriken-projectile.png", import.meta.url).href,
+});
 export const SPRITE_URLS = Object.freeze(Object.fromEntries(
   [...Object.keys(PLANTS), ...Object.keys(ENEMIES)].map(type => [type, new URL(`../assets/sprites/${type}.png`, import.meta.url).href])
 ));
@@ -20,13 +28,14 @@ let loading;
 
 export function loadSprites() {
   if (loading) return loading;
-  loading = Promise.all(Object.entries({ ...SPRITE_URLS, ...GEAR_URLS }).map(([type, url]) => new Promise((resolve, reject) => {
+  loading = Promise.all(Object.entries({ ...SPRITE_URLS, ...GEAR_URLS, ...PROJECTILE_URLS }).map(([type, url]) => new Promise((resolve, reject) => {
     const image = new Image();
     const timer = setTimeout(() => reject(new Error(`${type} 그림을 불러오는 시간이 초과됐어요.`)), 15000);
     image.onload = () => {
       clearTimeout(timer);
       const columns = type === "desert-gear" ? 2 : 4, rows = type === "desert-gear" ? 1 : 3;
-      if (image.naturalWidth !== SPRITE_CELL.width * columns || image.naturalHeight !== SPRITE_CELL.height * rows) {
+      const expected = type === "shuriken-projectile" ? [128, 128] : [SPRITE_CELL.width * columns, SPRITE_CELL.height * rows];
+      if (image.naturalWidth !== expected[0] || image.naturalHeight !== expected[1]) {
         reject(new Error(`${type} 프레임 시트의 크기가 맞지 않아요.`));
       } else resolve([type, image]);
     };
@@ -44,6 +53,13 @@ function actionFrame(time, happenedAt, timer, state) {
   return null;
 }
 export function plantFrame(plant, game) {
+  if (plant.type === "shuriken") {
+    const flight = game.shots?.find(s => s.kind === "shuriken" && s.plantId === plant.id);
+    if (flight && flight.age < .12) return { state: "fire", row: 1, col: 1 };
+    if (flight?.leg === "back" && flight.x - (plant.col * 100 + 50) < 40) return { state: "catch", row: 1, col: 2 };
+    if (game.time - (plant.caughtAt ?? -100) < .24) return { state: "catch", row: 1, col: 3 };
+    if (!flight && game.enemies.some(e => e.hp > 0 && e.row === plant.row && e.x > plant.col * 100 + 50)) return { state: "fire", row: 1, col: 0 };
+  }
   if (plant.type === "bomb") {
     return plant.age < .4
       ? { state: "idle", row: 0, col: Math.min(3, Math.floor(plant.age * 10)) }
@@ -56,7 +72,7 @@ export function plantFrame(plant, game) {
   if (plant.type === "twin") {
     const elapsed = game.time - (plant.shotAt ?? -100);
     if (elapsed >= 0 && elapsed < TWIN_GAP * 2) return { state: "fire", row: 1, col: Math.min(3, Math.floor((elapsed + 1e-9) / (TWIN_GAP / 2))) };
-  } else if (PLANTS[plant.type].damage || plant.type === "cactus") {
+  } else if ((PLANTS[plant.type].damage && plant.type !== "shuriken") || plant.type === "cactus") {
     const targetAhead = game.enemies.some(enemy => enemy.hp > 0 && enemy.row === plant.row
       && (plant.type === "cactus" ? enemy.x > plant.col * 100 + 50 : enemy.x >= plant.col * 100 + 40));
     const frame = actionFrame(game.time, plant.shotAt, targetAhead ? plant.timer : 0, "fire");
@@ -144,4 +160,12 @@ export function drawGearSprite(context, type) {
   const image = images.get("desert-gear");
   if (!image) throw new Error("장비 그림을 먼저 불러와야 합니다.");
   context.drawImage(image, type === "barrel" ? 0 : 320, 0, 320, 224, -160 * .48, -112 * .48, 320 * .48, 224 * .48);
+}
+
+export function drawShuriken(context, x, y, angle = 0, size = 27) {
+  const image = images.get("shuriken-projectile");
+  if (!image) throw new Error("shuriken-projectile 그림을 먼저 불러와야 합니다.");
+  context.save(); context.translate(x, y); context.rotate(angle);
+  context.drawImage(image, -size / 2, -size / 2, size, size);
+  context.restore();
 }

@@ -6092,6 +6092,344 @@
           210
         ]
       }
+    ],
+    "shuriken": [
+      {
+        "state": "idle",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          313,
+          420
+        ],
+        "sourceBounds": [
+          44,
+          35,
+          300,
+          412
+        ],
+        "sourceRoot": [
+          141,
+          412
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          144,
+          25,
+          269,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 1,
+        "sourceCell": [
+          313,
+          0,
+          627,
+          420
+        ],
+        "sourceBounds": [
+          36,
+          35,
+          292,
+          412
+        ],
+        "sourceRoot": [
+          136,
+          412
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          143,
+          25,
+          268,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 2,
+        "sourceCell": [
+          627,
+          0,
+          940,
+          420
+        ],
+        "sourceBounds": [
+          30,
+          35,
+          277,
+          412
+        ],
+        "sourceRoot": [
+          121,
+          412
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          147,
+          25,
+          268,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 3,
+        "sourceCell": [
+          940,
+          0,
+          1254,
+          420
+        ],
+        "sourceBounds": [
+          34,
+          35,
+          279,
+          412
+        ],
+        "sourceRoot": [
+          128,
+          412
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          146,
+          25,
+          266,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 0,
+        "sourceCell": [
+          0,
+          420,
+          313,
+          830
+        ],
+        "sourceBounds": [
+          50,
+          17,
+          287,
+          390
+        ],
+        "sourceRoot": [
+          142,
+          390
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          147,
+          27,
+          263,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 1,
+        "sourceCell": [
+          313,
+          420,
+          645,
+          830
+        ],
+        "sourceBounds": [
+          23,
+          16,
+          327,
+          390
+        ],
+        "sourceRoot": [
+          130,
+          390
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          140,
+          27,
+          289,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 2,
+        "sourceCell": [
+          645,
+          420,
+          967,
+          830
+        ],
+        "sourceBounds": [
+          8,
+          14,
+          298,
+          390
+        ],
+        "sourceRoot": [
+          104,
+          390
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          145,
+          26,
+          287,
+          210
+        ]
+      },
+      {
+        "state": "fire",
+        "column": 3,
+        "sourceCell": [
+          967,
+          420,
+          1254,
+          830
+        ],
+        "sourceBounds": [
+          24,
+          16,
+          253,
+          390
+        ],
+        "sourceRoot": [
+          101,
+          390
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          154,
+          27,
+          266,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 0,
+        "sourceCell": [
+          0,
+          830,
+          313,
+          1254
+        ],
+        "sourceBounds": [
+          35,
+          26,
+          288,
+          385
+        ],
+        "sourceRoot": [
+          153,
+          385
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          134,
+          34,
+          258,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 1,
+        "sourceCell": [
+          313,
+          830,
+          627,
+          1254
+        ],
+        "sourceBounds": [
+          32,
+          25,
+          296,
+          385
+        ],
+        "sourceRoot": [
+          147,
+          385
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          136,
+          34,
+          265,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 2,
+        "sourceCell": [
+          627,
+          830,
+          940,
+          1254
+        ],
+        "sourceBounds": [
+          31,
+          18,
+          295,
+          385
+        ],
+        "sourceRoot": [
+          129,
+          385
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          144,
+          30,
+          273,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 3,
+        "sourceCell": [
+          940,
+          830,
+          1254,
+          1254
+        ],
+        "sourceBounds": [
+          35,
+          19,
+          291,
+          385
+        ],
+        "sourceRoot": [
+          128,
+          385
+        ],
+        "scale": 0.49,
+        "flipped": false,
+        "alignedBounds": [
+          146,
+          31,
+          271,
+          210
+        ]
+      }
     ]
   }
 }

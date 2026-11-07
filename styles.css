@@ -85,6 +85,8 @@ h1 i { position: absolute; font-style: normal; font-size: .5em; color: #dcaa44; 
 .seed-card[aria-pressed="true"] { background: #f0f3cb; border-color: #4b7748; box-shadow: 0 0 0 2px #4b774824; }
 .seed-card.unaffordable { background: #e7e8dc; }
 .seed-card.unaffordable img { opacity: .6; }
+.seed-card.at-limit { background: #e7e8dc; border-color: #b19d7d; }
+.seed-card .plant-limit { position: absolute; bottom: 0; left: 0; right: 0; background: #f3d9b8; color: #614518; font-size: 10px; font-weight: 800; line-height: 12px; }
 .seed-card.locked { background: #e3e5dc; border-color: #d3d8c8; color: #78816e; }
 .seed-card.locked img { filter: grayscale(1); opacity: .38; }
 .seed-card.locked .cost { color: #6b7563; }

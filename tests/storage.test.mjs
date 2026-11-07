@@ -116,7 +116,7 @@ test("이전 저장의 별·진행·잠긴 식물은 유지하고 발사체를 �
   assert.match(result.notice, /이전/);
   assert.equal(result.data.unlocked, 7);
   assert.deepEqual(result.data.stars, [...data.stars, ...Array(20).fill(0)]);
-  assert.equal(result.data.current.rulesVersion, 6);
+  assert.equal(result.data.current.rulesVersion, 7);
   assert.deepEqual(result.data.current.plants, old.plants);
   assert.equal(result.data.current.shots[0].damage, 12);
   assert.equal(plantAt(result.data.current, "sun", 1, 0).ok, true);
@@ -186,7 +186,7 @@ test("v16 저장은 불꽃봉오리 쿨다운만 추가하고 팀·25초 시간�
   const result = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(result.error, null);
   assert.deepEqual(result.data, {
-    ...data, current: { ...game, rulesVersion: 6, effects: [], cooldowns: { ...game.cooldowns, ember: 0 } },
+    ...data, current: { ...game, rulesVersion: 7, effects: [], cooldowns: { ...game.cooldowns, ember: 0 } },
   });
   assert.ok(validateSave(result.data));
   const current = createGame(10);
@@ -206,8 +206,8 @@ test("v17의 긴 대기도 저장을 거부하지 않고 새 상한으로 한 �
   const data = { ...freshSave(), current: old, unlocked: 10, stars: freshSave().stars.fill(3), sound: true, volume: 65, language: "en" };
   assert.ok(validateSave(data));
   const expected = {
-    ...data, current: { ...old, rulesVersion: 6, skyTimer: 5,
-      cooldowns: { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9, storm: 0, cactus: 0 },
+    ...data, current: { ...old, rulesVersion: 7, skyTimer: 5,
+      cooldowns: { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9, storm: 0, cactus: 0, shuriken: 0 },
       plants: old.plants.map(p => ({ ...p, timer: p.type === "sun" ? 6 : p.type === "lantern" ? 8 : p.timer })),
     },
   };

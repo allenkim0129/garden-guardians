@@ -15,8 +15,8 @@ function enemy(game, type, row, x) {
   return e;
 }
 
-test("식물 13종, 좀비 6종, 증가하는 30개의 유효한 스테이지", () => {
-  assert.equal(Object.keys(PLANTS).length, 13);
+test("식물 14종, 좀비 6종, 증가하는 30개의 유효한 스테이지", () => {
+  assert.equal(Object.keys(PLANTS).length, 14);
   assert.equal(Object.keys(ENEMIES).length, 6);
   assert.equal(STAGES.length, 30);
   for (const stage of STAGES) {
@@ -43,7 +43,7 @@ test("달빛 온실은 28~64명·5줄·초반 3명과 점진적인 중후반 물
     assert.ok(final.length > plan.length * .5);
     assert.equal(stage.startSun, STAGES[9].startSun);
     assert.equal(engine.loadoutLimit(stage.id), 8);
-    assert.deepEqual(engine.introducedPlants(stage.id), stage.id === 19 ? ["storm"] : []);
+    assert.deepEqual(engine.introducedPlants(stage.id), stage.id === 19 ? ["storm"] : stage.id === 15 ? ["shuriken"] : []);
   }
 });
 

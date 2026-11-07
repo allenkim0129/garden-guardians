@@ -1,5 +1,5 @@
 import { PLANTS, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, LASER_DURATION, boardColumns, boardWidth, enemyMaxHp } from "./engine.js";
-import { drawSprite, drawGearSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION, SPRITE_CELL, CACTUS_MUZZLES } from "./sprites.js";
+import { drawSprite, drawGearSprite, drawShuriken, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION, SPRITE_CELL, CACTUS_MUZZLES, SHURIKEN_HANDS } from "./sprites.js";
 
 const ink = "#304b3d";
 function ellipse(c, x, y, rx, ry, fill, stroke = null, width = 3) {
@@ -77,9 +77,14 @@ function groundShadow(c, width = 34) {
   ellipse(c, 0, 30, width * .55, 5, "#243f3d48");
 }
 
-export function drawPlant(c, type, x, y, scale = 1, time = 0, frame = { row: 0, col: 0 }) {
+export function drawPlant(c, type, x, y, scale = 1, time = 0, frame = { row: 0, col: 0 }, holding = true) {
   c.save(); c.translate(x, y); c.scale(scale, scale); groundShadow(c, type === "pea" ? 27 : 32); c.restore();
   drawSprite(c, type, frame, x, y, scale);
+  if (type === "shuriken" && holding) {
+    const [hx, hy] = SHURIKEN_HANDS[frame.row * 4 + frame.col];
+    drawShuriken(c, x + (hx - SPRITE_CELL.anchorX) * SPRITE_CELL.scale * scale,
+      y + 31 * scale + (hy - SPRITE_CELL.anchorY) * SPRITE_CELL.scale * scale, 0, 27 * scale);
+  }
 }
 export function drawEnemy(c, type, x, y, scale = 1, age = 0, slow = false, eating = false, frame = { row: 0, col: 0 }, equipmentDropped = false) {
   c.save(); c.translate(x, y); c.scale(scale, scale); groundShadow(c, type === "sleepy" ? 25 : 32); c.restore();
@@ -138,7 +143,21 @@ export function projectilePosition(shot) {
   if (shot.kind === "ember") return { x: shot.x, y: shot.row * 100 + 44 };
   return { x: shot.x + (shot.frost ? 7 : 0), y: shot.row * 100 + (shot.frost ? 26 : 42) };
 }
-export function drawProjectile(c, shot) {
+export function drawProjectile(c, shot, game) {
+  if (shot.kind === "shuriken") {
+    const plant = game.plants.find(p => p.id === shot.plantId);
+    if (!plant) return;
+    const frame = plantFrame(plant, game);
+    const [hx, hy] = SHURIKEN_HANDS[shot.leg === "out" ? 5 : frame.row * 4 + frame.col];
+    const origin = plant.col * 100 + 50, end = boardWidth(game);
+    const progress = (shot.x - origin) / (end - origin);
+    const handX = origin + (hx - SPRITE_CELL.anchorX) * .48 * .9;
+    const handY = plant.row * 100 + 53 + 31 * .9 + (hy - SPRITE_CELL.anchorY) * .48 * .9;
+    c.save(); c.beginPath(); c.rect(0, plant.row * 100, end, 100); c.clip();
+    drawShuriken(c, handX + (end - handX) * progress, handY, shot.age * 14, 27 * .9);
+    c.restore();
+    return;
+  }
   const { x, y } = projectilePosition(shot);
   c.save(); c.translate(x, y);
   if (shot.kind === "storm") {
@@ -268,7 +287,8 @@ export function drawBoard(c, game, selected, shovel) {
   c.fillStyle = moon ? "#b4b1f555" : "#6f9d5a35"; c.fillRect(0, 0, 8, 500);
   for (let row = 0; row < 5; row++) {
     for (const plant of game.plants.filter(p => p.row === row)) {
-      drawPlant(c, plant.type, plant.col * 100 + 50, row * 100 + 53, .9, game.time, plantFrame(plant, game));
+      drawPlant(c, plant.type, plant.col * 100 + 50, row * 100 + 53, .9, game.time, plantFrame(plant, game),
+        !game.shots.some(s => s.kind === "shuriken" && s.plantId === plant.id));
       if (plant.hp < PLANTS[plant.type].hp * .95) healthBar(c, plant.col * 100 + 50, row * 100 + 91, plant.hp / PLANTS[plant.type].hp, "#4e8753");
       if (shovel) { c.strokeStyle = "#a27342"; c.lineWidth = 2; c.strokeRect(plant.col * 100 + 5, row * 100 + 5, 90, 90); }
     }
@@ -280,7 +300,7 @@ export function drawBoard(c, game, selected, shovel) {
       if (enemy.hp < enemyMaxHp(enemy)) healthBar(c, enemy.x, row * 100 + 91, enemy.hp / enemyMaxHp(enemy), "#b97c68");
     }
   }
-  for (const shot of game.shots) if (!(shot.kind === "storm" && shot.hitIds)) drawProjectile(c, shot);
+  for (const shot of game.shots) if (!(shot.kind === "storm" && shot.hitIds)) drawProjectile(c, shot, game);
   for (const plant of game.plants.filter(p => p.type === "cactus")) {
     const elapsed = game.status === "playing" ? game.time - (plant.shotAt ?? -100)
       : game.effects.find(e => e.kind === "laser" && e.plantId === plant.id)?.age ?? LASER_DURATION;

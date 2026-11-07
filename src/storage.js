@@ -45,7 +45,7 @@ export function readSave(storage) {
         }
         data.current.skyTimer = Math.min(data.current.skyTimer, 5);
       }
-      data.current.rulesVersion = 6;
+      data.current.rulesVersion = 7;
     }
     return { data, error: null, notice };
   } catch (error) {

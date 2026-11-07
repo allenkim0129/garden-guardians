@@ -15,10 +15,10 @@ async function seed(page, game, extra = {}, url = "/") {
 }
 const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
 
-test("v29 피해 표시 13종은 도감·출전 선택과 간결한 전투 카드에 양언어로 표시", async ({ page }, testInfo) => {
+test("피해 표시 14종은 도감·출전 선택과 간결한 전투 카드에 양언어로 표시", async ({ page }, testInfo) => {
   for (const language of ["ko", "en"]) {
     setLanguage(language);
-    const labels = Object.fromEntries(Object.keys(PLANTS).map(type => [type, t(plantDamageLabel(type))]));
+    const labels = Object.fromEntries(Object.keys(PLANTS).sort((a, b) => PLANTS[a].unlockStage - PLANTS[b].unlockStage).map(type => [type, t(plantDamageLabel(type))]));
     setLanguage("ko");
     await page.setViewportSize({ width: 568, height: 320 });
     await seed(page, createGame(30), { language });

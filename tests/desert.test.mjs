@@ -175,7 +175,7 @@ test("연쇄는 적이 범위 밖으로 나가면 끊기고 발사 후 식물 �
   }
 });
 
-test("선인장은 400햇빛·6초 재배치·22해금이며 첫6초와 매6초 전방 같은 줄만 즉사", () => {
+test("선인장은 400햇빛·20초 재배치·22해금이며 첫6초와 매6초 전방 같은 줄만 즉사", () => {
   assert.deepEqual(engine.introducedPlants(22), ["cactus"]);
   assert.deepEqual(engine.introducedPlants(28), []);
   assert.equal(plantAt(createGame(21), "cactus", 2, 5).ok, false);
@@ -184,7 +184,7 @@ test("선인장은 400햇빛·6초 재배치·22해금이며 첫6초와 매6초 
   game.sun = 1000;
   assert.ok(plantAt(game, "cactus", 2, 5).ok);
   assert.equal(game.sun, 600);
-  assert.equal(game.cooldowns.cactus, 6);
+  assert.equal(game.cooldowns.cactus, 20);
   assert.equal(game.plants[0].hp, 160);
   assert.equal(plantAt(game, "cactus", 1, 5).ok, false);
   const front = enemy(game, "barrel", 2, 950);
@@ -195,7 +195,7 @@ test("선인장은 400햇빛·6초 재배치·22해금이며 첫6초와 매6초 
   const samePosition = enemy(game, "barrel", 2, 550);
   tick(game, .1);
   assert.equal(front.hp, 0);
-  assert.equal(game.cooldowns.cactus, 0);
+  assert.ok(Math.abs(game.cooldowns.cactus - 14) < 1e-8);
   assert.equal(behind.hp, 400);
   assert.equal(otherLane.hp, 400);
   assert.equal(samePosition.hp, 400);
@@ -210,6 +210,61 @@ test("선인장은 400햇빛·6초 재배치·22해금이며 첫6초와 매6초 
   assert.equal(next.hp, 0);
   assert.equal(game.stats.defeated, 2);
   assert.ok(game.plants.some(p => p.type === "cactus"));
+});
+
+test("선인장 최대2개는 자원·쿨다운 차감 없이 차단하고 제거·사망 후 슬롯을 반환", () => {
+  for (const removal of ["shovel", "death"]) {
+    const game = createGame(22, ["cactus"]);
+    game.sun = 3000;
+    assert.ok(plantAt(game, "cactus", 0, 0).ok);
+    advance(game, 19.9);
+    assert.equal(plantAt(game, "cactus", 1, 0).ok, false);
+    tick(game, .1);
+    assert.ok(plantAt(game, "cactus", 1, 0).ok);
+    assert.equal(game.cooldowns.cactus, 20);
+    const before = snapshot(game);
+    assert.match(plantAt(game, "cactus", 2, 0).reason, /최대 2개/);
+    assert.deepEqual(snapshot(game), before);
+    advance(game, 20);
+    assert.equal(game.cooldowns.cactus, 0);
+    assert.equal(engine.plantLimitReached(game, "cactus"), true);
+    if (removal === "shovel") engine.removePlant(game, 0, 0);
+    else { game.plants[0].hp = 0; tick(game, .1); }
+    assert.equal(engine.plantLimitReached(game, "cactus"), false);
+    assert.ok(plantAt(game, "cactus", 2, 0).ok);
+    assert.equal(game.plants.filter(p => p.type === "cactus").length, 2);
+    assert.equal(game.cooldowns.cactus, 20);
+    assert.ok(validSnapshot(snapshot(game)));
+  }
+});
+
+test("기존 선인장3개와 남은6초는 삭제·연장 없이 복구하고 2개 미만일 때만 추가 허용", () => {
+  const game = createGame(28, ["cactus"]);
+  game.pacingVersion = 6; game.sun = 2000;
+  for (let row = 0; row < 3; row++) game.plants.push({
+    id: game.nextId++, type: "cactus", row, col: 0, hp: 160, timer: 6, age: 0,
+  });
+  game.cooldowns.cactus = 6;
+  const data = { ...freshSave(), unlocked: 28, current: snapshot(game) };
+  const loaded = readSave({ getItem: () => JSON.stringify(data) });
+  assert.equal(loaded.error, null);
+  assert.deepEqual(loaded.data, data);
+  const restored = loaded.data.current;
+  advance(restored, 6);
+  assert.equal(restored.cooldowns.cactus, 0);
+  assert.equal(restored.plants.length, 3);
+  assert.equal(plantAt(restored, "cactus", 3, 0).ok, false);
+  engine.removePlant(restored, 0, 0);
+  assert.equal(plantAt(restored, "cactus", 3, 0).ok, false);
+  engine.removePlant(restored, 1, 0);
+  assert.ok(plantAt(restored, "cactus", 3, 0).ok);
+  assert.equal(restored.cooldowns.cactus, 20);
+  const before = snapshot(restored);
+  tick(restored, 0);
+  assert.deepEqual(snapshot(restored), before);
+  const roundTrip = readSave({ getItem: () => JSON.stringify({ ...data, current: before }) });
+  assert.equal(roundTrip.error, null);
+  assert.deepEqual(roundTrip.data.current, before);
 });
 
 test("선인장 충전은 정지·복구에 보존되고 첫 공격 전에 제거하거나 죽으면 취소", () => {
@@ -265,7 +320,7 @@ test("v23 별20칸·팀빈칸·진행·발사체 보존, 마지막 클리어 때
     const restored = readSave({ getItem: () => JSON.stringify(old) });
     assert.equal(restored.error, null);
     assert.deepEqual(restored.data, { ...old, unlocked: cleared ? 21 : 20, stars: [...old.stars, ...Array(10).fill(0)],
-      current: { ...old.current, rulesVersion: 6, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
+      current: { ...old.current, rulesVersion: 7, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
     assert.equal(restored.data.current.shots[0].damage, 24);
     advance(restored.data.current, .2);
     assert.equal(restored.data.current.shots[1].damage, 33);

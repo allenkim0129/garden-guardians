@@ -19,6 +19,7 @@ export const CHAIN_GAP = .12;
 export const LASER_DURATION = .24;
 export const SKY_SUN_INTERVAL = 7;
 export const REGROUP_DURATION = 30;
+export const SHURIKEN_SPEED = 180;
 export const PLANTS = Object.freeze({
   sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 4, firstHarvest: 5, interval: 8, description: "첫 햇빛은 5초 뒤, 이후 8초마다 햇빛 25를 만들어요." },
   pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 5, interval: 1.6, damage: 12, description: "1.6초마다 12 피해의 콩을 쏘는 기본 공격 식물이에요." },
@@ -32,7 +33,8 @@ export const PLANTS = Object.freeze({
   iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 12, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 12초!" },
   ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 15, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 15 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요." },
   storm: { name: "번개가시", unlockStage: 19, cost: 275, hp: 110, recharge: 10, interval: 4.2, damage: 64, description: "가시풀의 상위형! 4.2초마다 노란 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!" },
-  cactus: { name: "선인장", unlockStage: 22, cost: 400, hp: 160, recharge: 6, firstAttack: 6, interval: 6, description: "심고 6초 뒤부터 6초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 좀비를 모두 처치해요. 뒤쪽과 다른 줄은 공격하지 않아요." },
+  cactus: { name: "선인장", unlockStage: 22, cost: 400, hp: 160, recharge: 20, maxCount: 2, firstAttack: 6, interval: 6, description: "심고 6초 뒤부터 6초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 좀비를 모두 처치해요. 뒤쪽과 다른 줄은 공격하지 않아요. 다시 심기까지 20초, 정원에 동시에 최대 2개!" },
+  shuriken: { name: "표창잎", unlockStage: 15, cost: 300, hp: 110, recharge: 10, damage: 32, description: "손의 표창이 같은 줄 오른쪽 끝까지 날아갔다 돌아와요. 갈 때와 올 때 적마다 한 번씩 32 피해! 한 개만 날리며 회수 즉시 다시 던져요. 가까이 심으면 빨리 돌아오지만 좀비에게 물리기 쉬워요." },
 });
 const LEGACY_RECHARGES = Object.freeze({ sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 });
 export const ENEMIES = Object.freeze({
@@ -100,12 +102,14 @@ export function introducedPlants(stage) {
 export function plantDamageLabel(type, compact = false) {
   const plant = PLANTS[type];
   if (compact) {
+    if (type === "shuriken") return `${plant.damage}↔${plant.damage}`;
     if (type === "cactus") return "즉사";
     if (type === "bomb") return String(BOMB_DAMAGE);
     if (type === "twin") return `${plant.damage}×2`;
     if (type === "ember") return `${plant.damage}+${BURN_DAMAGE}/s`;
     return plant.damage ? String(plant.damage) : "—";
   }
+  if (type === "shuriken") return `편도 ${plant.damage} · 왕복 ${plant.damage * 2}`;
   if (type === "cactus") return "전방 한 줄 즉사";
   if (type === "bomb") return `범위 피해 ${BOMB_DAMAGE}`;
   if (type === "twin") return `피해 ${plant.damage} × 2`;
@@ -196,12 +200,16 @@ export function validLoadout(loadout, stage) {
 export function isPlantAvailable(game, type) {
   return isPlantUnlocked(type, game.stage) && (game.loadout === undefined || game.loadout.includes(type));
 }
+export function plantLimitReached(game, type) {
+  const limit = PLANTS[type]?.maxCount;
+  return limit !== undefined && game.plants.filter(p => p.type === type && p.hp > 0).length >= limit;
+}
 export function createGame(stageNumber, loadout) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 6, pacingVersion: 7, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 7, pacingVersion: 7, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -221,6 +229,7 @@ export function plantAt(game, type, row, col) {
   const info = PLANTS[type];
   if (!isPlantUnlocked(type, game.stage)) return { ok: false, reason: `${info.name}은 ${info.unlockStage}번째 정원부터 함께해요.` };
   if (!isPlantAvailable(game, type)) return { ok: false, reason: "이번 정원에 고른 식물이 아니에요." };
+  if (plantLimitReached(game, type)) return { ok: false, reason: "선인장은 정원에 동시에 최대 2개까지만 심을 수 있어요." };
   if (game.plants.some(p => p.row === row && p.col === col)) return { ok: false, reason: "이미 친구가 있어요. 다른 땅을 골라 주세요." };
   if (game.sun < info.cost) return { ok: false, reason: "햇빛이 부족해요. 반짝이는 햇빛을 모아 주세요." };
   if (game.cooldowns[type] > 0) return { ok: false, reason: "친구가 준비 중이에요. 조금만 기다려 주세요." };
@@ -237,6 +246,7 @@ export function removePlant(game, row, col) {
   const index = game.plants.findIndex(p => p.row === row && p.col === col);
   if (index < 0) return { ok: false, reason: "삽으로 뽑을 식물을 골라 주세요." };
   const [plant] = game.plants.splice(index, 1);
+  game.shots = game.shots.filter(shot => shot.kind !== "shuriken" || shot.plantId !== plant.id);
   const refund = Math.floor(PLANTS[plant.type].cost / 2);
   game.sun += refund;
   return { ok: true, refund };
@@ -315,6 +325,43 @@ function advanceChain(game, shot) {
   shot.chainAt += CHAIN_GAP;
 }
 
+function advanceShuriken(game, plant, dt) {
+  const originX = cellX(plant.col), endX = boardWidth(game);
+  const hasTarget = () => game.enemies.some(e => e.hp > 0 && e.row === plant.row && e.x > originX);
+  const launch = at => {
+    if (!hasTarget()) return null;
+    const shot = { id: id(game), kind: "shuriken", plantId: plant.id, row: plant.row, x: originX,
+      damage: PLANTS.shuriken.damage, frost: false, leg: "out", outHits: [], backHits: [], age: 0 };
+    game.shots.push(shot);
+    plant.shotAt = at;
+    return shot;
+  };
+  let shot = game.shots.find(s => s.kind === "shuriken" && s.plantId === plant.id) ?? launch(game.time - dt);
+  let remaining = dt;
+  while (shot && remaining > 1e-10) {
+    const outward = shot.leg === "out", destination = outward ? endX : originX;
+    const duration = Math.min(remaining, Math.abs(destination - shot.x) / SHURIKEN_SPEED);
+    const nextX = shot.x + (outward ? 1 : -1) * SHURIKEN_SPEED * duration;
+    const hits = outward ? shot.outHits : shot.backHits;
+    const targets = game.enemies.filter(e => e.hp > 0 && e.row === plant.row && e.x > originX
+      && e.x + 25 >= Math.min(shot.x, nextX) && e.x - 25 <= Math.max(shot.x, nextX) && !hits.includes(e.id))
+      .sort((a, b) => outward ? a.x - b.x : b.x - a.x);
+    for (const target of targets) { damageEnemy(game, target, shot.damage); hits.push(target.id); }
+    shot.x = nextX;
+    shot.age += duration;
+    remaining = Math.max(0, remaining - duration);
+    if (Math.abs(shot.x - destination) < 1e-8) {
+      shot.x = destination;
+      if (outward) shot.leg = "back";
+      else {
+        game.shots.splice(game.shots.indexOf(shot), 1);
+        plant.caughtAt = game.time - remaining;
+        shot = launch(plant.caughtAt);
+      }
+    }
+  }
+}
+
 export function tick(game, dt) {
   if (game.status !== "playing" || !Number.isFinite(dt) || dt <= 0) return;
   // Large wall-clock gaps must never make enemies jump past a plant.
@@ -372,6 +419,7 @@ export function tick(game, dt) {
       fireShot(game, plant, null, 1);
       delete plant.pendingShotAt;
     }
+    if (plant.type === "shuriken") { plant.timer = 0; continue; }
     if ((info.damage || plant.type === "cactus") && plant.timer <= (plant.type === "cactus" ? 1e-9 : 0)) {
       const target = game.enemies.filter(e => e.hp > 0 && e.row === plant.row
         && (plant.type === "cactus" ? e.x > cellX(plant.col) : e.x >= cellX(plant.col) - 10))
@@ -392,6 +440,7 @@ export function tick(game, dt) {
     }
   }
   for (const shot of game.shots) {
+    if (shot.kind === "shuriken") continue;
     if (shot.kind === "storm" && shot.hitIds) {
       advanceChain(game, shot);
       continue;
@@ -431,6 +480,7 @@ export function tick(game, dt) {
       if (shot.kind !== "thorn" || shot.hitIds.length >= THORN_HITS) { shot.x = width + 200; break; }
     }
   }
+  for (const plant of game.plants) if (plant.type === "shuriken" && plant.hp > 0) advanceShuriken(game, plant, dt);
   for (const enemy of game.enemies) {
     if (enemy.hp <= 0) {
       game.stats.defeated++;
@@ -464,10 +514,11 @@ export function tick(game, dt) {
   }
   game.plants = game.plants.filter(p => p.hp > 0);
   game.enemies = game.enemies.filter(e => e.hp > 0 && !e.escaped);
-  game.shots = game.shots.filter(s => s.x < width + 100);
+  game.shots = game.shots.filter(s => s.x < width + 100 && (s.kind !== "shuriken" || game.plants.some(p => p.id === s.plantId)));
   advanceEffects(game, dt);
   if (game.lives <= 0) game.status = "lost";
   else if (game.nextSpawn === schedule.length && game.enemies.length === 0) game.status = "won";
+  if (game.status !== "playing") game.shots = game.shots.filter(s => s.kind !== "shuriken");
 }
 
 // Visual-only effects can finish after a terminal result without ticking combat.
@@ -486,20 +537,21 @@ export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, STAGES.length) || g.status !== "playing") return false;
   if (g.columns !== undefined && ![9, COLS].includes(g.columns)) return false;
   const columns = boardColumns(g), width = boardWidth(g);
-  if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6].includes(g.rulesVersion)) return false;
+  if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6, 7].includes(g.rulesVersion)) return false;
   if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5, 6, 7].includes(g.pacingVersion)) return false;
   const schedule = scheduleFor(g.stage, g.pacingVersion ?? 1);
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
   if (!integer(g.nextSpawn, 0, schedule.length) || !finite(g.skyTimer, -1, (g.rulesVersion ?? 1) < 5 ? 6 : SKY_SUN_INTERVAL) || !integer(g.wave, 0, 3)) return false;
   if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, (g.rulesVersion ?? 1) < 5 ? LEGACY_RECHARGES[t] ?? PLANTS[t].recharge : PLANTS[t].recharge)
-    || ((g.rulesVersion ?? 1) < (["storm", "cactus"].includes(t) ? 6 : t === "ember" ? 4 : PLANTS[t].unlockStage >= 5 ? 3 : 1) && g.cooldowns[t] === undefined))) return false;
+    || ((g.rulesVersion ?? 1) < (t === "shuriken" ? 7 : ["storm", "cactus"].includes(t) ? 6 : t === "ember" ? 4 : PLANTS[t].unlockStage >= 5 ? 3 : 1) && g.cooldowns[t] === undefined))) return false;
   if (!object(g.stats) || !["planted", "defeated", "collected"].every(k => integer(g.stats[k], 0, 1000000))) return false;
   const hasId = p => object(p) && integer(p.id, 1, g.nextId - 1);
   const eventTime = value => value === undefined || finite(value, 0, g.time);
   if (!list(g.plants, ROWS * columns, p => hasId(p) && Object.hasOwn(PLANTS, p.type) && position(p, columns) && finite(p.hp, .000001, PLANTS[p.type].hp) && finite(p.timer, -100000, 10) && finite(p.age, 0, 100000))) return false;
   if (new Set(g.plants.map(p => `${p.row}:${p.col}`)).size !== g.plants.length) return false;
-  if (!g.plants.every(p => eventTime(p.shotAt) && eventTime(p.hurtAt) && eventTime(p.producedAt))) return false;
+  if (!g.plants.every(p => eventTime(p.shotAt) && eventTime(p.hurtAt) && eventTime(p.producedAt)
+    && (p.caughtAt === undefined || (p.type === "shuriken" && eventTime(p.caughtAt))))) return false;
   if (!g.plants.every(p => p.pendingShotAt === undefined || (p.type === "twin" && finite(p.shotAt, 0, g.time)
     && finite(p.pendingShotAt, g.time, g.time + TWIN_GAP) && Math.abs(p.pendingShotAt - p.shotAt - TWIN_GAP) < 1e-8))) return false;
   if (!list(g.enemies, schedule.length, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4)
@@ -513,6 +565,14 @@ export function validSnapshot(g) {
     // Already-fired projectiles retain their damage across balance updates.
     if (s.kind === undefined) return [PLANTS.pea.damage, PLANTS.frost.damage, 7, 14, 15, 18, 22].includes(s.damage);
     if (s.frost) return false;
+    if (s.kind === "shuriken") {
+      const owner = g.plants.find(p => p.id === s.plantId && p.type === "shuriken" && p.row === s.row);
+      return owner !== undefined && s.damage === PLANTS.shuriken.damage && ["out", "back"].includes(s.leg)
+        && finite(s.x, cellX(owner.col), width) && finite(s.age, 0, 100000)
+        && [s.outHits, s.backHits].every(hits => list(hits, schedule.length, n => integer(n, 1, g.nextId - 1) && n !== s.id && n !== owner.id)
+          && new Set(hits).size === hits.length)
+        && (s.leg !== "out" || s.backHits.length === 0);
+    }
     if (s.kind === "storm") return [32, PLANTS.storm.damage].includes(s.damage) && (s.hitIds === undefined ? s.chainAt === undefined
       : list(s.hitIds, CHAIN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id) && s.hitIds.length > 0
         && new Set(s.hitIds).size === s.hitIds.length && finite(s.chainAt, g.time - 1e-9, g.time + CHAIN_GAP + 1e-9));
@@ -524,6 +584,8 @@ export function validSnapshot(g) {
       && finite(s.targetX, 0, width + 100) && finite(s.duration, .45, 1.6) && finite(s.age, 0, s.duration)
       && Math.abs(s.x - (s.originX + (s.targetX - s.originX) * s.age / s.duration)) < 1e-7;
   })) return false;
+  const returning = g.shots.filter(s => s.kind === "shuriken");
+  if (new Set(returning.map(s => s.plantId)).size !== returning.length) return false;
   if (!list(g.suns, 100, s => hasId(s) && finite(s.x, 50, width - 50) && finite(s.y, 50, 450) && finite(s.age, 0, 8) && [25, 50].includes(s.value))) return false;
   const ids = [...g.plants, ...g.enemies, ...g.shots, ...g.suns].map(p => p.id);
   return new Set(ids).size === ids.length;

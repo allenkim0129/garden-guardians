@@ -9,6 +9,12 @@ CELL = (320, 224)
 ANCHOR = (192, 210)
 SCALE = 0.66
 SHEETS = {
+    "shuriken": {
+        "size": (1254, 1254), "rows": [0, 420, 830, 1254], "scale": .49,
+        "columns": {0: [0, 313, 627, 940, 1254], 1: [0, 313, 645, 967, 1254], 2: [0, 313, 627, 940, 1254]},
+        "roots": [141, 136, 122, 129, 142, 130, 123, 129, 153, 147, 130, 129],
+        "states": ["idle", "fire", "hurt"],
+    },
     "barrel": {
         "rows": [0, 370, 715, 1024], "scale": .56,
         "columns": {2: [0, 384, 730, 1125, 1536]},
@@ -268,9 +274,18 @@ def build(names, source_dir, suffix, props_source):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--names", nargs="+", choices=SHEETS,
-                        default=[name for name in SHEETS if name not in {"cactus", "storm", "barrel", "courier"}])
+                        default=[name for name in SHEETS if name not in {"cactus", "storm", "barrel", "courier", "shuriken"}])
     parser.add_argument("--source-dir", type=Path, default=ROOT / "art-source")
     parser.add_argument("--suffix", default="-source.png")
     parser.add_argument("--props-source", type=Path)
+    parser.add_argument("--shuriken-projectile", type=Path)
     args = parser.parse_args()
     build(args.names, args.source_dir, args.suffix, args.props_source)
+    if args.shuriken_projectile:
+        image = clean_alpha(Image.open(args.shuriken_projectile))
+        if image.size != (1254, 1254):
+            raise ValueError("Unexpected approved shuriken projectile size")
+        # The circular hub is at (627, 615), not the file's center.
+        image = image.crop((157, 145, 1097, 1085))
+        image = image.convert("RGBa").resize((128, 128), Image.Resampling.LANCZOS).convert("RGBA")
+        image.save(ROOT / "assets" / "sprites" / "shuriken-projectile.png", optimize=True)

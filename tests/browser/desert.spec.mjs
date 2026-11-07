@@ -16,6 +16,49 @@ function enemy(game, type, row, x) {
   game.enemies.push({ id: game.nextId++, type, row, x, hp: maxHp, maxHp, slow: 0, age: 0, eating: false });
 }
 
+test("선인장 초과 저장은 보존하고 양언어 카드 한도·삽 슬롯 반환·20초 재배치를 표시", async ({ page }, testInfo) => {
+  for (const language of ["ko", "en"]) {
+    await page.setViewportSize(language === "ko" ? { width: 568, height: 320 } : { width: 320, height: 568 });
+    const game = createGame(28, ["cactus"]);
+    game.pacingVersion = 6; game.sun = 1200;
+    for (let row = 0; row < 3; row++) game.plants.push({
+      id: game.nextId++, type: "cactus", row, col: 0, hp: 160, timer: 6, age: 0,
+    });
+    await seed(page, { ...freshSave(), unlocked: 28, tutorialSeen: true, language, current: game });
+    await page.locator("#resume-button").tap();
+    const card = page.locator('.seed-card[data-type="cactus"]');
+    await expect(card).toHaveAttribute("aria-disabled", "true");
+    await expect(card).toHaveAttribute("aria-label", language === "ko" ? /20초.*최대 2개/ : /20s.*Maximum 2/);
+    await expect(card.locator(".plant-limit")).toHaveText(language === "ko" ? "최대 2개" : "Max 2");
+    const box = await card.boundingBox();
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(page.locator("#toast")).toContainText(language === "ko" ? "동시에 최대 2개" : "Only 2 Cacti");
+    await expect(card).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#sun-count")).toHaveText("1200");
+    await page.locator("#shovel-button").tap();
+    await page.locator('.plot[data-row="0"][data-col="0"]').tap();
+    await expect(card).toHaveAttribute("aria-disabled", "true");
+    await page.locator("#shovel-button").tap();
+    await page.locator('.plot[data-row="1"][data-col="0"]').tap();
+    await expect(card).toHaveAttribute("aria-disabled", "false");
+    await expect(card.locator(".plant-limit")).toBeHidden();
+    await card.tap();
+    await page.locator('.plot[data-row="3"][data-col="0"]').tap();
+    await expect(card.locator(".cooldown")).toHaveText(language === "ko" ? "20초" : "20s");
+    await expect(card).toHaveAttribute("aria-disabled", "true");
+    await page.locator("#pause-button").tap();
+    const after = await stored(page);
+    expect(after.current.plants.map(p => p.row)).toEqual([2, 3]);
+    expect(after.current.plants[1].id).toBeGreaterThan(3);
+    expect(after.current.sun).toBe(1200);
+    expect(after.current.cooldowns.cactus).toBeGreaterThan(19);
+    await page.locator("#modal-close").tap();
+    await page.screenshot({ path: testInfo.outputPath(`cactus-cap-${language}.png`) });
+  }
+});
+
 test("테마 탭은 10단계씩 표시·키보드·언어·44px·회전·탐색 중 저장 불변", async ({ page }, testInfo) => {
   const data = { ...freshSave(), unlocked: 30, tutorialSeen: true, language: "en" };
   await seed(page, data);
@@ -97,8 +140,8 @@ test("사막 배경은 모래색이고 기존 햇살·달빛 정원의 색과 �
   expect(colors[2][1]).toBeGreaterThan(colors[2][2]);
 });
 
-test("18·21 첫 클리어만 새 식물 획득, 재도전 중복 없음", async ({ page }) => {
-  for (const [stage, type, name] of [[18, "storm", "번개가시"], [21, "cactus", "선인장"]]) {
+test("14·18·21 첫 클리어만 새 식물 획득, 재도전 중복 없음", async ({ page }) => {
+  for (const [stage, type, name] of [[14, "shuriken", "표창잎"], [18, "storm", "번개가시"], [21, "cactus", "선인장"]]) {
     for (const replay of [false, true]) {
       const game = createGame(stage); game.nextSpawn = STAGES[stage - 1].count; game.time = 210;
       const stars = freshSave().stars;
@@ -120,7 +163,7 @@ test("18·21 첫 클리어만 새 식물 획득, 재도전 중복 없음", async
 
 for (const language of ["ko", "en"]) {
   test(`v25 해금 19·22는 기존 진행에 즉시 적용하고 이전 단계 재도전은 잠금 (${language})`, async ({ page }) => {
-    for (const [type, unlock] of [["storm", 19], ["cactus", 22]]) {
+    for (const [type, unlock] of [["storm", 19], ["cactus", 22], ["shuriken", 15]]) {
       for (const stage of [unlock - 1, unlock]) {
         const data = { ...freshSave(), unlocked: unlock, language, tutorialSeen: true,
           teamSlots: ["sun", null, null, null, null, null, null, null] };
@@ -134,7 +177,7 @@ for (const language of ["ko", "en"]) {
           await page.locator("#modal-actions .primary").tap();
         }
         await page.locator("#play-button").tap();
-        await expect(page.locator(`.stage-button[data-stage="${unlock}"] .stage-reward`)).toContainText(type === "storm" ? /번개가시|Stormthorn/ : /선인장|Cactus/);
+        await expect(page.locator(`.stage-button[data-stage="${unlock}"] .stage-reward`)).toContainText(type === "storm" ? /번개가시|Stormthorn/ : type === "cactus" ? /선인장|Cactus/ : /표창잎|Shuriken Leaf/);
         for (const oldUnlock of [25, 28]) await expect(page.locator(`.stage-button[data-stage="${oldUnlock}"] .stage-reward`)).toHaveCount(0);
         await selectStage(page, stage);
         await expect(page.locator(`.loadout-choice[data-type="${type}"]`)).toBeEnabled({ enabled: stage === unlock });
