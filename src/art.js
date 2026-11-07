@@ -108,7 +108,7 @@ export function drawProjectile(c, shot) {
   const { x, y } = projectilePosition(shot);
   c.save(); c.translate(x, y);
   if (shot.kind === "storm") {
-    shape(c, "M-15 -3 L-2 -5 L-5 -12 L15 0 L2 3 L5 11Z", "#e7faff", "#596da1", 2);
+    shape(c, "M-15 -3 L-2 -5 L-5 -12 L15 0 L2 3 L5 11Z", "#ff3838", "#a71929", 4);
   } else if (shot.kind === "ember") {
     c.rotate(Math.PI / 2);
     drawFlame(c, 0, 0, .65, shot.x / 100);
@@ -267,8 +267,8 @@ export function drawBoard(c, game, selected, shovel) {
       c.globalAlpha = 1;
       drawDroppedGear(c, effect);
     } else if (effect.kind === "chain") {
-      line(c, [[effect.x, effect.y], [(effect.x + effect.toX) / 2 + 8, (effect.y + effect.toY) / 2 - 8], [effect.toX, effect.toY]], "#596da1", 6);
-      line(c, [[effect.x, effect.y], [(effect.x + effect.toX) / 2 + 8, (effect.y + effect.toY) / 2 - 8], [effect.toX, effect.toY]], "#e7faff", 3);
+      line(c, [[effect.x, effect.y], [(effect.x + effect.toX) / 2 + 8, (effect.y + effect.toY) / 2 - 8], [effect.toX, effect.toY]], "#a71929", 14);
+      line(c, [[effect.x, effect.y], [(effect.x + effect.toX) / 2 + 8, (effect.y + effect.toY) / 2 - 8], [effect.toX, effect.toY]], "#ff3838", 8);
     } else if (effect.kind === "fall") {
       c.globalAlpha = Math.min(1, Math.max(0, (FALL_DURATION - effect.age) / .24));
       drawEnemy(c, effect.type ?? "sleepy", effect.x, effect.y + 4, .87, 0, false, false, fallFrame(effect.age), effect.equipmentDropped);

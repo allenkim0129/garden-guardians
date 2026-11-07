@@ -153,7 +153,7 @@ test("기존 쌍콩이 예약과 사막 저장은 명시적 업데이트·오프
     await page.locator("#pause-button").tap();
     const after = await saved(page);
     expect(after.current.shots.map(s => s.muzzle)).toEqual([0, 1]);
-    expect(after.current.shots.map(s => s.damage)).toEqual([22, 22]);
+    expect(after.current.shots.map(s => s.damage)).toEqual([33, 33]);
     expect(after.current.plants[0].pendingShotAt).toBeUndefined();
     expect(after.current.plants[0].shotAt).toBe(game.plants[0].shotAt);
     expect(after.teamSlots).toEqual(data.teamSlots);
@@ -229,7 +229,7 @@ test("v21의 첫 콩·불씨 피해와 예약·화상·냉기를 보존하고 �
     const restored = await saved(page);
     expect(restored.current.plants[0].pendingShotAt).toBeUndefined();
     expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.muzzle)).toEqual([0, 1]);
-    expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.damage)).toEqual([18, 22]);
+    expect(restored.current.shots.filter(s => s.kind === "twin").map(s => s.damage)).toEqual([18, 33]);
     expect(restored.current.shots.filter(s => s.kind === "ember")).toHaveLength(1);
     expect(restored.current.shots.find(s => s.kind === "ember").damage).toBe(24);
     expect(restored.current.enemies[1].burn).toBeLessThan(game.enemies[1].burn);

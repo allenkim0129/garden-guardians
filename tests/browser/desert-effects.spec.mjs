@@ -1,5 +1,51 @@
 import { test, expect } from "@playwright/test";
 
+test("v27 번개는 굵은 빨간 중심선과 외곽선이며 축소·정지·연출 종료에도 피해를 추가하지 않음", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await expect(page.locator("body")).toHaveAttribute("data-sprites-ready", "true");
+  const report = await page.evaluate(async () => {
+    const { drawBoard } = await import("./src/art.js");
+    const { createGame } = await import("./src/engine.js");
+    const game = createGame(22);
+    const canvas = document.createElement("canvas");
+    canvas.width = 1000; canvas.height = 500;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    const strokes = [], stroke = context.stroke.bind(context);
+    context.stroke = function(...args) {
+      if (["#a71929", "#ff3838"].includes(this.strokeStyle)) strokes.push([this.strokeStyle, this.lineWidth]);
+      return stroke(...args);
+    };
+    game.effects = [{ id: game.nextId++, kind: "chain", x: 200, y: 250, toX: 700, toY: 250, age: 0 }];
+    const before = JSON.stringify(game);
+    drawBoard(context, game);
+    const image = canvas.toDataURL();
+    drawBoard(context, game);
+    const unchanged = image === canvas.toDataURL() && before === JSON.stringify(game);
+    const small = document.createElement("canvas"); small.width = 400; small.height = 200;
+    const brush = small.getContext("2d");
+    brush.drawImage(canvas, 0, 0, 400, 200);
+    const red = pixels => {
+      let count = 0;
+      for (let i = 0; i < pixels.length; i += 4) if (pixels[i] > 140 && pixels[i] > pixels[i + 1] * 1.8 && pixels[i] > pixels[i + 2] * 1.8) count++;
+      return count;
+    };
+    const fullWidth = red(context.getImageData(300, 225, 1, 50).data);
+    const smallWidth = red(brush.getImageData(120, 90, 1, 20).data);
+    game.effects[0].age = .5;
+    drawBoard(context, game);
+    const faded = canvas.toDataURL();
+    game.effects = [];
+    drawBoard(context, game);
+    return { strokes, fullWidth, smallWidth, unchanged, ended: faded === canvas.toDataURL(), image };
+  });
+  expect(report.strokes).toEqual(expect.arrayContaining([["#a71929", 14], ["#ff3838", 8]]));
+  expect(report.fullWidth).toBeGreaterThanOrEqual(13);
+  expect(report.smallWidth).toBeGreaterThanOrEqual(4);
+  expect(report.unchanged).toBe(true);
+  expect(report.ended).toBe(true);
+  await testInfo.attach("red-lightning", { body: Buffer.from(report.image.split(",")[1], "base64"), contentType: "image/png" });
+});
+
 test("선인장 빨간 레이저는 실제 구슬에서 같은 줄 안으로 발사되고 정지·복구·승리 때 일관됨", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("body")).toHaveAttribute("data-sprites-ready", "true");

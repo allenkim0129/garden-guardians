@@ -172,7 +172,7 @@ test("안전 여백으로 좁아진 화면의 6종 카드 스크롤·44px·방�
   const board = await page.locator("#board").boundingBox();
   const bank = await page.locator("#seed-cards").boundingBox();
   if (browserName === "chromium") {
-    await swipe(page, context, browserName,
+    for (let i = 0; i < 2; i++) await swipe(page, context, browserName,
       { x: bank.x + 20, y: bank.y + bank.height / 2 },
       { x: bank.x + bank.width - 20, y: bank.y + bank.height / 2 });
   } else await page.locator("#seed-cards").evaluate(node => node.scrollTop = node.scrollHeight);

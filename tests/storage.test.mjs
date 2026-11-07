@@ -151,6 +151,31 @@ test("v21의 여섯 발사체·예약·타이머·자원은 그대로 복원하�
   }
 });
 
+test("v26의 상위 발사체·진행 중 연쇄는 원래 피해를 보존하고 다음 공격부터 v27 적용", () => {
+  for (const [type, damage] of Object.entries({ twin: 22, thorn: 24, pumpkin: 64, ember: 10, storm: 32 })) {
+    const game = createGame(22, [type]);
+    plantAt(game, type, 2, 0);
+    for (let i = 0; i < 6; i++) game.enemies.push({ id: game.nextId++, type: "barrel", row: 2, x: 700 + i * 35, hp: 400, slow: 0, age: 0, eating: false });
+    tick(game, .1); tick(game, .1);
+    game.shots[0].damage = damage;
+    const data = { ...freshSave(), unlocked: 22, language: "en", teamSlots: [type, null, null, null, null, null, null, null], current: snapshot(game) };
+    const loaded = readSave({ getItem: () => JSON.stringify(data) });
+    assert.equal(loaded.error, null, type);
+    assert.deepEqual(loaded.data, data, type);
+    const restored = loaded.data.current, firstId = restored.shots[0].id;
+    tick(restored, .1); tick(restored, .1);
+    if (type === "storm") assert.equal(restored.enemies[1].hp, 368);
+    else assert.equal(restored.shots.find(s => s.id === firstId).damage, damage);
+    let newDamage = false;
+    for (let i = 0; i < Math.ceil(PLANTS[type].interval * 10) + 2; i++) {
+      tick(restored, .1);
+      if (restored.shots.some(s => s.id > firstId && s.damage === PLANTS[type].damage)) newDamage = true;
+    }
+    assert.ok(newDamage, type);
+    assert.ok(validSnapshot(snapshot(restored)), type);
+  }
+});
+
 test("v16 저장은 불꽃봉오리 쿨다운만 추가하고 팀·25초 시간표·설정을 보존", () => {
   const game = createGame(10, ["sun", "pea", "wall", "frost", "bomb", "twin"]);
   game.rulesVersion = 3; game.pacingVersion = 4;

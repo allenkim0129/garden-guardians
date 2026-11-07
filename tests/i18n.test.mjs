@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getLanguage, setLanguage, t } from "../src/i18n.js";
-import { PLANTS, ENEMIES, STAGES } from "../src/engine.js";
+import { PLANTS, ENEMIES, STAGES, plantDamageLabel } from "../src/engine.js";
 import { freshSave, readSave, writeSave } from "../src/storage.js";
 
 test("한국어 기본값과 전체 캐릭터·스테이지·동적 상태 영어 번역", () => {
@@ -18,6 +18,12 @@ test("한국어 기본값과 전체 캐릭터·스테이지·동적 상태 영�
     assert.equal(t("5줄 10칸 정원"), "Garden with 5 rows and 10 columns");
     assert.equal(t("2번째 선택 칸: 비어 있음"), "Team slot 2: empty");
     assert.equal(t("정비 시간 · 30초"), "Regroup · 30s");
+    const damageLabels = {
+      sun: "No attack", pea: "DMG 12", wall: "No attack", frost: "DMG 6", bomb: "Area DMG 300",
+      twin: "DMG 33 × 2", thorn: "DMG 36/foe", pumpkin: "Area DMG 96", lantern: "No attack",
+      iron: "No attack", ember: "DMG 15 + burn 4/s", storm: "DMG 64/foe", cactus: "Lane KO",
+    };
+    for (const [type, label] of Object.entries(damageLabels)) assert.equal(t(plantDamageLabel(type)), label);
     assert.equal(t("햇빛 75 · 2번째 정원부터 사용"), "75 sunlight · From garden 2");
     assert.equal(t("1. 첫 번째 새싹, 별 3개"), "1. First Sprouts, 3 stars");
     assert.equal(t("캐릭터 그림 준비 실패 · sun 프레임 그림을 불러오지 못했어요. 온라인 상태에서 다시 시도해 주세요."),

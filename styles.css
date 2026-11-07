@@ -75,8 +75,8 @@ h1 i { position: absolute; font-style: normal; font-size: .5em; color: #dcaa44; 
 .seed-bank:has(.legacy, .extended) .seed-scroll-hint { display: block; }
 .seed-card { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 9px; width: 100%; min-height: 88px; padding: 5px 9px; background: #fffdf2; border: 2px solid #dce3cb; border-radius: 14px; text-align: left; overflow: hidden; touch-action: pan-y; }
 .seed-card img { width: 72px; height: 72px; flex-shrink: 0; pointer-events: none; -webkit-user-drag: none; }
-.seed-cards:not(.legacy):not(.extended), .seed-cards:not(.legacy):not(.extended) .seed-card { touch-action: none; }
-.seed-cards:not(.legacy):not(.extended) { overflow: hidden; }
+.damage { display: block; font-size: 11px; font-weight: 800; line-height: 1.2; color: #8e3030; }
+.loadout-choice .damage { color: #8e3030; }
 .seed-card strong { display: block; font-size: 14px; white-space: nowrap; }
 .seed-card .cost { font-size: 12px; color: #887037; }
 .seed-card[aria-pressed="true"] { background: #f0f3cb; border-color: #4b7748; box-shadow: 0 0 0 2px #4b774824; }
@@ -221,9 +221,10 @@ dialog[data-kind="loadout"] .modal-top, dialog[data-kind="loadout"] h2, dialog[d
   .game-layout { height: calc(100% - 48px); padding: 6px 10px; gap: 12px; }
   .seed-bank { flex-basis: 154px; gap: 5px; }
   .seed-label, .seed-hint { display: none; }
-  .seed-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 80px; gap: 4px; }
-  .seed-card { min-height: 80px; height: 80px; display: grid; grid-template-rows: 50px 22px; justify-items: center; gap: 0; border-radius: 10px; padding: 2px; text-align: center; }
+  .seed-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 104px; gap: 4px; }
+  .seed-card { min-height: 104px; height: 104px; display: grid; grid-template-rows: 50px 46px; justify-items: center; gap: 0; border-radius: 10px; padding: 2px; text-align: center; }
   .seed-card img { width: 56px; height: 56px; }
+  .seed-card .damage { font-size: 10px; margin-top: 2px; }
   .seed-card strong, html[lang="en"] .seed-card strong { font-size: 10px; white-space: normal; line-height: 11px; }
   .seed-card .cost { position: absolute; right: 2px; top: 2px; padding: 1px 3px; border-radius: 4px; background: #fff3cced; font-size: 10px; }
   .seed-card .cooldown { top: 26px; }

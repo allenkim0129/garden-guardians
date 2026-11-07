@@ -3,6 +3,13 @@ export const getLanguage = () => language;
 export function setLanguage(value) { language = value === "en" ? "en" : "ko"; }
 
 const messages = {
+  "공격 없음": "No attack",
+  "전방 한 줄 즉사": "Lane KO",
+  "가시풀의 상위형! 4.2초마다 빨간 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!": "Thornleaf's upgrade! Every 4.2s, red lightning jumps across rows to up to 5 enemies, each within 1.55 tiles of the last, dealing 64 damage once per enemy.",
+  "2초마다 33 피해의 콩 두 발을 0.2초 간격으로 쏘는 주력 공격 식물이에요.": "A main attacker: every 2s, fires two 33-damage peas, 0.2s apart.",
+  "2.8초마다 같은 줄의 좀비를 최대 3명 관통하며 각각 36 피해를 주는 가시를 쏴요.": "Every 2.8s, fires a thorn through up to 3 zombies in the same row, dealing 36 damage per enemy.",
+  "4.5초마다 반경 약 한 칸에 96 피해! 비싸고 발사가 느리니 방어·둔화 식물로 지켜 주세요.": "Deals 96 splash damage within about one tile every 4.5s. Expensive and slow to fire: protect it with defenders and slowing plants.",
+  "3.2초마다 불씨를 쏴 반경 약 한 칸에 15 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요.": "Every 3.2s, supports attackers with 15 damage within about one tile, then 4 burn damage per second for 3s. Burns do not stack.",
   "정원 수비대": "Garden Guardians",
   "정원": "Garden",
   "수비대": "Guardians",
@@ -248,6 +255,11 @@ const messages = {
 };
 
 const patterns = [
+  [/^피해 (\d+)$/, (_, damage) => `DMG ${damage}`],
+  [/^피해 (\d+) × 2$/, (_, damage) => `DMG ${damage} × 2`],
+  [/^적당 피해 (\d+)$/, (_, damage) => `DMG ${damage}/foe`],
+  [/^범위 피해 (\d+)$/, (_, damage) => `Area DMG ${damage}`],
+  [/^피해 (\d+) \+ 화상 (\d+)\/초$/, (_, damage, burn) => `DMG ${damage} + burn ${burn}/s`],
   [/^함께할 식물을 최대 (\d+)종 골라 주세요\. 선택한 카드를 다시 누르면 뺄 수 있어요\.$/, (_, count) => `Choose up to ${count} plants. Tap a selected card again to remove it.`],
   [/^함께할 식물을 1~(\d+)종 골라 주세요\.$/, (_, count) => `Choose 1 to ${count} plants for your team.`],
   [/^등장 진행 (\d+)% · 남은 좀비 (\d+)명$/, (_, percent, count) => `Spawning ${percent}% · Zombies left: ${count}`],

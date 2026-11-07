@@ -25,13 +25,13 @@ export const PLANTS = Object.freeze({
   wall: { name: "도토리벽", unlockStage: 2, cost: 75, hp: 650, recharge: 7, description: "튼튼한 몸으로 좀비를 막아요." },
   frost: { name: "서리초", unlockStage: 3, cost: 125, hp: 100, recharge: 4, interval: 1.6, damage: 6, description: "1.6초마다 6 피해와 3초 둔화! 강한 공격 식물과 함께 심어요." },
   bomb: { name: "방울폭탄", unlockStage: 4, cost: 125, hp: 150, recharge: 14, description: "1초 뒤 주변 좀비에게 큰 피해!" },
-  twin: { name: "쌍콩이", unlockStage: 5, cost: 225, hp: 120, recharge: 8, interval: 2, damage: 22, description: "2초마다 22 피해의 콩 두 발을 0.2초 간격으로 쏘는 주력 공격 식물이에요." },
-  thorn: { name: "가시풀", unlockStage: 6, cost: 200, hp: 100, recharge: 8, interval: 2.8, damage: 24, description: "2.8초마다 같은 줄의 좀비를 최대 3명 관통하는 가시를 쏴요." },
-  pumpkin: { name: "호박포", unlockStage: 7, cost: 300, hp: 130, recharge: 9, interval: 4.5, damage: 64, description: "4.5초마다 반경 약 한 칸에 64 피해! 비싸고 발사가 느리니 방어·둔화 식물로 지켜 주세요." },
+  twin: { name: "쌍콩이", unlockStage: 5, cost: 225, hp: 120, recharge: 8, interval: 2, damage: 33, description: "2초마다 33 피해의 콩 두 발을 0.2초 간격으로 쏘는 주력 공격 식물이에요." },
+  thorn: { name: "가시풀", unlockStage: 6, cost: 200, hp: 100, recharge: 8, interval: 2.8, damage: 36, description: "2.8초마다 같은 줄의 좀비를 최대 3명 관통하며 각각 36 피해를 주는 가시를 쏴요." },
+  pumpkin: { name: "호박포", unlockStage: 7, cost: 300, hp: 130, recharge: 9, interval: 4.5, damage: 96, description: "4.5초마다 반경 약 한 칸에 96 피해! 비싸고 발사가 느리니 방어·둔화 식물로 지켜 주세요." },
   lantern: { name: "해등나무", unlockStage: 8, cost: 125, hp: 140, recharge: 9, firstHarvest: 8, interval: 10, description: "첫 햇빛은 8초 뒤, 이후 10초마다 햇빛 50을 만들어요." },
   iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 12, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 12초!" },
-  ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 10, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 10 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요." },
-  storm: { name: "번개가시", unlockStage: 19, cost: 275, hp: 110, recharge: 10, interval: 4.2, damage: 32, description: "가시풀의 상위형! 4.2초마다 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 32 피해!" },
+  ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 15, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 15 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요." },
+  storm: { name: "번개가시", unlockStage: 19, cost: 275, hp: 110, recharge: 10, interval: 4.2, damage: 64, description: "가시풀의 상위형! 4.2초마다 빨간 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!" },
   cactus: { name: "선인장", unlockStage: 22, cost: 400, hp: 160, recharge: 6, firstAttack: 6, interval: 6, description: "심고 6초 뒤부터 6초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 좀비를 모두 처치해요. 뒤쪽과 다른 줄은 공격하지 않아요." },
 });
 const LEGACY_RECHARGES = Object.freeze({ sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 });
@@ -93,6 +93,17 @@ export function isPlantUnlocked(type, stage) {
 }
 export function introducedPlants(stage) {
   return Object.entries(PLANTS).filter(([, plant]) => plant.unlockStage === stage).map(([type]) => type);
+}
+
+export function plantDamageLabel(type) {
+  const plant = PLANTS[type];
+  if (type === "cactus") return "전방 한 줄 즉사";
+  if (type === "bomb") return `범위 피해 ${BOMB_DAMAGE}`;
+  if (type === "twin") return `피해 ${plant.damage} × 2`;
+  if (type === "ember") return `피해 ${plant.damage} + 화상 ${BURN_DAMAGE}/초`;
+  if (type === "pumpkin") return `범위 피해 ${plant.damage}`;
+  if (type === "thorn" || type === "storm") return `적당 피해 ${plant.damage}`;
+  return plant.damage ? `피해 ${plant.damage}` : "공격 없음";
 }
 
 export function scheduleFor(stageNumber, pacingVersion = 6) {
@@ -483,14 +494,14 @@ export function validSnapshot(g) {
     // Already-fired projectiles retain their damage across balance updates.
     if (s.kind === undefined) return [PLANTS.pea.damage, PLANTS.frost.damage, 7, 14, 15, 18, 22].includes(s.damage);
     if (s.frost) return false;
-    if (s.kind === "storm") return s.damage === PLANTS.storm.damage && (s.hitIds === undefined ? s.chainAt === undefined
+    if (s.kind === "storm") return [32, PLANTS.storm.damage].includes(s.damage) && (s.hitIds === undefined ? s.chainAt === undefined
       : list(s.hitIds, CHAIN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id) && s.hitIds.length > 0
         && new Set(s.hitIds).size === s.hitIds.length && finite(s.chainAt, g.time - 1e-9, g.time + CHAIN_GAP + 1e-9));
-    if (s.kind === "ember") return [12, 24, PLANTS.ember.damage].includes(s.damage);
-    if (s.kind === "twin") return [18, 24, PLANTS.twin.damage].includes(s.damage) && integer(s.muzzle, 0, 1);
-    if (s.kind === "thorn") return [26, PLANTS.thorn.damage].includes(s.damage) && list(s.hitIds, THORN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id)
+    if (s.kind === "ember") return [10, 12, 24, PLANTS.ember.damage].includes(s.damage);
+    if (s.kind === "twin") return [18, 22, 24, PLANTS.twin.damage].includes(s.damage) && integer(s.muzzle, 0, 1);
+    if (s.kind === "thorn") return [24, 26, PLANTS.thorn.damage].includes(s.damage) && list(s.hitIds, THORN_HITS - 1, n => integer(n, 1, g.nextId - 1) && n !== s.id)
       && new Set(s.hitIds).size === s.hitIds.length;
-    return s.kind === "pumpkin" && [55, 70, PLANTS.pumpkin.damage].includes(s.damage) && finite(s.originX, 78, width - 22)
+    return s.kind === "pumpkin" && [55, 64, 70, PLANTS.pumpkin.damage].includes(s.damage) && finite(s.originX, 78, width - 22)
       && finite(s.targetX, 0, width + 100) && finite(s.duration, .45, 1.6) && finite(s.age, 0, s.duration)
       && Math.abs(s.x - (s.originX + (s.targetX - s.originX) * s.age / s.duration)) < 1e-7;
   })) return false;

@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, STAGES, THEMES, ROWS, COLS, HEIGHT, boardColumns, boardWidth, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress } from "./engine.js";
+import { PLANTS, ENEMIES, STAGES, THEMES, ROWS, COLS, HEIGHT, boardColumns, boardWidth, loadoutLimit, createGame, plantAt, removePlant, collectSun, sunsAlongPath, tick, isPlantUnlocked, isPlantAvailable, introducedPlants, advanceEffects, waveProgress, plantDamageLabel } from "./engine.js";
 import { drawTitle, drawBoard, plantIcon, drawSunToken } from "./art.js";
 import { loadSprites } from "./sprites.js";
 import { GardenAudio } from "./audio.js";
@@ -217,7 +217,7 @@ function helpMarkup() {
     <div class="help-step"><b>1. 햇빛 모으기</b><span>햇빛을 누르거나 손가락으로 쓸어 모아요. 놓쳐도 8초 뒤 자동으로 모여요.</span></div>
     <div class="help-step"><b>2. 식물 배치</b><span>카드를 고르고 빈 땅을 톡! 한 번 심으면 선택이 풀려요. 카드를 다시 눌러도 취소돼요.</span></div>
     <div class="help-step"><b>3. 정원 지키기</b><span>좀비가 왼쪽 끝에 닿으면 하트가 하나 줄어요. 3번의 무리를 막아요!</span></div>
-  </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
+  </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><span class="damage">${plantDamageLabel(type)}</span><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
   <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~9번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
   <p>시작 전에 최대 6종, 10번째 정원부터는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.</p>
   <p>새 판에서는 중간 무리의 마지막 좀비가 나온 뒤 30초 동안 새 좀비가 나오지 않아요. 남은 적을 막으며 햇빛을 모으고 방어선을 정비해요. 저장된 판은 기존 시간표로 이어져요.</p>
@@ -247,7 +247,9 @@ function showLoadout(stageNumber) {
     const button = document.createElement("button");
     button.className = "loadout-choice"; button.dataset.type = type;
     setLabel(button, `${plant.name}, 햇빛 ${plant.cost}. ${plant.description}`);
-    button.innerHTML = `<img src="${icons[type]}" alt=""><strong>${plant.name}</strong><span>☀ ${plant.cost}</span><small>${plant.description}</small>`;
+    button.innerHTML = `<img src="${icons[type]}" alt=""><strong>${plant.name}</strong><span>☀ ${plant.cost}</span><span class="damage">${plantDamageLabel(type)}</span><small>${plant.description}</small>`;
+    button.querySelector(".damage").id = `loadout-damage-${type}`;
+    button.setAttribute("aria-describedby", `loadout-damage-${type}`);
     if (!available.includes(type)) {
       button.disabled = true;
       text(button.querySelector("small"), `${plant.unlockStage}정원 해금`);
@@ -402,7 +404,9 @@ for (const [type, plant] of Object.entries(PLANTS).sort((a, b) => a[1].unlockSta
   button.className = "seed-card";
   button.dataset.type = type;
   setLabel(button, `${plant.name}, 햇빛 ${plant.cost}. ${plant.description}`);
-  button.innerHTML = `<img src="${icons[type]}" alt=""><span><strong>${plant.name}</strong><span class="cost">☀ ${plant.cost}</span></span><span class="cooldown" hidden></span>`;
+  button.innerHTML = `<img src="${icons[type]}" alt=""><span><strong>${plant.name}</strong><span class="cost">☀ ${plant.cost}</span><span class="damage">${plantDamageLabel(type)}</span></span><span class="cooldown" hidden></span>`;
+  button.querySelector(".damage").id = `seed-damage-${type}`;
+  button.setAttribute("aria-describedby", `seed-damage-${type}`);
   button.onclick = () => {
     if (paused || !game || !isPlantAvailable(game, type)) return;
     selected = selected === type && !shovel ? null : type; shovel = false;

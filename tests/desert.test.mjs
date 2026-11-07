@@ -12,12 +12,13 @@ function enemy(game, type, row, x) {
 }
 const advance = (game, seconds) => { for (let i = 0; i < Math.round(seconds * 10); i++) tick(game, .1); };
 
-test("v24 기본 공격은 8~17% 감소하고 새 식물은 별도 해금되는 비싼 상위형", () => {
-  for (const [type, before, after] of [["pea", 14, 12], ["frost", 7, 6], ["twin", 24, 22],
-    ["thorn", 26, 24], ["pumpkin", 70, 64], ["ember", 12, 10]]) {
+test("v27 상위 공격은 50%·번개는 두 배 강화하고 기본 공격과 해금은 유지", () => {
+  for (const [type, before, after] of [["twin", 22, 33], ["thorn", 24, 36], ["pumpkin", 64, 96], ["ember", 10, 15], ["storm", 32, 64]]) {
     assert.equal(PLANTS[type].damage, after);
-    assert.ok(after / before >= .83 && after / before <= .93);
+    assert.equal(after / before, type === "storm" ? 2 : 1.5);
   }
+  assert.equal(PLANTS.pea.damage, 12);
+  assert.equal(PLANTS.frost.damage, 6);
   assert.equal(engine.BOMB_DAMAGE, 300);
   assert.equal(engine.BURN_DAMAGE, 4);
   assert.equal(PLANTS.storm.cost, 275);
@@ -44,12 +45,12 @@ test("번개가시는 가까운 옆줄로 연결·최대5명·중복 없음·거
     assert.ok(validSnapshot(saved));
     tick(game, .1); tick(saved, .1);
     assert.deepEqual(game, saved);
-    assert.equal(first.hp, 368);
+    assert.equal(first.hp, 336);
     assert.equal(next.hp, 400);
     assert.equal(game.shots.length, 1);
     advance(game, .5);
     assert.equal(game.shots.length, 0);
-    const damage = distance === 155 ? 32 : 0;
+    const damage = distance === 155 ? 64 : 0;
     assert.equal(next.hp, ENEMIES.barrel.hp - damage);
     assert.equal(third.hp, ENEMIES.barrel.hp - damage);
     assert.equal(fourth.hp, ENEMIES.barrel.hp - damage);
@@ -57,6 +58,23 @@ test("번개가시는 가까운 옆줄로 연결·최대5명·중복 없음·거
     assert.equal(sixth.hp, ENEMIES.barrel.hp);
     assert.equal(game.effects.filter(e => e.kind === "chain").length, damage ? 4 : 0);
   }
+});
+
+test("v27 실제 번개 공격은 최대 5명에게 각각 64 피해이며 정지·복구해도 중복 없음", () => {
+  const game = createGame(19, ["storm"]);
+  plantAt(game, "storm", 2, 0);
+  const targets = Array.from({ length: 6 }, (_, index) => enemy(game, "barrel", 2, 450 + index * 35));
+  advance(game, .2);
+  assert.deepEqual(targets.map(e => e.hp), [336, 400, 400, 400, 400, 400]);
+  const saved = snapshot(game);
+  tick(game, 0);
+  assert.deepEqual(snapshot(game), saved);
+  const restored = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: 19, current: saved }) });
+  assert.equal(restored.error, null);
+  game.effects = [];
+  advance(game, .6); advance(restored.data.current, .6);
+  assert.deepEqual(restored.data.current, game);
+  assert.deepEqual(targets.map(e => e.hp), [336, 336, 336, 336, 336, 400]);
 });
 
 test("신규 좀비 체력·속도·장비 탈락 경계와 냉기·화상·복구", () => {
@@ -144,13 +162,13 @@ test("연쇄는 적이 범위 밖으로 나가면 끊기고 발사 후 식물 �
     const second = enemy(game, "barrel", 3, 150);
     advance(game, .2);
     assert.equal(game.plants[0].shotAt, game.time);
-    assert.equal(first.hp, 368);
+    assert.equal(first.hp, 336);
     assert.equal(second.hp, 400);
     if (remove === "shovel") engine.removePlant(game, 2, 0);
     else game.plants[0].hp = 0;
     second.x = 900;
     advance(game, .5);
-    assert.equal(first.hp, 368);
+    assert.equal(first.hp, 336);
     assert.equal(second.hp, 400);
     assert.equal(game.shots.length, 0);
     assert.equal(game.plants.length, 0);
@@ -250,7 +268,7 @@ test("v23 별20칸·팀빈칸·진행·발사체 보존, 마지막 클리어 때
       current: { ...old.current, rulesVersion: 6, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
     assert.equal(restored.data.current.shots[0].damage, 24);
     advance(restored.data.current, .2);
-    assert.equal(restored.data.current.shots[1].damage, 22);
+    assert.equal(restored.data.current.shots[1].damage, 33);
     assert.ok(validateSave(restored.data));
   }
 });
@@ -290,6 +308,6 @@ test("모래 사막 전 단계를 실제 8종·비용·쿨다운·초당 1회 �
   }
   for (const attacker of ["pea", "twin", "storm", "pumpkin"]) {
     const result = playStrategy({ ...engine, createGame: n => createGame(n, ["sun", attacker]) }, 30, "pea", attacker);
-    assert.equal(result.game.status, "lost", `${attacker} 단일공격 도배`);
+    assert.equal(result.game.status, ["storm", "pumpkin"].includes(attacker) ? "won" : "lost", `${attacker} v27 단일공격 비교`);
   }
 });

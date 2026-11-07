@@ -35,7 +35,7 @@ test("쌍콩이는 시간차 두 발과 위·아래 프레임/발사 원점을 �
   assert.ok(Math.abs(game.time - firstAt - TWIN_GAP) < 1e-8);
   assert.ok(game.shots[0].x > game.shots[1].x);
   assert.ok(projectilePosition(game.shots[0]).y < projectilePosition(game.shots[1]).y);
-  assert.ok(game.shots.every(s => s.damage === 22));
+  assert.ok(game.shots.every(s => s.damage === 33));
   assert.equal(game.plants[0].pendingShotAt, undefined);
   tick(game, .1);
   assert.equal(plantFrame(game.plants[0], game).col, 3);
@@ -111,8 +111,8 @@ test("호박탄은 고정 착지점으로 날아가며 비행 중 피해가 없�
   shot.x = origin + (landing - origin) * shot.age / shot.duration;
   assert.ok(validSnapshot(snapshot(game)));
   tick(game, .02);
-  assert.equal(edge.hp, 276);
-  assert.equal(adjacent.hp, 276);
+  assert.equal(edge.hp, 244);
+  assert.equal(adjacent.hp, 244);
   assert.equal(diagonal.hp, 340);
   assert.equal(far.hp, 340);
   assert.equal(game.enemies[0].hp, 340);
@@ -120,7 +120,7 @@ test("호박탄은 고정 착지점으로 날아가며 비행 중 피해가 없�
   assert.equal(game.effects.filter(e => e.kind === "splash").length, 1);
   assert.equal(game.effects.find(e => e.kind === "splash").x, landing);
   advance(game, .5);
-  assert.equal(edge.hp, 276);
+  assert.equal(edge.hp, 244);
 });
 test("포물선 비행·착지 피해는 저장 복구 후 동일하고 그리기는 상태를 바꾸지 않음", () => {
   const game = duel("pumpkin");
@@ -209,23 +209,23 @@ test("새 예약·관통·포물선·햇빛의 잘못된 저장은 실행 전에
   delete game.cooldowns.twin;
   assert.equal(validSnapshot(game), false);
 });
-test("v24 주력은 기본·유틸보다 강하고 관통·광역은 별도의 비용과 대가를 가짐", () => {
+test("v27 강화된 주력·관통·광역은 기본 공격보다 강하고 비용·주기는 유지", () => {
   const dps = type => PLANTS[type].damage / PLANTS[type].interval;
   const peaDpsPerCost = PLANTS.pea.damage / PLANTS.pea.interval / PLANTS.pea.cost;
   assert.equal(dps("pea"), 7.5);
   assert.equal(dps("frost"), dps("pea") / 2);
-  assert.equal(dps("twin") * 2, 22);
+  assert.equal(dps("twin") * 2, 33);
   assert.ok(dps("twin") * 2 > dps("pea") * 2.5);
   assert.ok(dps("twin") * 2 / PLANTS.twin.cost > peaDpsPerCost);
   assert.ok(dps("thorn") < dps("twin") * 2);
   assert.ok(dps("thorn") * THORN_HITS > dps("twin") * 2);
-  assert.equal(PLANTS.pumpkin.damage, 64);
+  assert.equal(PLANTS.pumpkin.damage, 96);
   assert.equal(PLANTS.pumpkin.cost, 300);
   assert.equal(PLANTS.pumpkin.interval, 4.5);
   assert.ok(dps("pumpkin") > dps("pea") * 1.7);
-  assert.ok(PLANTS.pumpkin.damage / PLANTS.pumpkin.interval / PLANTS.pumpkin.cost < peaDpsPerCost);
-  assert.equal(PLANTS.ember.damage + engine.BURN_DAMAGE * engine.BURN_DURATION, 22);
-  assert.ok((PLANTS.ember.damage + engine.BURN_DAMAGE * engine.BURN_DURATION) / PLANTS.ember.interval < dps("pea"));
+  assert.ok(PLANTS.pumpkin.damage / PLANTS.pumpkin.interval / PLANTS.pumpkin.cost > peaDpsPerCost);
+  assert.equal(PLANTS.ember.damage + engine.BURN_DAMAGE * engine.BURN_DURATION, 27);
+  assert.ok((PLANTS.ember.damage + engine.BURN_DAMAGE * engine.BURN_DURATION) / PLANTS.ember.interval < dps("twin") * 2);
   assert.ok(PLANTS.lantern.cost > PLANTS.sun.cost * 2);
   assert.ok(PLANTS.iron.recharge > PLANTS.wall.recharge);
 });
