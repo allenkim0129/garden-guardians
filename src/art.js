@@ -1,5 +1,5 @@
 import { PLANTS, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, LASER_DURATION, boardColumns, boardWidth, enemyMaxHp } from "./engine.js";
-import { drawSprite, drawGearSprite, drawShuriken, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION, SPRITE_CELL, CACTUS_MUZZLES, SHURIKEN_HANDS } from "./sprites.js";
+import { drawSprite, drawGearSprite, drawShuriken, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION, SPRITE_CELL, CACTUS_MUZZLES, SHURIKEN_HANDS, SHURIKEN_SIZE } from "./sprites.js";
 
 const ink = "#304b3d";
 function ellipse(c, x, y, rx, ry, fill, stroke = null, width = 3) {
@@ -83,7 +83,7 @@ export function drawPlant(c, type, x, y, scale = 1, time = 0, frame = { row: 0, 
   if (type === "shuriken" && holding) {
     const [hx, hy] = SHURIKEN_HANDS[frame.row * 4 + frame.col];
     drawShuriken(c, x + (hx - SPRITE_CELL.anchorX) * SPRITE_CELL.scale * scale,
-      y + 31 * scale + (hy - SPRITE_CELL.anchorY) * SPRITE_CELL.scale * scale, 0, 27 * scale);
+      y + 31 * scale + (hy - SPRITE_CELL.anchorY) * SPRITE_CELL.scale * scale, 0, SHURIKEN_SIZE * scale);
   }
 }
 export function drawEnemy(c, type, x, y, scale = 1, age = 0, slow = false, eating = false, frame = { row: 0, col: 0 }, equipmentDropped = false) {
@@ -154,7 +154,7 @@ export function drawProjectile(c, shot, game) {
     const handX = origin + (hx - SPRITE_CELL.anchorX) * .48 * .9;
     const handY = plant.row * 100 + 53 + 31 * .9 + (hy - SPRITE_CELL.anchorY) * .48 * .9;
     c.save(); c.beginPath(); c.rect(0, plant.row * 100, end, 100); c.clip();
-    drawShuriken(c, handX + (end - handX) * progress, handY, shot.age * 14, 27 * .9);
+    drawShuriken(c, handX + (end - handX) * progress, handY, shot.age * 14, SHURIKEN_SIZE * .9);
     c.restore();
     return;
   }
@@ -304,14 +304,18 @@ export function drawBoard(c, game, selected, shovel) {
   for (const plant of game.plants.filter(p => p.type === "cactus")) {
     const elapsed = game.status === "playing" ? game.time - (plant.shotAt ?? -100)
       : game.effects.find(e => e.kind === "laser" && e.plantId === plant.id)?.age ?? LASER_DURATION;
-    if (elapsed < 0 || elapsed >= LASER_DURATION) continue;
+    if (elapsed < 0 || elapsed >= LASER_DURATION || plant.laserTargetX === undefined) continue;
     const origin = cactusLaserOrigin(plant, game);
+    const endX = Math.min(boardWidth(game), plant.laserTargetX);
     c.save();
-    c.beginPath(); c.rect(0, plant.row * 100 + 1, boardWidth(game), 98); c.clip();
-    c.globalAlpha = (1 - elapsed / LASER_DURATION) * .22;
-    line(c, [[origin.x, origin.y], [boardWidth(game), origin.y]], "#ff3030", 8);
+    c.beginPath(); c.rect(Math.min(origin.x, endX), plant.row * 100 + 1, Math.abs(endX - origin.x), 98); c.clip();
+    c.globalAlpha = (1 - elapsed / LASER_DURATION) * .28;
+    line(c, [[origin.x, origin.y], [endX, origin.y]], "#ff3030", 20);
+    c.globalAlpha = (1 - elapsed / LASER_DURATION) * .55;
+    line(c, [[origin.x, origin.y], [endX, origin.y]], "#ff3030", 13);
     c.globalAlpha = 1 - elapsed / LASER_DURATION;
-    line(c, [[origin.x, origin.y], [boardWidth(game), origin.y]], "#e62332", 2.8);
+    line(c, [[origin.x, origin.y], [endX, origin.y]], "#e62332", 8);
+    line(c, [[origin.x, origin.y], [endX, origin.y]], "#fff0df", 3);
     c.restore();
   }
   for (const effect of game.effects) {

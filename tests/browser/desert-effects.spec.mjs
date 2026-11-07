@@ -150,7 +150,7 @@ test("선인장 빨간 레이저는 실제 구슬에서 같은 줄 안으로 발
     const game = createGame(28, ["cactus"]); game.sun = 400;
     plantAt(game, "cactus", 2, 0);
     game.enemies.push({ id: game.nextId++, type: "barrel", row: 2, x: 900, hp: 400, age: 0, slow: 0, eating: false });
-    for (let step = 0; step < 60; step++) tick(game, .1);
+    for (let step = 0; step < 30; step++) tick(game, .1);
     const canvas = document.createElement("canvas"); canvas.width = 1100; canvas.height = 500;
     const c = canvas.getContext("2d");
     const draw = data => { c.clearRect(0, 0, 1100, 500); drawBoard(c, data, null, false); };
@@ -184,8 +184,9 @@ test("선인장 빨간 레이저는 실제 구슬에서 같은 줄 안으로 발
   expect(report.origin.x).toBeGreaterThan(50);
   expect(report.origin.y).toBeGreaterThan(201);
   expect(report.origin.y).toBeLessThan(215);
-  expect(report.color[0]).toBeGreaterThan(report.color[1] * 1.8);
-  expect(report.color[0]).toBeGreaterThan(report.color[2] * 1.8);
+  expect(report.color[0]).toBeGreaterThan(230);
+  expect(report.color[1]).toBeGreaterThan(200);
+  expect(report.color[2]).toBeGreaterThan(180);
   expect(report.outside[3]).toBe(0);
   expect(report.paused).toBe(true);
   expect(report.restoredBeam).toBe(true);

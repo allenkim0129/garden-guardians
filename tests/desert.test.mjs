@@ -175,7 +175,7 @@ test("연쇄는 적이 범위 밖으로 나가면 끊기고 발사 후 식물 �
   }
 });
 
-test("선인장은 400햇빛·20초 재배치·22해금이며 첫6초와 매6초 전방 같은 줄만 즉사", () => {
+test("선인장은 400햇빛·20초 재배치·22해금이며 첫3초와 매3초 가장 가까운 한 마리만 즉사", () => {
   assert.deepEqual(engine.introducedPlants(22), ["cactus"]);
   assert.deepEqual(engine.introducedPlants(28), []);
   assert.equal(plantAt(createGame(21), "cactus", 2, 5).ok, false);
@@ -188,14 +188,17 @@ test("선인장은 400햇빛·20초 재배치·22해금이며 첫6초와 매6초
   assert.equal(game.plants[0].hp, 160);
   assert.equal(plantAt(game, "cactus", 1, 5).ok, false);
   const front = enemy(game, "barrel", 2, 950);
+  const farther = enemy(game, "barrel", 2, 990);
   const behind = enemy(game, "barrel", 2, 400);
   const otherLane = enemy(game, "barrel", 1, 950);
-  advance(game, 5.9);
+  advance(game, 2.9);
   assert.equal(front.hp, 400);
   const samePosition = enemy(game, "barrel", 2, 550);
   tick(game, .1);
   assert.equal(front.hp, 0);
-  assert.ok(Math.abs(game.cooldowns.cactus - 14) < 1e-8);
+  assert.ok(Math.abs(game.cooldowns.cactus - 17) < 1e-8);
+  assert.equal(farther.hp, 400);
+  assert.equal(game.plants[0].laserTargetX, front.x);
   assert.equal(behind.hp, 400);
   assert.equal(otherLane.hp, 400);
   assert.equal(samePosition.hp, 400);
@@ -203,8 +206,8 @@ test("선인장은 400햇빛·20초 재배치·22해금이며 첫6초와 매6초
   assert.equal(game.shots.length, 0);
   assert.equal(game.effects.filter(e => e.kind === "laser").length, 1);
   game.enemies = game.enemies.filter(e => e.id !== samePosition.id);
-  const next = enemy(game, "barrel", 2, 950);
-  advance(game, 5.9);
+  const next = farther;
+  advance(game, 2.9);
   assert.equal(next.hp, 400);
   tick(game, .1);
   assert.equal(next.hp, 0);
@@ -240,7 +243,7 @@ test("선인장 최대2개는 자원·쿨다운 차감 없이 차단하고 제�
 
 test("기존 선인장3개와 남은6초는 삭제·연장 없이 복구하고 2개 미만일 때만 추가 허용", () => {
   const game = createGame(28, ["cactus"]);
-  game.pacingVersion = 6; game.sun = 2000;
+  game.rulesVersion = 7; game.pacingVersion = 6; game.sun = 2000;
   for (let row = 0; row < 3; row++) game.plants.push({
     id: game.nextId++, type: "cactus", row, col: 0, hp: 160, timer: 6, age: 0,
   });
@@ -248,7 +251,8 @@ test("기존 선인장3개와 남은6초는 삭제·연장 없이 복구하고 2
   const data = { ...freshSave(), unlocked: 28, current: snapshot(game) };
   const loaded = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(loaded.error, null);
-  assert.deepEqual(loaded.data, data);
+  assert.deepEqual(loaded.data, { ...data, current: { ...data.current, rulesVersion: 8,
+    plants: data.current.plants.map(p => ({ ...p, timer: 3 })) } });
   const restored = loaded.data.current;
   advance(restored, 6);
   assert.equal(restored.cooldowns.cactus, 0);
@@ -272,7 +276,7 @@ test("선인장 충전은 정지·복구에 보존되고 첫 공격 전에 제�
     const game = createGame(28, ["cactus"]);
     game.sun = 400; plantAt(game, "cactus", 2, 0);
     const target = enemy(game, "barrel", 2, 950);
-    advance(game, 3);
+    advance(game, 1.5);
     const data = { ...freshSave(), unlocked: 28, current: snapshot(game) };
     const loaded = readSave({ getItem: () => JSON.stringify(data) });
     assert.equal(loaded.error, null);
@@ -281,7 +285,7 @@ test("선인장 충전은 정지·복구에 보존되고 첫 공격 전에 제�
     if (remove === "shovel") engine.removePlant(game, 2, 0);
     if (remove === "dead") game.plants[0].hp = 0;
     game.effects = [];
-    advance(game, 3); advance(loaded.data.current, 3);
+    advance(game, 1.5); advance(loaded.data.current, 1.5);
     if (remove) {
       assert.equal(target.hp, 400);
       assert.equal(game.plants.length, 0);
@@ -290,6 +294,72 @@ test("선인장 충전은 정지·복구에 보존되고 첫 공격 전에 제�
       assert.deepEqual(game, loaded.data.current);
     }
   }
+});
+
+test("선인장은 동률 ID 순으로 한 마리만 선택하며 빈 줄과 죽은 적에 유령 공격 없음", () => {
+  const game = createGame(22, ["cactus"]); game.sun = 1000;
+  plantAt(game, "cactus", 2, 1);
+  advance(game, 3.5);
+  assert.equal(game.plants[0].shotAt, undefined);
+  assert.equal(game.plants[0].timer, 0);
+  assert.equal(game.effects.filter(e => e.kind === "laser").length, 0);
+  const dead = enemy(game, "barrel", 2, 200); dead.hp = 0;
+  const low = enemy(game, "barrel", 2, 600);
+  const high = enemy(game, "barrel", 2, 600);
+  const other = enemy(game, "barrel", 1, 200);
+  const behind = enemy(game, "barrel", 2, 100);
+  game.enemies.reverse();
+  tick(game, .1);
+  assert.equal(low.hp, 0);
+  assert.equal(high.hp, 400);
+  assert.equal(other.hp, 400);
+  assert.equal(behind.hp, 400);
+  assert.equal(game.plants[0].laserTargetX, 600);
+  assert.equal(game.effects.filter(e => e.kind === "laser").length, 1);
+  advance(game, .4);
+  assert.equal(high.hp, 400);
+  assert.equal(game.effects.filter(e => e.kind === "laser").length, 0);
+});
+
+test("v31 공격 타이머는 최대3초로 한 번만 이관하고 초과 선인장·진행·설정을 보존", () => {
+  const game = createGame(28, ["cactus", "shuriken"]); game.rulesVersion = 7; game.pacingVersion = 6;
+  game.cooldowns.cactus = 17;
+  for (const [row, timer] of [6, 4, 1.2, 0].entries()) game.plants.push({
+    id: game.nextId++, type: "cactus", row, col: 0, hp: 160, timer, age: 0,
+  });
+  const data = { ...freshSave(), unlocked: 28, stars: freshSave().stars.fill(3), language: "en", volume: 67,
+    teamSlots: ["cactus", null, "shuriken", null, null, null, null, null], current: snapshot(game) };
+  const loaded = readSave({ getItem: () => JSON.stringify(data) });
+  assert.equal(loaded.error, null);
+  const expected = structuredClone(data); expected.current.rulesVersion = 8;
+  expected.current.plants[0].timer = 3; expected.current.plants[1].timer = 3;
+  assert.deepEqual(loaded.data, expected);
+  const again = readSave({ getItem: () => JSON.stringify(loaded.data) });
+  assert.deepEqual(again.data, expected);
+  assert.ok(validSnapshot(again.data.current));
+});
+
+test("선인장 목표 좌표 저장을 검증하고 승리 연출은 추가 처치 없이 끝남", () => {
+  const game = createGame(22, ["cactus"]); game.sun = 400;
+  plantAt(game, "cactus", 2, 0);
+  enemy(game, "barrel", 2, 600);
+  advance(game, 3);
+  const before = snapshot(game);
+  const loaded = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: 22, current: before }) });
+  assert.equal(loaded.error, null);
+  assert.deepEqual(loaded.data.current, before);
+  for (const x of [NaN, -1, 50, 1101, "600"]) {
+    const bad = snapshot(game); bad.plants[0].laserTargetX = x;
+    assert.equal(validSnapshot(bad), false);
+  }
+  game.nextSpawn = engine.scheduleFor(22).length;
+  tick(game, .01);
+  assert.equal(game.status, "won");
+  const time = game.time, defeated = game.stats.defeated;
+  for (let i = 0; i < 10; i++) { tick(game, .1); engine.advanceEffects(game, .1); }
+  assert.equal(game.time, time);
+  assert.equal(game.stats.defeated, defeated);
+  assert.equal(game.effects.filter(e => e.kind === "laser").length, 0);
 });
 
 test("v25에서 기존 19·22단계 진행과 팀은 보존하고 새 선택에 해금을 적용", () => {
@@ -320,7 +390,7 @@ test("v23 별20칸·팀빈칸·진행·발사체 보존, 마지막 클리어 때
     const restored = readSave({ getItem: () => JSON.stringify(old) });
     assert.equal(restored.error, null);
     assert.deepEqual(restored.data, { ...old, unlocked: cleared ? 21 : 20, stars: [...old.stars, ...Array(10).fill(0)],
-      current: { ...old.current, rulesVersion: 7, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
+      current: { ...old.current, rulesVersion: 8, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
     assert.equal(restored.data.current.shots[0].damage, 24);
     advance(restored.data.current, .2);
     assert.equal(restored.data.current.shots[1].damage, 33);

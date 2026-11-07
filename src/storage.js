@@ -45,7 +45,12 @@ export function readSave(storage) {
         }
         data.current.skyTimer = Math.min(data.current.skyTimer, 5);
       }
-      data.current.rulesVersion = 7;
+      if ((data.current.rulesVersion ?? 1) < 8) {
+        for (const plant of data.current.plants) {
+          if (plant.type === "cactus") plant.timer = Math.min(plant.timer, PLANTS.cactus.interval);
+        }
+      }
+      data.current.rulesVersion = 8;
     }
     return { data, error: null, notice };
   } catch (error) {

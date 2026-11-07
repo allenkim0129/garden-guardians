@@ -27,23 +27,23 @@ test("표창 실제 왕복·빈손·선인장 최대2·정지·회전·서버 �
     await page.goto(server.url);
     await expect(page.locator("#offline-status")).toContainText("오프라인 준비 완료");
     const cached = await page.evaluate(async () => {
-      const cache = await caches.open((await caches.keys()).find(k => k.endsWith("-v31")));
+      const cache = await caches.open((await caches.keys()).find(k => k.endsWith("-v32")));
       return Promise.all(["shuriken", "shuriken-projectile"].map(async name => Boolean(await cache.match(new URL(`assets/sprites/${name}.png`, location.href).href))));
     });
     expect(cached).toEqual([true, true]);
     await page.locator("#resume-button").tap();
-    await expect(page.locator('.seed-card[data-type="shuriken"]')).toHaveAttribute("aria-label", /표창잎.*300.*32/);
-    await expect(page.locator('.seed-card[data-type="shuriken"] .compact-damage')).toHaveText("32↔32");
+    await expect(page.locator('.seed-card[data-type="shuriken"]')).toHaveAttribute("aria-label", /표창잎.*300.*36/);
+    await expect(page.locator('.seed-card[data-type="shuriken"] .compact-damage')).toHaveText("36↔36");
     await expect(page.locator('.seed-card[data-type="cactus"] .plant-limit')).toHaveText("최대 2개");
-    await page.waitForTimeout(4200);
+    await page.waitForTimeout(2100);
     await page.screenshot({ path: testInfo.outputPath("return-flight.png") });
-    await page.waitForTimeout(2200);
+    await page.waitForTimeout(1100);
     await page.locator("#pause-button").tap();
     const paused = await stored(page);
-    expect(paused.current.plants[0].caughtAt).toBeGreaterThan(6);
+    expect(paused.current.plants[0].caughtAt).toBeGreaterThan(3);
     expect(paused.current.shots).toHaveLength(1);
     expect(paused.current.shots[0].outHits).toEqual([]);
-    expect(paused.current.enemies.map(e => e.hp)).toEqual(game.enemies.map(e => e.hp - 64));
+    expect(paused.current.enemies.map(e => e.hp)).toEqual(game.enemies.map(e => e.hp - 72));
     const canvas = await page.locator("#game-art").evaluate(c => c.toDataURL());
     await page.waitForTimeout(300);
     expect(await page.locator("#game-art").evaluate(c => c.toDataURL())).toBe(canvas);
@@ -131,7 +131,7 @@ test("승인 몸체 12프레임의 손·접지와 별도 표창 회전·빈손 �
     expect(bounds.maxY).toBeLessThan(300);
     expect(bounds.maxX).toBeLessThan(1000);
   }
-  expect(report.bounds[0].minX).toBeGreaterThan(470);
+  expect(report.bounds[0].minX).toBeGreaterThan(460);
   expect(report.bounds[1].minX).toBeGreaterThan(report.bounds[0].maxX);
   expect(report.bounds[2].maxX).toBe(999);
   expect(report.bounds[5].minX).toBeLessThan(report.bounds[4].minX);

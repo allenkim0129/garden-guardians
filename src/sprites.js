@@ -12,6 +12,7 @@ export const SHURIKEN_HANDS = Object.freeze([
   [166.03, 96.32], [275.30, 102.20], [271.87, 102.20], [168.48, 97.30],
   [247.37, 108.57], [250.80, 109.55], [258.64, 112], [261.58, 112],
 ]);
+export const SHURIKEN_SIZE = 54;
 export const PROJECTILE_URLS = Object.freeze({
   "shuriken-projectile": new URL("../assets/sprites/shuriken-projectile.png", import.meta.url).href,
 });
@@ -162,7 +163,7 @@ export function drawGearSprite(context, type) {
   context.drawImage(image, type === "barrel" ? 0 : 320, 0, 320, 224, -160 * .48, -112 * .48, 320 * .48, 224 * .48);
 }
 
-export function drawShuriken(context, x, y, angle = 0, size = 27) {
+export function drawShuriken(context, x, y, angle = 0, size = SHURIKEN_SIZE) {
   const image = images.get("shuriken-projectile");
   if (!image) throw new Error("shuriken-projectile 그림을 먼저 불러와야 합니다.");
   context.save(); context.translate(x, y); context.rotate(angle);

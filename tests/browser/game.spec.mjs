@@ -383,7 +383,7 @@ test("구버전 진행 중 식물은 보존하고 새 배치는 해금 규칙을
   await page.locator("#pause-button").tap();
   const saved = await readStored(page);
   expect(saved.unlocked).toBe(7);
-  expect(saved.current.rulesVersion).toBe(7);
+  expect(saved.current.rulesVersion).toBe(8);
   expect(saved.current.plants[0].type).toBe("sun");
 });
 

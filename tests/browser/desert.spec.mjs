@@ -20,7 +20,7 @@ test("선인장 초과 저장은 보존하고 양언어 카드 한도·삽 슬�
   for (const language of ["ko", "en"]) {
     await page.setViewportSize(language === "ko" ? { width: 568, height: 320 } : { width: 320, height: 568 });
     const game = createGame(28, ["cactus"]);
-    game.pacingVersion = 6; game.sun = 1200;
+    game.rulesVersion = 7; game.pacingVersion = 6; game.sun = 1200;
     for (let row = 0; row < 3; row++) game.plants.push({
       id: game.nextId++, type: "cactus", row, col: 0, hp: 160, timer: 6, age: 0,
     });
@@ -250,7 +250,7 @@ test("사막 새 캐릭터·장비·기존 쌍콩이 예약·연쇄 그림·소�
     expect(battle.current.enemies.some(e => e.hp < enemyMaxHp(e))).toBe(true);
     expect(battle.current.enemies.find(e => e.type === "courier")).toMatchObject({ maxHp: 192, equipmentDropped: true });
     expect(battle.current.enemies.filter(e => e.row === 1)).toHaveLength(0);
-    expect(battle.current.plants.find(p => p.type === "cactus").shotAt).toBeGreaterThanOrEqual(6 - 1e-8);
+    expect(battle.current.plants.find(p => p.type === "cactus").shotAt).toBeGreaterThanOrEqual(3 - 1e-8);
     await page.getByRole("button", { name: "Continue", exact: true }).tap();
     await page.screenshot({ path: testInfo.outputPath("desert-combat.png") });
     expect(errors).toEqual([]);

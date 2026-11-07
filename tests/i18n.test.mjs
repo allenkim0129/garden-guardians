@@ -21,12 +21,12 @@ test("한국어 기본값과 전체 캐릭터·스테이지·동적 상태 영�
     const damageLabels = {
       sun: "No attack", pea: "DMG 12", wall: "No attack", frost: "DMG 6", bomb: "Area DMG 300",
       twin: "DMG 33 × 2", thorn: "DMG 36/foe", pumpkin: "Area DMG 96", lantern: "No attack",
-      iron: "No attack", ember: "DMG 15 + burn 4/s", storm: "DMG 64/foe", cactus: "Lane KO", shuriken: "32 each way · 64 total",
+      iron: "No attack", ember: "DMG 15 + burn 4/s", storm: "DMG 64/foe", cactus: "Nearest KO · 3s", shuriken: "36 each way · 72 total",
     };
     for (const [type, label] of Object.entries(damageLabels)) assert.equal(t(plantDamageLabel(type)), label);
     const compactDamage = {
       sun: "—", pea: "12", wall: "—", frost: "6", bomb: "300", twin: "33×2", thorn: "36",
-      pumpkin: "96", lantern: "—", iron: "—", ember: "15+4/s", storm: "64", cactus: "KO", shuriken: "32↔32",
+      pumpkin: "96", lantern: "—", iron: "—", ember: "15+4/s", storm: "64", cactus: "KO", shuriken: "36↔36",
     };
     for (const [type, label] of Object.entries(compactDamage)) assert.equal(t(plantDamageLabel(type, true)), label);
     assert.equal(t("햇빛 75 · 2번째 정원부터 사용"), "75 sunlight · From garden 2");

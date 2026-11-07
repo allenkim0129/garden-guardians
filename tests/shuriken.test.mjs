@@ -22,10 +22,12 @@ function advance(game, duration, dt = .1, stationary = false) {
   }
 }
 
-test("표창잎은 15해금·편도32·가격300이며 적 없을 때는 보유", () => {
+test("표창잎은 15해금·편도36·속도360·가격300이며 적 없을 때는 보유", () => {
   assert.deepEqual(engine.introducedPlants(15), ["shuriken"]);
   assert.equal(plantAt(createGame(14), "shuriken", 2, 0).ok, false);
-  assert.equal(PLANTS.shuriken.damage, PLANTS.storm.damage / 2);
+  assert.equal(PLANTS.shuriken.damage, 36);
+  assert.equal(PLANTS.storm.damage, 64);
+  assert.equal(SHURIKEN_SPEED, 180 * 2);
   assert.equal(PLANTS.shuriken.cost, 300);
   const game = setup();
   advance(game, .5);
@@ -49,10 +51,10 @@ test("표창은 같은 줄 전방 적마다 편도1회·복귀1회, 끝을 넘�
     assert.equal(game.shots.length, 1);
     assert.equal(game.shots[0].x, width);
     assert.equal(game.shots[0].leg, "back");
-    assert.deepEqual(foes.map(e => e.hp), [368, 368, 368]);
+    assert.deepEqual(foes.map(e => e.hp), [364, 364, 364]);
     const firstId = game.shots[0].id;
     advance(game, halfTrip, .1, true);
-    assert.deepEqual(foes.map(e => e.hp), [336, 336, 336]);
+    assert.deepEqual(foes.map(e => e.hp), [328, 328, 328]);
     assert.equal(behind.hp, 400); assert.equal(other.hp, 400);
     assert.equal(game.shots.length, 1);
     assert.ok(game.shots[0].id > firstId);
@@ -67,19 +69,19 @@ test("맵끝 반전의 남은 시간은 복귀에 사용하고 짧은 왕복도 
   const initial = setup(9);
   target(initial, 1000);
   const coarse = snapshot(initial), fine = snapshot(initial);
-  advance(coarse, .3, .1, true); advance(fine, .3, .01, true);
+  advance(coarse, .15, .1, true); advance(fine, .15, .01, true);
   assert.equal(coarse.shots[0].leg, "back");
   assert.ok(Math.abs(coarse.shots[0].x - 996) < 1e-8);
   assert.ok(Math.abs(coarse.shots[0].x - fine.shots[0].x) < 1e-8);
   assert.deepEqual(coarse.shots[0].outHits, fine.shots[0].outHits);
   assert.deepEqual(coarse.shots[0].backHits, fine.shots[0].backHits);
-  assert.equal(coarse.enemies[0].hp, 336);
-  advance(coarse, .3, .1, true); advance(fine, .3, .01, true);
+  assert.equal(coarse.enemies[0].hp, 328);
+  advance(coarse, .15, .1, true); advance(fine, .15, .01, true);
   assert.equal(coarse.shots.length, 1);
   assert.equal(coarse.shots[0].leg, "out");
   assert.ok(Math.abs(coarse.shots[0].x - 958) < 1e-8);
   assert.ok(Math.abs(coarse.shots[0].x - fine.shots[0].x) < 1e-8);
-  assert.ok(Math.abs(coarse.plants[0].shotAt - 100 / 180) < 1e-8);
+  assert.ok(Math.abs(coarse.plants[0].shotAt - 100 / 360) < 1e-8);
   const clamped = snapshot(initial), single = snapshot(initial);
   tick(clamped, 10); tick(single, .1);
   assert.deepEqual(clamped, single);
@@ -154,7 +156,7 @@ test("v30 저장은 팀·별·자원·기존 쿨다운을 유지하고 표창 �
   const data = { ...freshSave(), unlocked: 20, current: old, teamSlots: ["sun", "storm", null, null, null, null, null, null] };
   const loaded = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(loaded.error, null);
-  assert.deepEqual(loaded.data, { ...data, current: { ...old, rulesVersion: 7, cooldowns: { ...old.cooldowns, shuriken: 0 } } });
+  assert.deepEqual(loaded.data, { ...data, current: { ...old, rulesVersion: 8, cooldowns: { ...old.cooldowns, shuriken: 0 } } });
   const missing = createGame(20); delete missing.cooldowns.shuriken;
   assert.equal(validSnapshot(missing), false);
 });
@@ -166,8 +168,41 @@ test("표창 가격 측정: 후열·중간·최전열 왕복 시간과 단일/�
     const trip = (1000 - origin) * 2 / SHURIKEN_SPEED;
     advance(game, trip, .01, true);
     const damage = targets.reduce((sum, e) => sum + 400 - e.hp, 0);
-    assert.equal(damage, 64 * count);
+    assert.equal(damage, 72 * count);
     assert.ok(Math.abs(game.plants[0].shotAt - trip) < 1e-8);
     t.diagnostic(`col${col + 1}, ${count} stationary foes: ${trip.toFixed(3)}s/trip, ${damage} damage, ${(damage / trip).toFixed(2)} DPS`);
   }
+});
+
+test("v31 비행 중 표창은 32 피해·방향·명중 기록을 보존하고 다음 투척부터 36", () => {
+  for (const leg of ["out", "back"]) {
+    const game = setup(9);
+    target(game, 1000);
+    tick(game, .01);
+    Object.assign(game.shots[0], { damage: 32, leg, x: leg === "out" ? 960 : 990 });
+    if (leg === "back") game.shots[0].outHits = [game.enemies[0].id];
+    game.rulesVersion = 7;
+    const before = snapshot(game);
+    const loaded = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: 15, current: before }) });
+    assert.equal(loaded.error, null);
+    assert.deepEqual(loaded.data.current, { ...before, rulesVersion: 8 });
+    const restored = loaded.data.current, firstId = restored.shots[0].id;
+    advance(restored, .3, .01, true);
+    assert.equal(restored.shots.length, 1);
+    assert.ok(restored.shots[0].id > firstId);
+    assert.equal(restored.shots[0].damage, 36);
+    assert.ok(validSnapshot(snapshot(restored)));
+  }
+});
+
+test("고속 표창은 한 틱 안에서 지나친 적도 각 방향 한 번만 맞힘", () => {
+  const game = setup(9), foe = target(game, 990), other = target(game, 990, 1);
+  tick(game, .1);
+  assert.equal(game.shots[0].x, 986);
+  assert.equal(foe.hp, 364);
+  tick(game, .1);
+  assert.equal(game.shots[0].leg, "back");
+  assert.ok(Math.abs(game.shots[0].x - 978) < 1e-8);
+  assert.equal(foe.hp, 328);
+  assert.equal(other.hp, 400);
 });

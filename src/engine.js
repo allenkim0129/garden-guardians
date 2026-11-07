@@ -19,7 +19,7 @@ export const CHAIN_GAP = .12;
 export const LASER_DURATION = .24;
 export const SKY_SUN_INTERVAL = 7;
 export const REGROUP_DURATION = 30;
-export const SHURIKEN_SPEED = 180;
+export const SHURIKEN_SPEED = 360;
 export const PLANTS = Object.freeze({
   sun: { name: "햇살봉", unlockStage: 1, cost: 50, hp: 100, recharge: 4, firstHarvest: 5, interval: 8, description: "첫 햇빛은 5초 뒤, 이후 8초마다 햇빛 25를 만들어요." },
   pea: { name: "콩별이", unlockStage: 1, cost: 125, hp: 120, recharge: 5, interval: 1.6, damage: 12, description: "1.6초마다 12 피해의 콩을 쏘는 기본 공격 식물이에요." },
@@ -33,8 +33,8 @@ export const PLANTS = Object.freeze({
   iron: { name: "철잎보루", unlockStage: 9, cost: 150, hp: 1500, recharge: 12, description: "체력 1500의 철잎으로 막아요. 튼튼하지만 다시 심기까지 12초!" },
   ember: { name: "불꽃봉오리", unlockStage: 10, cost: 200, hp: 110, recharge: 9, interval: 3.2, damage: 15, description: "3.2초마다 불씨를 쏴 반경 약 한 칸에 15 피해, 3초 동안 초당 4 화상 피해로 공격을 도와요. 화상은 중첩되지 않아요." },
   storm: { name: "번개가시", unlockStage: 19, cost: 275, hp: 110, recharge: 10, interval: 4.2, damage: 64, description: "가시풀의 상위형! 4.2초마다 노란 번개가 가까운 좀비를 타고 옆줄까지 이어져요. 적 사이 1.55칸 안에서 최대 5명에게 각각 한 번씩 64 피해!" },
-  cactus: { name: "선인장", unlockStage: 22, cost: 400, hp: 160, recharge: 20, maxCount: 2, firstAttack: 6, interval: 6, description: "심고 6초 뒤부터 6초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 좀비를 모두 처치해요. 뒤쪽과 다른 줄은 공격하지 않아요. 다시 심기까지 20초, 정원에 동시에 최대 2개!" },
-  shuriken: { name: "표창잎", unlockStage: 15, cost: 300, hp: 110, recharge: 10, damage: 32, description: "손의 표창이 같은 줄 오른쪽 끝까지 날아갔다 돌아와요. 갈 때와 올 때 적마다 한 번씩 32 피해! 한 개만 날리며 회수 즉시 다시 던져요. 가까이 심으면 빨리 돌아오지만 좀비에게 물리기 쉬워요." },
+  cactus: { name: "선인장", unlockStage: 22, cost: 400, hp: 160, recharge: 20, maxCount: 2, firstAttack: 3, interval: 3, description: "심고 3초 뒤부터 3초마다 머리 위 빨간 구슬에서 레이저를 쏴 앞쪽 같은 줄의 가장 가까운 좀비 한 마리만 즉사시켜요. 뒤쪽과 다른 줄은 공격하지 않아요. 다시 심기까지 20초, 정원에 동시에 최대 2개!" },
+  shuriken: { name: "표창잎", unlockStage: 15, cost: 300, hp: 110, recharge: 10, damage: 36, description: "손의 표창이 같은 줄 오른쪽 끝까지 날아갔다 돌아와요. 갈 때와 올 때 적마다 한 번씩 36 피해! 한 개만 날리며 회수 즉시 다시 던져요. 가까이 심으면 빨리 돌아오지만 좀비에게 물리기 쉬워요." },
 });
 const LEGACY_RECHARGES = Object.freeze({ sun: 5, pea: 6, wall: 8, frost: 5, bomb: 16, twin: 9, thorn: 9, pumpkin: 10, lantern: 10, iron: 14, ember: 10 });
 export const ENEMIES = Object.freeze({
@@ -80,7 +80,7 @@ export const STAGES = [
   { name: "번개가시 언덕", count: 150, gap: 1.44, types: ["barrel", "courier", "jelly", "umbrella", "courier"], tip: "가시풀의 상위형 번개가시! 붙어 있는 옆줄의 좀비까지 번개를 이어 보내요." },
   { name: "모래바람 다리", count: 156, gap: 1.4, types: ["courier", "barrel", "jelly", "barrel", "roller"], tip: "앞줄은 방어, 뒷줄은 집중 공격! 번개가시는 모인 적을 상대하게 해요." },
   { name: "붉은 바위 미로", count: 162, gap: 1.36, types: ["barrel", "umbrella", "courier", "jelly", "barrel"], tip: "통이 깨지면 적이 빨라져요. 빈 방어 칸을 바로 채워 주세요." },
-  { name: "신기루 오아시스", count: 168, gap: 1.32, types: ["courier", "roller", "barrel", "courier", "umbrella"], tip: "선인장은 앞쪽 같은 줄을 쓸어내요. 첫 공격까지 6초! 다른 줄과 뒤쪽은 친구들로 지켜요." },
+  { name: "신기루 오아시스", count: 168, gap: 1.32, types: ["courier", "roller", "barrel", "courier", "umbrella"], tip: "선인장은 3초마다 앞쪽 같은 줄의 가장 가까운 좀비 한 마리만 즉사시켜요. 첫 공격도 3초! 다른 줄과 뒤쪽은 친구들로 지켜요." },
   { name: "마지막 모래언덕", count: 174, gap: 1.28, types: ["barrel", "jelly", "courier", "barrel", "umbrella"], tip: "튼튼한 무리 뒤에 빠른 적이 숨어 있어요. 집중 공격과 범위 공격을 함께 써요." },
   { name: "사막의 수호자", count: 180, gap: 1.24, types: ["barrel", "courier", "jelly", "umbrella", "barrel", "courier"], tip: "사막의 마지막 도전! 여덟 친구를 조합하고 비상용 햇빛을 남겨 두세요." },
 ].map(stage => ({ ...stage, theme: "desert", startSun: 350 })))
@@ -110,7 +110,7 @@ export function plantDamageLabel(type, compact = false) {
     return plant.damage ? String(plant.damage) : "—";
   }
   if (type === "shuriken") return `편도 ${plant.damage} · 왕복 ${plant.damage * 2}`;
-  if (type === "cactus") return "전방 한 줄 즉사";
+  if (type === "cactus") return "전방 1마리 즉사 · 3초";
   if (type === "bomb") return `범위 피해 ${BOMB_DAMAGE}`;
   if (type === "twin") return `피해 ${plant.damage} × 2`;
   if (type === "ember") return `피해 ${plant.damage} + 화상 ${BURN_DAMAGE}/초`;
@@ -209,7 +209,7 @@ export function createGame(stageNumber, loadout) {
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 7, pacingVersion: 7, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 8, pacingVersion: 7, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -423,12 +423,11 @@ export function tick(game, dt) {
     if ((info.damage || plant.type === "cactus") && plant.timer <= (plant.type === "cactus" ? 1e-9 : 0)) {
       const target = game.enemies.filter(e => e.hp > 0 && e.row === plant.row
         && (plant.type === "cactus" ? e.x > cellX(plant.col) : e.x >= cellX(plant.col) - 10))
-        .sort((a, b) => a.x - b.x)[0];
+        .sort((a, b) => a.x - b.x || (plant.type === "cactus" ? a.id - b.id : 0))[0];
       if (target) {
         if (plant.type === "cactus") {
-          for (const enemy of game.enemies) {
-            if (enemy.row === plant.row && enemy.x > cellX(plant.col)) damageEnemy(game, enemy, enemy.hp);
-          }
+          damageEnemy(game, target, target.hp);
+          plant.laserTargetX = target.x;
           game.effects.push({ id: id(game), kind: "laser", plantId: plant.id, x: cellX(plant.col), y: cellY(plant.row), age: 0 });
         } else fireShot(game, plant, target);
         if (plant.type === "twin") plant.pendingShotAt = game.time + TWIN_GAP;
@@ -537,7 +536,7 @@ export function validSnapshot(g) {
   if (!object(g) || g.version !== 1 || !integer(g.stage, 1, STAGES.length) || g.status !== "playing") return false;
   if (g.columns !== undefined && ![9, COLS].includes(g.columns)) return false;
   const columns = boardColumns(g), width = boardWidth(g);
-  if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6, 7].includes(g.rulesVersion)) return false;
+  if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6, 7, 8].includes(g.rulesVersion)) return false;
   if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5, 6, 7].includes(g.pacingVersion)) return false;
   const schedule = scheduleFor(g.stage, g.pacingVersion ?? 1);
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
@@ -552,6 +551,8 @@ export function validSnapshot(g) {
   if (new Set(g.plants.map(p => `${p.row}:${p.col}`)).size !== g.plants.length) return false;
   if (!g.plants.every(p => eventTime(p.shotAt) && eventTime(p.hurtAt) && eventTime(p.producedAt)
     && (p.caughtAt === undefined || (p.type === "shuriken" && eventTime(p.caughtAt))))) return false;
+  if (!g.plants.every(p => p.laserTargetX === undefined || (p.type === "cactus" && p.shotAt !== undefined
+    && finite(p.laserTargetX, cellX(p.col), width + 100) && p.laserTargetX > cellX(p.col)))) return false;
   if (!g.plants.every(p => p.pendingShotAt === undefined || (p.type === "twin" && finite(p.shotAt, 0, g.time)
     && finite(p.pendingShotAt, g.time, g.time + TWIN_GAP) && Math.abs(p.pendingShotAt - p.shotAt - TWIN_GAP) < 1e-8))) return false;
   if (!list(g.enemies, schedule.length, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4)
@@ -567,7 +568,7 @@ export function validSnapshot(g) {
     if (s.frost) return false;
     if (s.kind === "shuriken") {
       const owner = g.plants.find(p => p.id === s.plantId && p.type === "shuriken" && p.row === s.row);
-      return owner !== undefined && s.damage === PLANTS.shuriken.damage && ["out", "back"].includes(s.leg)
+      return owner !== undefined && [32, PLANTS.shuriken.damage].includes(s.damage) && ["out", "back"].includes(s.leg)
         && finite(s.x, cellX(owner.col), width) && finite(s.age, 0, 100000)
         && [s.outHits, s.backHits].every(hits => list(hits, schedule.length, n => integer(n, 1, g.nextId - 1) && n !== s.id && n !== owner.id)
           && new Set(hits).size === hits.length)

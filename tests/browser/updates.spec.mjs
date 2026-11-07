@@ -37,7 +37,7 @@ self.addEventListener('message', e => {
 });`;
 
 test("표창 왕복의 방향·피격 목록·발사자와 선인장 대기를 업데이트·오프라인에서 보존", async ({ page }) => {
-  for (const elapsed of [.4, 1.2]) {
+  for (const elapsed of [.15, .5]) {
     const server = await releaseServer();
     try {
       const game = createGame(22, ["shuriken", "cactus"]); game.sun = 1000;
@@ -67,7 +67,7 @@ test("표창 왕복의 방향·피격 목록·발사자와 선인장 대기를 �
       expect(after.shots[0].id).toBe(game.shots[0].id);
       expect(after.cooldowns.cactus).toBeLessThanOrEqual(game.cooldowns.cactus);
       expect(after.cooldowns.cactus).toBeGreaterThan(game.cooldowns.cactus - 1);
-      expect([game.enemies[0].hp, game.enemies[0].hp - 32]).toContain(after.enemies[0].hp);
+      expect([game.enemies[0].hp, game.enemies[0].hp - 36]).toContain(after.enemies[0].hp);
     } finally { await server.stop(); }
   }
 });
@@ -115,6 +115,44 @@ async function releaseServer(legacy = false) {
     },
   };
 }
+test("v31 공격 저장은 명시적 업데이트·오프라인 뒤 rules8로 한 번만 안전 이관", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(22, ["shuriken", "cactus"]); game.sun = 2000;
+    plantAt(game, "shuriken", 2, 4);
+    game.enemies.push({ id: game.nextId++, type: "barrel", row: 2, x: 900, hp: 400, age: 0, slow: 0, eating: false });
+    tick(game, .1);
+    game.rulesVersion = 7; game.pacingVersion = 6; game.shots[0].damage = 32; game.effects = [];
+    for (const [row, timer] of [[0, 5], [1, 1.5], [4, 0]]) game.plants.push({
+      id: game.nextId++, type: "cactus", row, col: 0, hp: 160, timer, age: 0,
+    });
+    game.cooldowns.cactus = 17;
+    const data = { ...freshSave(), unlocked: 22, stars: freshSave().stars.fill(3), tutorialSeen: true,
+      language: "en", volume: 67, teamSlots: ["shuriken", null, "cactus", null, null, null, null, null], current: game };
+    const expected = structuredClone(data); expected.current.rulesVersion = 8; expected.current.plants[1].timer = 3;
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await installNext(page, server);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await server.stop();
+    await page.reload();
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await page.locator("#resume-button").tap();
+    expect(await saved(page)).toEqual(expected);
+    await page.locator("#pause-button").tap();
+    const paused = await saved(page);
+    expect(paused.current.plants).toHaveLength(4);
+    expect(paused.current.shots[0].damage).toBe(32);
+    expect(paused.current.shots[0].outHits).toEqual(game.shots[0].outHits);
+    expect(paused.current.cooldowns.cactus).toBeGreaterThan(16);
+    await page.reload();
+    expect(await saved(page)).toEqual(paused);
+  } finally { await server.stop(); }
+});
 async function seed(page, url) {
   const game = createGame(2);
   plantAt(game, "pea", 2, 0);
@@ -207,7 +245,7 @@ test("선인장 초과 개수와 기존6초·새20초 대기는 업데이트·�
     const server = await releaseServer();
     try {
       const game = createGame(28, ["cactus"]);
-      game.pacingVersion = 6; game.cooldowns.cactus = cooldown;
+      game.rulesVersion = 7; game.pacingVersion = 6; game.cooldowns.cactus = cooldown;
       for (let row = 0; row < 3; row++) game.plants.push({
         id: game.nextId++, type: "cactus", row, col: 0, hp: 160, timer: 4, age: 2,
       });
@@ -232,7 +270,9 @@ test("선인장 초과 개수와 기존6초·새20초 대기는 업데이트·�
       expect(after.current.cooldowns.cactus).toBeLessThanOrEqual(cooldown);
       expect(after.current.cooldowns.cactus).toBeGreaterThan(cooldown - 1);
       expect(after.current.sun).toBe(data.current.sun);
-      expect(after.current.plants[0].timer).toBeGreaterThan(3);
+      expect(after.current.rulesVersion).toBe(8);
+      expect(after.current.plants[0].timer).toBeLessThanOrEqual(3);
+      expect(after.current.plants[0].timer).toBeGreaterThan(2);
     } finally { await server.stop(); }
   }
 });
@@ -277,7 +317,7 @@ test("순차 번개·선인장 충전은 업데이트와 서버 종료 후 중�
     const game = createGame(28, ["cactus", "storm"]);
     game.sun = 1000;
     plantAt(game, "cactus", 1, 0);
-    for (let step = 0; step < 54; step++) tick(game, .1);
+    for (let step = 0; step < 24; step++) tick(game, .1);
     const chainedIds = [];
     for (let index = 0; index < 6; index++) {
       const id = game.nextId++;
@@ -306,7 +346,7 @@ test("순차 번개·선인장 충전은 업데이트와 서버 종료 후 중�
     expect(after.shots).toEqual([]);
     expect(chainedIds.map(id => after.enemies.find(e => e.id === id)?.hp)).toEqual([368, 368, 368, 368, 368, 400]);
     expect(after.enemies.filter(e => e.row === 1)).toEqual([]);
-    expect(after.plants[0].shotAt).toBeGreaterThanOrEqual(6 - 1e-8);
+    expect(after.plants[0].shotAt).toBeGreaterThanOrEqual(3 - 1e-8);
     expect(after.plants[0].hp).toBe(160);
     expect(after.stats.defeated).toBe(1);
   } finally { await server.stop(); }
@@ -361,7 +401,7 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     game.plants.push({ id: game.nextId++, type: "lantern", row: 0, col: 1, hp: 140, timer: 9.5, age: 12 });
     const data = { ...freshSave(), unlocked: 10, stars: freshSave().stars.fill(3), language: "en", volume: 65, tutorialSeen: true, current: game };
     const expected = structuredClone(data);
-    expected.current.rulesVersion = 7;
+    expected.current.rulesVersion = 8;
     expected.current.cooldowns = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9, storm: 0, cactus: 0, shuriken: 0 };
     expected.current.skyTimer = 5;
     expected.current.plants[0].timer = 6;
@@ -391,7 +431,7 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     await expect(sun.locator(".cooldown")).toHaveText("4s");
     await page.locator("#pause-button").tap();
     const after = await saved(page);
-    expect(after.current.rulesVersion).toBe(7);
+    expect(after.current.rulesVersion).toBe(8);
     expect(after.current.cooldowns.sun).toBeGreaterThan(0);
     expect(after.current.cooldowns.sun).toBeLessThanOrEqual(4);
     expect(after.current.plants.at(-1).timer).toBeLessThanOrEqual(5);
