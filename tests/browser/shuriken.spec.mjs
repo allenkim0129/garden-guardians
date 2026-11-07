@@ -27,7 +27,7 @@ test("표창 실제 왕복·빈손·선인장 제한 해제·정지·회전·서
     await page.goto(server.url);
     await expect(page.locator("#offline-status")).toContainText("오프라인 준비 완료");
     const cached = await page.evaluate(async () => {
-      const cache = await caches.open((await caches.keys()).find(k => k.endsWith("-v33")));
+      const cache = await caches.open((await caches.keys()).find(k => k.endsWith("-v34")));
       return Promise.all(["shuriken", "shuriken-projectile"].map(async name => Boolean(await cache.match(new URL(`assets/sprites/${name}.png`, location.href).href))));
     });
     expect(cached).toEqual([true, true]);
@@ -58,9 +58,12 @@ test("표창 실제 왕복·빈손·선인장 제한 해제·정지·회전·서
     await page.waitForTimeout(200);
     await page.locator("#pause-button").tap();
     const restored = await stored(page);
+    const expected = structuredClone(paused.current);
+    const steps = Math.round((restored.current.time - expected.time) * 30);
+    for (let i = 0; i < steps; i++) tick(expected, 1 / 30);
     expect(restored.current.shots).toHaveLength(1);
-    expect(restored.current.shots[0].id).toBe(paused.current.shots[0].id);
-    expect(restored.current.enemies.map(e => e.hp)).toEqual(paused.current.enemies.map(e => e.hp));
+    expect(restored.current.shots).toEqual(expected.shots);
+    expect(restored.current.enemies).toEqual(expected.enemies);
     expect(restored.current.loadout).toEqual(["shuriken", "cactus"]);
     expect(errors).toEqual([]);
   } finally { await server.stop(); }
@@ -139,7 +142,7 @@ test("승인 몸체 12프레임의 손·접지와 별도 표창 회전·빈손 �
   await page.screenshot({ path: testInfo.outputPath("shuriken-hands.png") });
 });
 
-for (const name of ["shuriken", "shuriken-projectile"]) {
+for (const name of ["shuriken", "shuriken-projectile", "sprinkler"]) {
   test(`필수 ${name} 이미지 실패는 재시도 안내를 표시`, async ({ page }) => {
     await page.route(`**/assets/sprites/${name}.png`, route => route.abort());
     await page.goto("/");

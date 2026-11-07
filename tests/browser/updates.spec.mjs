@@ -115,7 +115,7 @@ async function releaseServer(legacy = false) {
     },
   };
 }
-test("v31 공격 저장은 명시적 업데이트·오프라인 뒤 rules9로 한 번만 안전 이관", async ({ page }) => {
+test("v31 공격 저장은 명시적 업데이트·오프라인 뒤 rules10로 한 번만 안전 이관", async ({ page }) => {
   const server = await releaseServer();
   try {
     const game = createGame(22, ["shuriken", "cactus"]); game.sun = 2000;
@@ -129,7 +129,7 @@ test("v31 공격 저장은 명시적 업데이트·오프라인 뒤 rules9로 �
     game.cooldowns.cactus = 17;
     const data = { ...freshSave(), unlocked: 22, stars: freshSave().stars.fill(3), tutorialSeen: true,
       language: "en", volume: 67, teamSlots: ["shuriken", null, "cactus", null, null, null, null, null], current: game };
-    const expected = structuredClone(data); expected.current.rulesVersion = 9; expected.current.plants[1].timer = 3;
+    const expected = structuredClone(data); expected.current.rulesVersion = 10; expected.current.plants[1].timer = 3;
     expected.current.cooldowns.cactus = 16;
     await page.goto(`${server.url}manifest.webmanifest`);
     await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
@@ -171,6 +171,44 @@ async function installNext(page, server) {
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration()).update(); });
   await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration()).waiting))).toBe(true);
 }
+
+test("물뿌리 비중첩 기본 작업량·표창 가속은 명시적 업데이트·오프라인 후 한 번만 적용", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(22, ["sun", "sprinkler", "shuriken"]); game.sun = 5000;
+    plantAt(game, "sun", 2, 2); plantAt(game, "sprinkler", 1, 1);
+    game.cooldowns.sprinkler = 0; plantAt(game, "sprinkler", 3, 1);
+    plantAt(game, "shuriken", 2, 0);
+    game.time = 4;
+    Object.assign(game.plants[0], { age: 4, producedAt: 0, timer: 4 });
+    game.enemies.push({ id: game.nextId++, type: "barrel", row: 2, x: 900, hp: 400, age: 0, slow: 0, eating: false });
+    tick(game, .05); game.effects = [];
+    const data = { ...freshSave(), unlocked: 22, stars: freshSave().stars.fill(2), tutorialSeen: true,
+      language: "en", volume: 67, teamSlots: ["sun", "sprinkler", null, "shuriken", null, null, null, null], current: game };
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await installNext(page, server);
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.current}`);
+    expect(await saved(page)).toEqual(data);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await server.stop(); await page.reload();
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    expect(await saved(page)).toEqual(data);
+    await page.locator("#resume-button").tap();
+    await page.locator("#pause-button").tap();
+    const after = await saved(page), elapsed = after.current.time - game.time;
+    expect(after.current.plants[0].timer).toBeCloseTo(game.plants[0].timer - elapsed * 8 / 6, 6);
+    expect(after.current.shots[0].x).toBeCloseTo(game.shots[0].x + elapsed * 540, 6);
+    expect(after.current.shots[0].outHits).toEqual(game.shots[0].outHits);
+    expect(after.teamSlots).toEqual(data.teamSlots);
+    expect(after.stars).toEqual(data.stars);
+    expect(after.language).toBe("en"); expect(after.volume).toBe(67);
+  } finally { await server.stop(); }
+});
 
 test("v26·v30 업데이트는 기존 시간표와 새 정비 구간의 남은 시간을 각각 보존", async ({ page }) => {
   for (const pacingVersion of [5, 6, 7]) {
@@ -273,7 +311,7 @@ test("선인장 세 개와 기존6초·20초 대기는 업데이트·오프라�
       expect(after.current.cooldowns.cactus).toBeLessThanOrEqual(Math.min(cooldown, 16));
       expect(after.current.cooldowns.cactus).toBeGreaterThan(Math.min(cooldown, 16) - 1);
       expect(after.current.sun).toBe(data.current.sun);
-      expect(after.current.rulesVersion).toBe(9);
+      expect(after.current.rulesVersion).toBe(10);
       expect(after.current.plants[0].timer).toBeLessThanOrEqual(3);
       expect(after.current.plants[0].timer).toBeGreaterThan(2);
     } finally { await server.stop(); }
@@ -310,7 +348,7 @@ test("v32 선인장 두 개 저장도 명시적 업데이트·오프라인에서
     expect(after.current.sun).toBe(400);
     expect(after.current.cooldowns.cactus).toBeGreaterThan(15);
     expect(after.current.cooldowns.cactus).toBeLessThanOrEqual(16);
-    expect(after.current.rulesVersion).toBe(9);
+    expect(after.current.rulesVersion).toBe(10);
     await page.reload();
     expect(await saved(page)).toEqual(after);
   } finally { await server.stop(); }
@@ -440,8 +478,8 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     game.plants.push({ id: game.nextId++, type: "lantern", row: 0, col: 1, hp: 140, timer: 9.5, age: 12 });
     const data = { ...freshSave(), unlocked: 10, stars: freshSave().stars.fill(3), language: "en", volume: 65, tutorialSeen: true, current: game };
     const expected = structuredClone(data);
-    expected.current.rulesVersion = 9;
-    expected.current.cooldowns = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9, storm: 0, cactus: 0, shuriken: 0 };
+    expected.current.rulesVersion = 10;
+    expected.current.cooldowns = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9, storm: 0, cactus: 0, shuriken: 0, sprinkler: 0 };
     expected.current.skyTimer = 5;
     expected.current.plants[0].timer = 6;
     expected.current.plants[1].timer = 8;
@@ -470,7 +508,7 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     await expect(sun.locator(".cooldown")).toHaveText("4s");
     await page.locator("#pause-button").tap();
     const after = await saved(page);
-    expect(after.current.rulesVersion).toBe(9);
+    expect(after.current.rulesVersion).toBe(10);
     expect(after.current.cooldowns.sun).toBeGreaterThan(0);
     expect(after.current.cooldowns.sun).toBeLessThanOrEqual(4);
     expect(after.current.plants.at(-1).timer).toBeLessThanOrEqual(5);

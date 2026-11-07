@@ -1,5 +1,5 @@
-import { PLANTS, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, LASER_DURATION, boardColumns, boardWidth, enemyMaxHp } from "./engine.js";
-import { drawSprite, drawGearSprite, drawShuriken, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION, SPRITE_CELL, CACTUS_MUZZLES, SHURIKEN_HANDS, SHURIKEN_SIZE } from "./sprites.js";
+import { PLANTS, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, LASER_DURATION, boardColumns, boardWidth, enemyMaxHp, isWatered, sprinklerTargets } from "./engine.js";
+import { drawSprite, drawGearSprite, drawShuriken, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION, SPRITE_CELL, CACTUS_MUZZLES, SHURIKEN_HANDS, SHURIKEN_SIZE, SPRINKLER_NOZZLES } from "./sprites.js";
 
 const ink = "#304b3d";
 function ellipse(c, x, y, rx, ry, fill, stroke = null, width = 3) {
@@ -243,7 +243,40 @@ export function cactusLaserOrigin(plant, game) {
     y: plant.row * 100 + 53 + 31 * .9 + (y - SPRITE_CELL.anchorY) * scale,
   };
 }
+export function sprinklerWaterPaths(plant, game) {
+  const frame = plantFrame(plant, game);
+  if (frame.state !== "watering") return [];
+  const scale = SPRITE_CELL.scale * .9;
+  return sprinklerTargets(game, plant).map(target => {
+    const nozzle = (target.row < plant.row ? 0 : 2) + (target.col < plant.col ? 0 : 1);
+    const [x, y] = SPRINKLER_NOZZLES[frame.col][nozzle];
+    return {
+      targetId: target.id,
+      x: plant.col * 100 + 50 + (x - SPRITE_CELL.anchorX) * scale,
+      y: plant.row * 100 + 53 + 31 * .9 + (y - SPRITE_CELL.anchorY) * scale,
+      toX: target.col * 100 + 50, toY: target.row * 100 + 65,
+    };
+  });
+}
+function drawWater(c, plant, game) {
+  for (const path of sprinklerWaterPaths(plant, game)) {
+    const cx = (path.x + path.toX) / 2, cy = Math.max(3, Math.min(path.y, path.toY) - 30);
+    c.save();
+    c.globalAlpha = .5;
+    c.beginPath(); c.moveTo(path.x, path.y); c.quadraticCurveTo(cx, cy, path.toX, path.toY);
+    c.strokeStyle = "#239ec6"; c.lineWidth = 3; c.stroke();
+    c.globalAlpha = .9;
+    for (let i = 0; i < 4; i++) {
+      const t = (plant.age * 1.8 + i / 4) % 1, u = 1 - t;
+      const x = u * u * path.x + 2 * u * t * cx + t * t * path.toX;
+      const y = u * u * path.y + 2 * u * t * cy + t * t * path.toY;
+      ellipse(c, x, y, 2.4, 3.4, "#c4f6ff", "#298eae", 1);
+    }
+    c.restore();
+  }
+}
 export function drawBoard(c, game, selected, shovel) {
+  c.save();
   const columns = boardColumns(game);
   c.clearRect(0, 0, boardWidth(game), 500);
   const moon = STAGES[game.stage - 1].theme === "moon";
@@ -285,8 +318,30 @@ export function drawBoard(c, game, selected, shovel) {
     }
   }
   c.fillStyle = moon ? "#b4b1f555" : "#6f9d5a35"; c.fillRect(0, 0, 8, 500);
+  if (game.status === "playing") {
+    const covered = new Set();
+    for (const source of game.plants.filter(p => p.type === "sprinkler" && p.hp > 0)) {
+      for (let row = Math.max(0, source.row - 1); row <= Math.min(4, source.row + 1); row++) {
+        for (let col = Math.max(0, source.col - 1); col <= Math.min(columns - 1, source.col + 1); col++) {
+          if (row !== source.row || col !== source.col) covered.add(row * columns + col);
+        }
+      }
+    }
+    c.save(); c.setLineDash([6, 5]); c.lineWidth = 1.5;
+    c.fillStyle = "#5bcde018"; c.strokeStyle = "#278aaa99";
+    for (const cell of covered) {
+      const x = cell % columns * 100, y = Math.floor(cell / columns) * 100;
+      c.fillRect(x + 3, y + 3, 94, 94); c.strokeRect(x + 3, y + 3, 94, 94);
+    }
+    c.restore();
+  }
   for (let row = 0; row < 5; row++) {
     for (const plant of game.plants.filter(p => p.row === row)) {
+      if (game.status === "playing" && isWatered(game, plant)) {
+        ellipse(c, plant.col * 100 + 50, row * 100 + 83, 24, 5, "#a9efff55", "#278aaa", 1.5);
+        for (const offset of [0, 7]) line(c, [[plant.col * 100 + 77, row * 100 + 73 - offset],
+          [plant.col * 100 + 82, row * 100 + 68 - offset], [plant.col * 100 + 87, row * 100 + 73 - offset]], "#176f8b", 2.5);
+      }
       drawPlant(c, plant.type, plant.col * 100 + 50, row * 100 + 53, .9, game.time, plantFrame(plant, game),
         !game.shots.some(s => s.kind === "shuriken" && s.plantId === plant.id));
       if (plant.hp < PLANTS[plant.type].hp * .95) healthBar(c, plant.col * 100 + 50, row * 100 + 91, plant.hp / PLANTS[plant.type].hp, "#4e8753");
@@ -300,6 +355,7 @@ export function drawBoard(c, game, selected, shovel) {
       if (enemy.hp < enemyMaxHp(enemy)) healthBar(c, enemy.x, row * 100 + 91, enemy.hp / enemyMaxHp(enemy), "#b97c68");
     }
   }
+  for (const plant of game.plants.filter(p => p.type === "sprinkler" && p.hp > 0)) drawWater(c, plant, game);
   for (const shot of game.shots) if (!(shot.kind === "storm" && shot.hitIds)) drawProjectile(c, shot, game);
   for (const plant of game.plants.filter(p => p.type === "cactus")) {
     const elapsed = game.status === "playing" ? game.time - (plant.shotAt ?? -100)
@@ -351,6 +407,7 @@ export function drawBoard(c, game, selected, shovel) {
     }
     c.restore();
   }
+  c.restore();
 }
 function healthBar(c, x, y, fraction, color) {
   rounded(c, x - 22, y, 44, 5, 3, "#536a4d30");

@@ -15,7 +15,7 @@ async function fixture(page, game = null) {
   await page.locator("#resume-button").tap();
 }
 
-test("19종과 장비 없는 252개 프레임의 픽셀 차이·투명 테두리·접지·모든 카드 일치", async ({ page }) => {
+test("21종과 장비 없는 276개 프레임의 픽셀 차이·투명 테두리·접지·모든 카드 일치", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("body")).toHaveAttribute("data-sprites-ready", "true");
   const report = await page.evaluate(async () => {
@@ -64,7 +64,7 @@ test("19종과 장비 없는 252개 프레임의 픽셀 차이·투명 테두리
     });
     return { results, anchorY: SPRITE_CELL.anchorY, cards };
   });
-  expect(report.results).toHaveLength(21);
+  expect(report.results).toHaveLength(23);
   for (const card of report.cards) {
     expect(card.sameIcon).toBe(true);
     expect(card.card).toBe(true);

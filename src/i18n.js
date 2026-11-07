@@ -3,6 +3,12 @@ export const getLanguage = () => language;
 export function setLanguage(value) { language = value === "en" ? "en" : "ko"; }
 
 const messages = {
+  "물뿌리": "Sprinkler",
+  "가속": "Boost",
+  "주변 8칸 가속 · 중첩 없음": "8-neighbor boost · No stacking",
+  "대각선 포함 주변 8칸의 공격·햇빛 생산 간격을 2초 줄여요(최소 0.5초). 첫 생산·선인장 첫 공격도 빨라지고, 표창잎은 표창 속도가 1.5배! 여러 물뿌리가 겹쳐도 중첩되지 않아요. 방어·폭탄·물뿌리와 카드 재배치 시간은 그대로예요.": "Reduces attack and sunlight-production intervals in the 8 neighboring tiles, including diagonals, by 2s (minimum 0.5s). First harvests and Cactus's first attack also speed up; Shuriken Leaf's projectile flies 1.5x faster! Multiple Sprinklers do not stack. Defenders, Burstbud, Sprinklers and replant cooldowns are unchanged.",
+  "새 친구 물뿌리! 대각선 포함 주변 8칸의 공격·햇빛 생산을 빠르게 해요. 파란 테두리와 화살표로 효과를 확인해요.": "Meet Sprinkler! Speeds up attacks and sunlight production in the 8 neighboring tiles, including diagonals. Blue outlines and arrows show the effect.",
+  "11번째 정원을 지키면 물뿌리를 얻어요. 주변 8칸의 파란 테두리는 범위, 식물 옆 화살표는 가속 표시예요. 콩별이 1.6→0.5초, 선인장 3→1초, 햇살봉 8→6초! 첫 생산도 2초 빨라지고 표창 속도는 360→540이 돼요. 물뿌리를 뽑거나 잃으면 원래 속도로 돌아가며 진행률은 유지돼요. 여러 개도 중첩되지 않아요.": "Win garden 11 to earn Sprinkler. Blue outlines mark its 8-neighbor range; arrows beside plants show the boost. Peabud: 1.6→0.5s, Cactus: 3→1s, Sunbell: 8→6s! First harvests are 2s sooner and shuriken speed rises from 360 to 540. Digging up or losing Sprinkler restores normal speed without resetting progress. Multiple Sprinklers do not stack.",
   "표창잎": "Shuriken Leaf",
   "14번째 정원을 지키면 15단계부터 표창잎을 골라요. 표창은 같은 줄 끝까지 갔다 돌아오며 각각 36 피해를 주고, 돌아오면 바로 다시 던져요.": "Win garden 14 to choose Shuriken Leaf from garden 15. Its shuriken travels to the lane edge and back for 36 damage each way, then is thrown again immediately.",
   "손의 표창이 같은 줄 오른쪽 끝까지 날아갔다 돌아와요. 갈 때와 올 때 적마다 한 번씩 36 피해! 한 개만 날리며 회수 즉시 다시 던져요. 가까이 심으면 빨리 돌아오지만 좀비에게 물리기 쉬워요.": "Throws the shuriken in its hand to the right edge of its lane and back, dealing 36 damage per enemy on each pass! One in flight; throws again immediately on return. Planting closer shortens the trip but risks zombie bites.",

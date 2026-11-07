@@ -1,6 +1,6 @@
 const BASE = new URL("./", self.location.href);
 const CACHE_PREFIX = `garden-guardians-${encodeURIComponent(BASE.pathname)}-`;
-const CACHE = `${CACHE_PREFIX}v33`;
+const CACHE = `${CACHE_PREFIX}v34`;
 const FILES = [
   "./", "./index.html", "./styles.css", "./src/app.js", "./src/engine.js",
   "./src/art.js", "./src/audio.js", "./src/storage.js", "./src/sprites.js", "./src/i18n.js", "./manifest.webmanifest",
@@ -10,6 +10,7 @@ const FILES = [
   "./assets/sprites/twin.png", "./assets/sprites/thorn.png", "./assets/sprites/pumpkin.png", "./assets/sprites/lantern.png", "./assets/sprites/iron.png",
   "./assets/sprites/ember.png",
   "./assets/sprites/shuriken.png", "./assets/sprites/shuriken-projectile.png",
+  "./assets/sprites/sprinkler.png",
   "./assets/sprites/storm.png", "./assets/sprites/cactus.png", "./assets/sprites/barrel.png", "./assets/sprites/courier.png",
   "./assets/sprites/barrel-bare.png", "./assets/sprites/courier-bare.png", "./assets/sprites/desert-gear.png",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png", "./icons/apple-touch-icon.png",

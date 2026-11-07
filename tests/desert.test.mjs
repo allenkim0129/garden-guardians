@@ -263,7 +263,7 @@ test("기존 선인장3개와 남은6초를 보존하고 대기 후 네 번째�
   const data = { ...freshSave(), unlocked: 28, current: snapshot(game) };
   const loaded = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(loaded.error, null);
-  assert.deepEqual(loaded.data, { ...data, current: { ...data.current, rulesVersion: 9,
+  assert.deepEqual(loaded.data, { ...data, current: { ...data.current, rulesVersion: 10,
     plants: data.current.plants.map(p => ({ ...p, timer: 3 })) } });
   const restored = loaded.data.current;
   advance(restored, 6);
@@ -340,7 +340,7 @@ test("v31 공격 타이머는 최대3초로 한 번만 이관하고 초과 선�
     teamSlots: ["cactus", null, "shuriken", null, null, null, null, null], current: snapshot(game) };
   const loaded = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(loaded.error, null);
-  const expected = structuredClone(data); expected.current.rulesVersion = 9;
+  const expected = structuredClone(data); expected.current.rulesVersion = 10;
   expected.current.cooldowns.cactus = 16;
   expected.current.plants[0].timer = 3; expected.current.plants[1].timer = 3;
   assert.deepEqual(loaded.data, expected);
@@ -382,7 +382,7 @@ test("v33 이전 재배치20초는 검증 후16초로만 줄이고 공격·생�
       teamSlots: ["cactus", null, "shuriken", null, null, null, null, null], current: snapshot(game) };
     const loaded = readSave({ getItem: () => JSON.stringify(data) });
     assert.equal(loaded.error, null);
-    const expected = structuredClone(data); expected.current.rulesVersion = 9;
+    const expected = structuredClone(data); expected.current.rulesVersion = 10;
     expected.current.cooldowns.cactus = Math.min(remaining, 16);
     assert.deepEqual(loaded.data, expected);
     assert.deepEqual(readSave({ getItem: () => JSON.stringify(loaded.data) }).data, expected);
@@ -397,7 +397,7 @@ test("v33 이전 재배치20초는 검증 후16초로만 줄이고 공격·생�
   assert.equal(PLANTS.lantern.interval, 10);
   assert.deepEqual(Object.fromEntries(Object.entries(PLANTS).map(([type, plant]) => [type, plant.recharge])), {
     sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9,
-    lantern: 9, iron: 12, ember: 9, storm: 10, cactus: 16, shuriken: 10,
+    lantern: 9, iron: 12, ember: 9, storm: 10, cactus: 16, shuriken: 10, sprinkler: 12,
   });
 });
 
@@ -429,7 +429,7 @@ test("v23 별20칸·팀빈칸·진행·발사체 보존, 마지막 클리어 때
     const restored = readSave({ getItem: () => JSON.stringify(old) });
     assert.equal(restored.error, null);
     assert.deepEqual(restored.data, { ...old, unlocked: cleared ? 21 : 20, stars: [...old.stars, ...Array(10).fill(0)],
-      current: { ...old.current, rulesVersion: 9, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
+      current: { ...old.current, rulesVersion: 10, cooldowns: { ...old.current.cooldowns, storm: 0, cactus: 0 } } });
     assert.equal(restored.data.current.shots[0].damage, 24);
     advance(restored.data.current, .2);
     assert.equal(restored.data.current.shots[1].damage, 33);

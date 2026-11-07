@@ -54,7 +54,7 @@ test("선인장 세 개 저장에서 양언어로 네 번째 배치·16초 대�
     expect(after.current.sun).toBe(1000);
     expect(after.current.cooldowns.cactus).toBeGreaterThan(12);
     expect(after.current.cooldowns.cactus).toBeLessThanOrEqual(16);
-    expect(after.current.rulesVersion).toBe(9);
+    expect(after.current.rulesVersion).toBe(10);
     await page.reload();
     expect(await stored(page)).toEqual(after);
     await page.locator("#resume-button").tap();
@@ -144,8 +144,9 @@ test("사막 배경은 모래색이고 기존 햇살·달빛 정원의 색과 �
   expect(colors[2][1]).toBeGreaterThan(colors[2][2]);
 });
 
-test("14·18·21 첫 클리어만 새 식물 획득, 재도전 중복 없음", async ({ page }) => {
-  for (const [stage, type, name] of [[14, "shuriken", "표창잎"], [18, "storm", "번개가시"], [21, "cactus", "선인장"]]) {
+test("11·14·18·21 첫 클리어만 새 식물 획득, 재도전 중복 없음", async ({ page }) => {
+  test.setTimeout(90000);
+  for (const [stage, type, name] of [[11, "sprinkler", "물뿌리"], [14, "shuriken", "표창잎"], [18, "storm", "번개가시"], [21, "cactus", "선인장"]]) {
     for (const replay of [false, true]) {
       const game = createGame(stage); game.nextSpawn = STAGES[stage - 1].count; game.time = 210;
       const stars = freshSave().stars;

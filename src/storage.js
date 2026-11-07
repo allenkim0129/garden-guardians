@@ -53,7 +53,7 @@ export function readSave(storage) {
       if ((data.current.rulesVersion ?? 1) < 9) {
         data.current.cooldowns.cactus = Math.min(data.current.cooldowns.cactus, PLANTS.cactus.recharge);
       }
-      data.current.rulesVersion = 9;
+      data.current.rulesVersion = 10;
     }
     return { data, error: null, notice };
   } catch (error) {

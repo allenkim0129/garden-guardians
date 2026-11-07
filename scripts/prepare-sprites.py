@@ -9,6 +9,17 @@ CELL = (320, 224)
 ANCHOR = (192, 210)
 SCALE = 0.66
 SHEETS = {
+    "sprinkler": {
+        "size": (1448, 1086), "rows": [0, 362, 724, 1086], "scale": .56,
+        "roots": [211, 202, 169, 162, 213, 201, 176, 166, 222, 199, 174, 167],
+        "states": ["idle", "watering", "hurt"],
+        "nozzles": {
+            4: [(129, 54), (204, 25), (159, 86), (236, 53)],
+            5: [(141, 34), (222, 27), (137, 79), (249, 56)],
+            6: [(116, 34), (196, 29), (115, 80), (227, 70)],
+            7: [(108, 45), (192, 30), (120, 81), (221, 71)],
+        },
+    },
     "shuriken": {
         "size": (1254, 1254), "rows": [0, 420, 830, 1254], "scale": .49,
         "columns": {0: [0, 313, 627, 940, 1254], 1: [0, 313, 645, 967, 1254], 2: [0, 313, 627, 940, 1254]},
@@ -253,6 +264,12 @@ def build(names, source_dir, suffix, props_source):
                 "sourceBounds": source_bounds, "sourceRoot": source_root, "scale": scale, "flipped": flipped,
                 "alignedBounds": [left, top, left + size[0], top + size[1]],
             })
+            if index in spec.get("nozzles", {}):
+                frames[-1]["nozzles"] = [
+                    [round(left + (x - bounds[0]) * size[0] / cropped.width, 2),
+                     round(top + (y - bounds[1]) * size[1] / cropped.height, 2)]
+                    for x, y in spec["nozzles"][index]
+                ]
         destination = output / f"{name}.png"
         atlas.save(destination, optimize=True)
         if bare_atlas is not None:
@@ -274,7 +291,7 @@ def build(names, source_dir, suffix, props_source):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--names", nargs="+", choices=SHEETS,
-                        default=[name for name in SHEETS if name not in {"cactus", "storm", "barrel", "courier", "shuriken"}])
+                        default=[name for name in SHEETS if name not in {"cactus", "storm", "barrel", "courier", "shuriken", "sprinkler"}])
     parser.add_argument("--source-dir", type=Path, default=ROOT / "art-source")
     parser.add_argument("--suffix", default="-source.png")
     parser.add_argument("--props-source", type=Path)

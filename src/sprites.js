@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, TWIN_GAP } from "./engine.js";
+import { PLANTS, ENEMIES, TWIN_GAP, plantActionRemaining, sprinklerTargets } from "./engine.js";
 
 export const SPRITE_CELL = Object.freeze({ width: 320, height: 224, anchorX: 192, anchorY: 210, scale: .48 });
 // Red orb centers measured in the approved, aligned cactus atlas.
@@ -13,6 +13,13 @@ export const SHURIKEN_HANDS = Object.freeze([
   [247.37, 108.57], [250.80, 109.55], [258.64, 112], [261.58, 112],
 ]);
 export const SHURIKEN_SIZE = 54;
+// Watering-row nozzle tips: upper-left, upper-right, lower-left, lower-right.
+export const SPRINKLER_NOZZLES = Object.freeze([
+  [[145, 45.74], [187.16, 29.48], [161.86, 63.68], [205.15, 45.18]],
+  [[157.95, 34.95], [203.24, 31.03], [155.72, 60.12], [218.34, 47.25]],
+  [[158.8, 35.15], [203.6, 32.35], [158.24, 60.84], [220.96, 55.26]],
+  [[159.22, 40.99], [206.12, 32.6], [165.92, 61.14], [222.31, 55.54]],
+]);
 export const PROJECTILE_URLS = Object.freeze({
   "shuriken-projectile": new URL("../assets/sprites/shuriken-projectile.png", import.meta.url).href,
 });
@@ -54,6 +61,15 @@ function actionFrame(time, happenedAt, timer, state) {
   return null;
 }
 export function plantFrame(plant, game) {
+  if (plant.type === "sprinkler") {
+    const hurt = game.time - (plant.hurtAt ?? -100);
+    if (hurt >= 0 && hurt < .48) return { state: "hurt", row: 2, col: Math.min(3, Math.floor(hurt / .12)) };
+    const phase = plant.age % 1.6;
+    if (game.status === "playing" && phase < .8 && sprinklerTargets(game, plant).length) {
+      return { state: "watering", row: 1, col: Math.min(3, Math.floor(phase / .2)) };
+    }
+    return { state: "idle", row: 0, col: Math.floor(plant.age * 4) % 4 };
+  }
   if (plant.type === "shuriken") {
     const flight = game.shots?.find(s => s.kind === "shuriken" && s.plantId === plant.id);
     if (flight && flight.age < .12) return { state: "fire", row: 1, col: 1 };
@@ -76,10 +92,10 @@ export function plantFrame(plant, game) {
   } else if ((PLANTS[plant.type].damage && plant.type !== "shuriken") || plant.type === "cactus") {
     const targetAhead = game.enemies.some(enemy => enemy.hp > 0 && enemy.row === plant.row
       && (plant.type === "cactus" ? enemy.x > plant.col * 100 + 50 : enemy.x >= plant.col * 100 + 40));
-    const frame = actionFrame(game.time, plant.shotAt, targetAhead ? plant.timer : 0, "fire");
+    const frame = actionFrame(game.time, plant.shotAt, targetAhead ? plantActionRemaining(game, plant) : 0, "fire");
     if (frame) return frame;
   } else if (plant.type === "sun" || plant.type === "lantern") {
-    const frame = actionFrame(game.time, plant.producedAt, plant.timer, "produce");
+    const frame = actionFrame(game.time, plant.producedAt, plantActionRemaining(game, plant), "produce");
     if (frame) return frame;
   }
   const sinceHurt = game.time - (plant.hurtAt ?? -100);

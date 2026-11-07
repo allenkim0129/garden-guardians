@@ -56,14 +56,14 @@ test("v19 클리어 여부로 11단계만 해금하고 두 테마 선택·8종 �
   }
 });
 
-test("10단계 승리는 달빛 온실로 이어지고 11단계는 12단계만 해금", async ({ page }) => {
+test("10단계 승리는 달빛 온실로 이어지고 11단계는 물뿌리·12단계를 해금", async ({ page }) => {
   for (const stage of [10, 11]) {
     const game = createGame(stage); game.nextSpawn = STAGES[stage - 1].count; game.time = 200;
     await seed(page, { ...freshSave(), unlocked: stage, tutorialSeen: true, current: game });
     await page.locator("#resume-button").tap();
     await expect(page.locator("#modal-title")).toHaveText("정원을 지켰어요!");
     if (stage === 10) await expect(page.locator("#modal-body")).toContainText("달빛 온실이 열렸어요");
-    await expect(page.locator(".plant-unlocks")).toHaveCount(0);
+    await expect(page.locator(".plant-unlocks")).toHaveCount(stage === 11 ? 1 : 0);
     const data = await stored(page);
     expect(data.unlocked).toBe(stage + 1);
     expect(data.stars[stage - 1]).toBe(3);

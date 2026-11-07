@@ -156,7 +156,7 @@ test("v30 저장은 팀·별·자원·기존 쿨다운을 유지하고 표창 �
   const data = { ...freshSave(), unlocked: 20, current: old, teamSlots: ["sun", "storm", null, null, null, null, null, null] };
   const loaded = readSave({ getItem: () => JSON.stringify(data) });
   assert.equal(loaded.error, null);
-  assert.deepEqual(loaded.data, { ...data, current: { ...old, rulesVersion: 9, cooldowns: { ...old.cooldowns, shuriken: 0 } } });
+  assert.deepEqual(loaded.data, { ...data, current: { ...old, rulesVersion: 10, cooldowns: { ...old.cooldowns, shuriken: 0 } } });
   const missing = createGame(20); delete missing.cooldowns.shuriken;
   assert.equal(validSnapshot(missing), false);
 });
@@ -185,7 +185,7 @@ test("v31 비행 중 표창은 32 피해·방향·명중 기록을 보존하고 
     const before = snapshot(game);
     const loaded = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: 15, current: before }) });
     assert.equal(loaded.error, null);
-    assert.deepEqual(loaded.data.current, { ...before, rulesVersion: 9 });
+    assert.deepEqual(loaded.data.current, { ...before, rulesVersion: 10 });
     const restored = loaded.data.current, firstId = restored.shots[0].id;
     advance(restored, .3, .01, true);
     assert.equal(restored.shots.length, 1);

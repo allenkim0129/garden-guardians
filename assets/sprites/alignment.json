@@ -6430,6 +6430,416 @@
           210
         ]
       }
+    ],
+    "sprinkler": [
+      {
+        "state": "idle",
+        "column": 0,
+        "sourceCell": [
+          0,
+          0,
+          362,
+          362
+        ],
+        "sourceBounds": [
+          113,
+          28,
+          300,
+          355
+        ],
+        "sourceRoot": [
+          211,
+          355
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          137,
+          27,
+          242,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 1,
+        "sourceCell": [
+          362,
+          0,
+          724,
+          362
+        ],
+        "sourceBounds": [
+          104,
+          24,
+          293,
+          355
+        ],
+        "sourceRoot": [
+          202,
+          355
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          137,
+          25,
+          243,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 2,
+        "sourceCell": [
+          724,
+          0,
+          1086,
+          362
+        ],
+        "sourceBounds": [
+          82,
+          28,
+          260,
+          355
+        ],
+        "sourceRoot": [
+          169,
+          355
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          143,
+          27,
+          243,
+          210
+        ]
+      },
+      {
+        "state": "idle",
+        "column": 3,
+        "sourceCell": [
+          1086,
+          0,
+          1448,
+          362
+        ],
+        "sourceBounds": [
+          69,
+          29,
+          252,
+          355
+        ],
+        "sourceRoot": [
+          162,
+          355
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          140,
+          27,
+          242,
+          210
+        ]
+      },
+      {
+        "state": "watering",
+        "column": 0,
+        "sourceCell": [
+          0,
+          362,
+          362,
+          724
+        ],
+        "sourceBounds": [
+          113,
+          17,
+          314,
+          347
+        ],
+        "sourceRoot": [
+          213,
+          347
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          136,
+          25,
+          249,
+          210
+        ],
+        "nozzles": [
+          [
+            145.0,
+            45.74
+          ],
+          [
+            187.16,
+            29.48
+          ],
+          [
+            161.86,
+            63.68
+          ],
+          [
+            205.15,
+            45.18
+          ]
+        ]
+      },
+      {
+        "state": "watering",
+        "column": 1,
+        "sourceCell": [
+          362,
+          362,
+          724,
+          724
+        ],
+        "sourceBounds": [
+          91,
+          18,
+          311,
+          347
+        ],
+        "sourceRoot": [
+          201,
+          347
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          130,
+          26,
+          253,
+          210
+        ],
+        "nozzles": [
+          [
+            157.95,
+            34.95
+          ],
+          [
+            203.24,
+            31.03
+          ],
+          [
+            155.72,
+            60.12
+          ],
+          [
+            218.34,
+            47.25
+          ]
+        ]
+      },
+      {
+        "state": "watering",
+        "column": 2,
+        "sourceCell": [
+          724,
+          362,
+          1086,
+          724
+        ],
+        "sourceBounds": [
+          61,
+          23,
+          286,
+          347
+        ],
+        "sourceRoot": [
+          176,
+          347
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          128,
+          29,
+          254,
+          210
+        ],
+        "nozzles": [
+          [
+            158.8,
+            35.15
+          ],
+          [
+            203.6,
+            32.35
+          ],
+          [
+            158.24,
+            60.84
+          ],
+          [
+            220.96,
+            55.26
+          ]
+        ]
+      },
+      {
+        "state": "watering",
+        "column": 3,
+        "sourceCell": [
+          1086,
+          362,
+          1448,
+          724
+        ],
+        "sourceBounds": [
+          70,
+          20,
+          267,
+          347
+        ],
+        "sourceRoot": [
+          166,
+          347
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          138,
+          27,
+          248,
+          210
+        ],
+        "nozzles": [
+          [
+            159.22,
+            40.99
+          ],
+          [
+            206.12,
+            32.6
+          ],
+          [
+            165.92,
+            61.14
+          ],
+          [
+            222.31,
+            55.54
+          ]
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 0,
+        "sourceCell": [
+          0,
+          724,
+          362,
+          1086
+        ],
+        "sourceBounds": [
+          118,
+          8,
+          302,
+          337
+        ],
+        "sourceRoot": [
+          222,
+          337
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          134,
+          26,
+          237,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 1,
+        "sourceCell": [
+          362,
+          724,
+          724,
+          1086
+        ],
+        "sourceBounds": [
+          106,
+          19,
+          292,
+          338
+        ],
+        "sourceRoot": [
+          199,
+          338
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          140,
+          31,
+          244,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 2,
+        "sourceCell": [
+          724,
+          724,
+          1086,
+          1086
+        ],
+        "sourceBounds": [
+          85,
+          21,
+          275,
+          338
+        ],
+        "sourceRoot": [
+          174,
+          338
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          142,
+          32,
+          248,
+          210
+        ]
+      },
+      {
+        "state": "hurt",
+        "column": 3,
+        "sourceCell": [
+          1086,
+          724,
+          1448,
+          1086
+        ],
+        "sourceBounds": [
+          70,
+          13,
+          270,
+          338
+        ],
+        "sourceRoot": [
+          167,
+          338
+        ],
+        "scale": 0.56,
+        "flipped": false,
+        "alignedBounds": [
+          138,
+          28,
+          250,
+          210
+        ]
+      }
     ]
   }
 }
