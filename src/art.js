@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, LASER_DURATION, boardColumns, boardWidth } from "./engine.js";
+import { PLANTS, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION, LASER_DURATION, boardColumns, boardWidth, enemyMaxHp } from "./engine.js";
 import { drawSprite, drawGearSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION, SPRITE_CELL, CACTUS_MUZZLES } from "./sprites.js";
 
 const ink = "#304b3d";
@@ -277,7 +277,7 @@ export function drawBoard(c, game, selected, shovel) {
       if (enemy.burn > 0) {
         for (let i = 0; i < 3; i++) drawFlame(c, enemy.x + (i - 1) * 18, row * 100 + 65 + i % 2 * 6, .65 + Math.sin(game.time * 8 + i) * .1, game.time + i);
       }
-      if (enemy.hp < ENEMIES[enemy.type].hp) healthBar(c, enemy.x, row * 100 + 91, enemy.hp / ENEMIES[enemy.type].hp, "#b97c68");
+      if (enemy.hp < enemyMaxHp(enemy)) healthBar(c, enemy.x, row * 100 + 91, enemy.hp / enemyMaxHp(enemy), "#b97c68");
     }
   }
   for (const shot of game.shots) if (!(shot.kind === "storm" && shot.hitIds)) drawProjectile(c, shot);

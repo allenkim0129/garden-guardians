@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createGame, plantAt, tick, snapshot, STAGES, ENEMIES } from "../../src/engine.js";
+import { createGame, plantAt, tick, snapshot, STAGES, enemyHealth, enemyMaxHp } from "../../src/engine.js";
 import { freshSave, SAVE_KEY } from "../../src/storage.js";
 import { confirmTeam, selectStage } from "../helpers/browser.mjs";
 import { isolatedServer } from "../helpers/server.mjs";
@@ -12,7 +12,8 @@ async function seed(page, data, url = "/") {
   await expect(page.locator("#offline-status")).toContainText(/오프라인 준비 완료|Offline ready/);
 }
 function enemy(game, type, row, x) {
-  game.enemies.push({ id: game.nextId++, type, row, x, hp: ENEMIES[type].hp, slow: 0, age: 0, eating: false });
+  const maxHp = enemyHealth(type, game.stage, game.pacingVersion);
+  game.enemies.push({ id: game.nextId++, type, row, x, hp: maxHp, maxHp, slow: 0, age: 0, eating: false });
 }
 
 test("테마 탭은 10단계씩 표시·키보드·언어·44px·회전·탐색 중 저장 불변", async ({ page }, testInfo) => {
@@ -203,7 +204,8 @@ test("사막 새 캐릭터·장비·기존 쌍콩이 예약·연쇄 그림·소�
     await page.waitForTimeout(6000);
     await page.locator("#pause-button").tap();
     const battle = await stored(page);
-    expect(battle.current.enemies.some(e => e.hp < ENEMIES[e.type].hp)).toBe(true);
+    expect(battle.current.enemies.some(e => e.hp < enemyMaxHp(e))).toBe(true);
+    expect(battle.current.enemies.find(e => e.type === "courier")).toMatchObject({ maxHp: 192, equipmentDropped: true });
     expect(battle.current.enemies.filter(e => e.row === 1)).toHaveLength(0);
     expect(battle.current.plants.find(p => p.type === "cactus").shotAt).toBeGreaterThanOrEqual(6 - 1e-8);
     await page.getByRole("button", { name: "Continue", exact: true }).tap();

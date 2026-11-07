@@ -96,8 +96,8 @@ async function installNext(page, server) {
   await expect.poll(() => page.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration()).waiting))).toBe(true);
 }
 
-test("v26 업데이트는 기존 시간표와 새 정비 구간의 남은 시간을 각각 보존", async ({ page }) => {
-  for (const pacingVersion of [5, 6]) {
+test("v26·v30 업데이트는 기존 시간표와 새 정비 구간의 남은 시간을 각각 보존", async ({ page }) => {
+  for (const pacingVersion of [5, 6, 7]) {
     const server = await releaseServer();
     try {
       const game = createGame(22, ["sun", "cactus"]);
@@ -118,12 +118,50 @@ test("v26 업데이트는 기존 시간표와 새 정비 구간의 남은 시간
       await page.reload();
       await expect(page.locator("#offline-status")).toContainText("Offline ready");
       await page.locator("#resume-button").tap();
-      await expect(page.locator("#wave-status")).toHaveText(pacingVersion === 6 ? /Regroup · 2[67]s/ : "Wave 2 / 3");
+      await expect(page.locator("#wave-status")).toHaveText(pacingVersion >= 6 ? /Regroup · 2[67]s/ : "Wave 2 / 3");
       await page.locator("#pause-button").tap();
       const restored = await saved(page);
       expect(restored.current.nextSpawn).toBe(game.nextSpawn);
       expect(restored.current.pacingVersion).toBe(pacingVersion);
       expect(restored.current.time - game.time).toBeLessThan(1);
+    } finally { await server.stop(); }
+  }
+});
+
+test("v30 테마 체력과 구버전 체력은 업데이트·오프라인·재개 뒤 각각 보존", async ({ page }) => {
+  for (const pacingVersion of [6, 7]) {
+    const server = await releaseServer();
+    try {
+      const game = createGame(22, ["sun", "cactus"]);
+      game.pacingVersion = pacingVersion;
+      game.time = 35.95; game.nextSpawn = 2;
+      tick(game, .1);
+      expect(game.enemies[0].type).toBe("barrel");
+      expect(game.enemies[0].hp).toBe(pacingVersion === 7 ? 640 : 400);
+      game.enemies[0].hp -= 32;
+      const data = { ...freshSave(), unlocked: 22, tutorialSeen: true, language: "en", current: game };
+      await page.goto(`${server.url}manifest.webmanifest`);
+      await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+      await page.goto(server.url);
+      await expect(page.locator("#offline-status")).toContainText("Offline ready");
+      await page.locator("#help-button").tap();
+      await expect(page.locator("#modal-body")).toContainText("Moonlit Greenhouse uses 1.3x health");
+      await page.locator("#modal-actions .primary").tap();
+      await installNext(page, server);
+      await page.locator("#update-button").tap();
+      await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+      expect(await saved(page)).toEqual(data);
+      await server.stop();
+      await page.reload();
+      await expect(page.locator("#offline-status")).toContainText("Offline ready");
+      await page.locator("#resume-button").tap();
+      await expect(page.locator("#enemy-count")).toHaveText(`Stopped 0 / ${pacingVersion === 7 ? 42 : 132}`);
+      await page.locator("#pause-button").tap();
+      const after = await saved(page);
+      expect(after.current.enemies[0].hp).toBe(data.current.enemies[0].hp);
+      expect(after.current.enemies[0].maxHp).toBe(pacingVersion === 7 ? 640 : undefined);
+      expect(after.current.pacingVersion).toBe(pacingVersion);
+      expect(after.current.nextSpawn).toBe(3);
     } finally { await server.stop(); }
   }
 });

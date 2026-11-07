@@ -1,6 +1,41 @@
 import { test, expect } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 
+test("v30 실제 출현 좀비의 체력 막대는 테마별 최대 체력을 기준으로 표시", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("body")).toHaveAttribute("data-sprites-ready", "true");
+  const report = await page.evaluate(async () => {
+    const { drawBoard } = await import("./src/art.js");
+    const { createGame, tick, snapshot } = await import("./src/engine.js");
+    const canvas = document.createElement("canvas");
+    canvas.width = 1000; canvas.height = 500;
+    const c = canvas.getContext("2d");
+    const roundRect = c.roundRect.bind(c), fill = c.fill.bind(c);
+    let width, bars = [];
+    c.roundRect = function(x, y, w, ...args) { width = w; return roundRect(x, y, w, ...args); };
+    c.fill = function(...args) {
+      if (this.fillStyle === "#b97c68") bars.push(width);
+      return fill(...args);
+    };
+    return [1, 11, 21].map(stage => {
+      const game = createGame(stage); game.time = 9.95; tick(game, .1);
+      const enemy = game.enemies[0]; enemy.x = 500;
+      bars = []; drawBoard(c, game, null, false);
+      const full = [...bars];
+      enemy.hp /= 2;
+      const before = snapshot(game);
+      bars = []; drawBoard(c, game, null, false);
+      return { maxHp: enemy.maxHp, full, half: [...bars], unchanged: JSON.stringify(before) === JSON.stringify(snapshot(game)) };
+    });
+  });
+  expect(report.map(r => r.maxHp)).toEqual([110, 143, 176]);
+  for (const result of report) {
+    expect(result.full).toEqual([]);
+    expect(result.half).toEqual([22]);
+    expect(result.unchanged).toBe(true);
+  }
+});
+
 test("v28 노란 번개는 여러 꺾임·짧은 가지·굵기를 갖고 축소·정지·연출 종료에도 피해를 추가하지 않음", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.locator("body")).toHaveAttribute("data-sprites-ready", "true");

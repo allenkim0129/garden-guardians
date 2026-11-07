@@ -26,24 +26,21 @@ test("식물 13종, 좀비 6종, 증가하는 30개의 유효한 스테이지", 
     assert.ok(plan.every((p, i) => p.row >= 0 && p.row < 5 && ENEMIES[p.type] && (i === 0 || p.at > plan[i - 1].at)));
   }
 });
-test("달빛 온실은 10개 단계·5줄·초반 3명·더 빠른 중후반과 더 큰 무리", () => {
-  const baseline = scheduleFor(10);
-  const health = plan => plan.reduce((sum, spawn) => sum + ENEMIES[spawn.type].hp, 0);
+test("달빛 온실은 28~64명·5줄·초반 3명과 점진적인 중후반 물량", () => {
   assert.ok(STAGES.slice(0, 10).every(stage => stage.theme === "garden"));
   for (const stage of STAGES.slice(10, 20)) {
     const plan = scheduleFor(stage.id);
     assert.equal(stage.theme, "moon");
-    assert.equal(plan.length, 70 + (stage.id - 11) * 6);
+    assert.equal(plan.length, 28 + (stage.id - 11) * 4);
     assert.deepEqual(plan.slice(0, 3).map(s => [s.at, s.type]), [[10, "sleepy"], [24, "sleepy"], [36, "roller"]]);
     assert.equal(new Set(plan.map(s => s.row)).size, 5);
-    assert.ok(health(plan) > health(baseline) * 1.1, `${stage.id}단계의 무리 체력 합계`);
     const regular = plan.slice(3);
     assert.deepEqual(regular.map(s => s.type), regular.map((_, i) => stage.types[(i + 3) % stage.types.length]));
     const middle = plan.filter(s => s.wave === 2), final = plan.filter(s => s.wave === 3);
-    assert.ok(middle[0].at < 55);
-    assert.ok(middle[1].at - middle[0].at < 3);
-    assert.ok(final[1].at - final[0].at < .75);
-    assert.ok(final.length > plan.length * .6);
+    assert.equal(middle[0].at, 55);
+    assert.ok(Math.abs(middle[1].at - middle[0].at - (3.6 - (stage.id - 11) * .1)) < 1e-8);
+    assert.ok(Math.abs(final[1].at - final[0].at - (1.2 - (stage.id - 11) * .04)) < 1e-8);
+    assert.ok(final.length > plan.length * .5);
     assert.equal(stage.startSun, STAGES[9].startSun);
     assert.equal(engine.loadoutLimit(stage.id), 8);
     assert.deepEqual(engine.introducedPlants(stage.id), stage.id === 19 ? ["storm"] : []);
@@ -87,7 +84,7 @@ test("실제 8종 조합으로 11~20단계 연속 통과하며 후반은 단일 
   assert.equal(progress.unlocked, 21);
   assert.ok(progress.stars.slice(0, 20).every(stars => stars > 0));
   assert.ok(progress.stars.slice(20).every(stars => stars === 0));
-  assert.ok(peaks.at(-1) > peaks[0] * 3);
+  assert.ok(peaks.at(-1) > peaks[1]);
   assert.equal(playStrategy(engine, 19, "pea").game.status, "lost");
   assert.equal(playStrategy(engine, 20, "pea").game.status, "lost");
 });
@@ -300,7 +297,7 @@ test("v15는 55초 전 1~2명만 천천히, 중반 증가, 최종 무리에 절�
   }
 });
 test("진행 바는 저장 버전의 시간표를 따르고 마지막 등장 이후 남은 적과 승리를 구분", () => {
-  for (const pacingVersion of [1, 2, 3, 4, 5, 6]) {
+  for (const pacingVersion of [1, 2, 3, 4, 5, 6, 7]) {
     const game = createGame(10); game.pacingVersion = pacingVersion;
     const plan = scheduleFor(10, pacingVersion);
     assert.ok(validSnapshot(game));
@@ -343,9 +340,8 @@ test("v10 진행 중 판은 저장·재접속 후에도 기존 등장 시점·�
 });
 test("v26은 30단계 모두 중간 출현 뒤 30초 정비하고 최종 무리의 구성·간격은 보존", () => {
   for (const stage of STAGES) {
-    const old = scheduleFor(stage.id, 5), plan = scheduleFor(stage.id);
+    const old = scheduleFor(stage.id, 5), plan = scheduleFor(stage.id, 6);
     const finalIndex = plan.findIndex(spawn => spawn.wave === 3);
-    assert.equal(createGame(stage.id).pacingVersion, 6);
     assert.equal(plan.length, old.length);
     assert.deepEqual(plan.slice(0, finalIndex), old.slice(0, finalIndex));
     assert.ok(Math.abs(plan[finalIndex].at - plan[finalIndex - 1].at - 30) < 1e-8);
@@ -359,16 +355,100 @@ test("v26은 30단계 모두 중간 출현 뒤 30초 정비하고 최종 무리�
     }
   }
 });
-test("이전 5종 시간표는 모든 30단계에서 v25와 바이트 단위로 동일", () => {
+test("이전 6종 시간표는 모든 30단계에서 각각 v25·v29와 바이트 단위로 동일", () => {
   const hashes = [
     "502519504f38ef8ef9be8284e9b3d18949c56d36675e70b516623e4989be8305",
     "beb1606ccb6dccb80e2dc554df4f2c9e81c72a0634ef643599e248b5dad08248",
     "854371239061fb06aced3f90a51f12f928dc39574cb6f2ad153ede2a84e58635",
     "70608bfac67348c74405920e7a6a3d1a164a7cf657903844d0952243d6f5fc29",
     "da1eb158c6067a6e89c21b0e9055693734295a7b4c8d95bca439e8b47c672cc4",
+    "f24290738711986aae7363ce8fccc50fa03d05cb9bb38d1eec0f4be798068688",
   ];
   hashes.forEach((hash, index) => {
     assert.equal(createHash("sha256").update(JSON.stringify(STAGES.map(stage => scheduleFor(stage.id, index + 1)))).digest("hex"), hash);
+  });
+  test("v30은 테마 안에서 체력을 고정하고 물량을 증가시키며 다음 테마에서 물량·간격을 리셋", () => {
+    for (const [start, count, step, multiplier] of [[11, 28, 4, 1.3], [21, 36, 6, 1.6]]) {
+      const previous = scheduleFor(start - 1);
+      const first = scheduleFor(start);
+      assert.ok(first.length < previous.length);
+      const gap = plan => {
+        const final = plan.filter(s => s.wave === 3);
+        return final[1].at - final[0].at;
+      };
+      assert.ok(gap(first) > gap(previous));
+      for (let offset = 0; offset < 10; offset++) {
+        const stage = start + offset, plan = scheduleFor(stage);
+        assert.equal(createGame(stage).pacingVersion, 7);
+        assert.equal(plan.length, count + step * offset);
+        assert.equal(STAGES[stage - 1].hpMultiplier, multiplier);
+        for (const type of Object.keys(ENEMIES)) {
+          assert.equal(engine.enemyHealth(type, stage), Math.round(ENEMIES[type].hp * multiplier));
+          assert.equal(engine.enemyHealth(type, stage, 6), ENEMIES[type].hp);
+        }
+        const final = plan.findIndex(s => s.wave === 3);
+        assert.ok(Math.abs(plan[final].at - plan[final - 1].at - 30) < 1e-8);
+        for (const type of new Set(plan.map(s => s.type))) {
+          const game = createGame(stage), index = plan.findIndex(s => s.type === type);
+          game.nextSpawn = index; game.time = plan[index].at - .05;
+          tick(game, .1);
+          assert.equal(game.enemies.length, 1);
+          assert.equal(game.enemies[0].hp, engine.enemyHealth(type, stage));
+          assert.equal(engine.enemyMaxHp(game.enemies[0]), game.enemies[0].hp);
+          assert.ok(validSnapshot(snapshot(game)));
+        }
+      }
+    }
+    for (let stage = 1; stage <= 10; stage++) {
+      assert.deepEqual(scheduleFor(stage), scheduleFor(stage, 6));
+      for (const type of Object.keys(ENEMIES)) assert.equal(engine.enemyHealth(type, stage), ENEMIES[type].hp);
+    }
+  });
+
+  test("v30 실제 출현 체력·장비 기준·저장 검증과 이전 판의 높은 적 수를 보존", () => {
+    for (const [stage, type] of [[20, "umbrella"], [30, "barrel"], [30, "courier"]]) {
+      const game = createGame(stage), plan = scheduleFor(stage);
+      game.nextSpawn = plan.findIndex(s => s.type === type);
+      game.time = plan[game.nextSpawn].at - .05;
+      tick(game, .1);
+      const target = game.enemies[0], maxHp = engine.enemyHealth(type, stage);
+      const threshold = type === "umbrella" ? maxHp - 65 : maxHp / 2;
+      target.hp = threshold + 1; target.x = 500;
+      const hit = () => {
+        game.shots.push({ id: game.nextId++, row: target.row, x: target.x - 30, damage: 1, frost: false });
+        tick(game, .1);
+      };
+      assert.equal(target.equipmentDropped, undefined);
+      hit();
+      assert.equal(target.hp, threshold);
+      assert.equal(target.equipmentDropped, true);
+      assert.equal(game.effects.filter(e => e.kind === "gear").length, 1);
+      const saved = snapshot(game);
+      const loaded = readSave({ getItem: () => JSON.stringify({ ...freshSave(), unlocked: stage, current: saved }) });
+      assert.equal(loaded.error, null);
+      assert.deepEqual(loaded.data.current, saved);
+      game.effects = [];
+      tick(game, .1); tick(loaded.data.current, .1);
+      assert.deepEqual(loaded.data.current, game);
+      hit();
+      assert.equal(game.effects.filter(e => e.kind === "gear").length, 0);
+      for (const change of [e => e.maxHp++, e => e.maxHp = null, e => e.hp = maxHp + 1]) {
+        const invalid = snapshot(game); change(invalid.enemies[0]);
+        assert.equal(validSnapshot(invalid), false);
+      }
+    }
+    for (const pacingVersion of [1, 2, 3, 4, 5, 6]) {
+      const old = createGame(30); old.pacingVersion = pacingVersion;
+      const plan = scheduleFor(30, pacingVersion);
+      old.time = plan.at(-1).at;
+      tick(old, .1);
+      assert.equal(old.enemies.length, plan.length);
+      assert.ok(old.enemies.length > STAGES[29].count);
+      assert.ok(old.enemies.every(e => e.hp === ENEMIES[e.type].hp && e.maxHp === undefined));
+      assert.ok(validSnapshot(old));
+      const data = { ...freshSave(), unlocked: 30, current: snapshot(old) };
+      assert.deepEqual(readSave({ getItem: () => JSON.stringify(data) }).data, data);
+    }
   });
 });
 test("정비 중 출현·조기 승리 없이 전투와 생산은 계속되고 정지·복구 뒤 최종 첫 적은 한 번만 등장", () => {

@@ -83,7 +83,9 @@ export const STAGES = [
   { name: "사막의 수호자", count: 180, gap: 1.24, types: ["barrel", "courier", "jelly", "umbrella", "barrel", "courier"], tip: "사막의 마지막 도전! 여덟 친구를 조합하고 비상용 햇빛을 남겨 두세요." },
 ].map(stage => ({ ...stage, theme: "desert", startSun: 350 })))
   .map((stage, i) => Object.freeze({ ...stage, theme: stage.theme ?? "garden", legacyRows: i === 0 ? [2, 1, 3] : stage.rows,
-    legacyCount: stage.count, count: stage.theme ? stage.count : Math.ceil(stage.count * 1.4), id: i + 1 }));
+    legacyCount: stage.count, previousCount: stage.theme ? stage.count : Math.ceil(stage.count * 1.4),
+    count: stage.theme === "moon" ? 28 + (i - 10) * 4 : stage.theme === "desert" ? 36 + (i - 20) * 6 : Math.ceil(stage.count * 1.4),
+    hpMultiplier: stage.theme === "moon" ? 1.3 : stage.theme === "desert" ? 1.6 : 1, id: i + 1 }));
 
 export const boardColumns = game => game.columns ?? 9;
 export const boardWidth = game => boardColumns(game) * 100;
@@ -113,22 +115,24 @@ export function plantDamageLabel(type, compact = false) {
   return plant.damage ? `피해 ${plant.damage}` : "공격 없음";
 }
 
-export function scheduleFor(stageNumber, pacingVersion = 6) {
+export function scheduleFor(stageNumber, pacingVersion = 7) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
+  const count = pacingVersion >= 7 ? stage.count : stage.previousCount;
   const rows = (pacingVersion < 3 ? stage.legacyRows : stage.rows) ?? [2, 0, 4, 1, 3];
   if (stage.theme === "moon" || stage.theme === "desert") {
     const desert = stage.theme === "desert";
     const offset = stageNumber - (desert ? 21 : 11);
     const first = 3;
-    const second = Math.ceil(stage.count * .28);
-    const middleAt = (desert ? 54 : 48) - offset * 2 / 3;
-    const finalAt = middleAt + (second - 1) * stage.gap + (pacingVersion >= 6 ? REGROUP_DURATION : 10);
-    const finalGap = desert ? .36 - offset * .01 : .65 - offset * .03;
-    return Array.from({ length: stage.count }, (_, i) => {
+    const second = Math.ceil(count * .28);
+    const middleAt = pacingVersion >= 7 ? 55 : (desert ? 54 : 48) - offset * 2 / 3;
+    const middleGap = pacingVersion >= 7 ? 3.6 - offset * .1 : stage.gap;
+    const finalAt = middleAt + (second - 1) * middleGap + (pacingVersion >= 6 ? REGROUP_DURATION : 10);
+    const finalGap = pacingVersion >= 7 ? 1.2 - offset * .04 : desert ? .36 - offset * .01 : .65 - offset * .03;
+    return Array.from({ length: count }, (_, i) => {
       const wave = i < first ? 1 : i < first + second ? 2 : 3;
       return {
-        at: wave === 1 ? [10, 24, 36][i] : wave === 2 ? middleAt + (i - first) * stage.gap : finalAt + (i - first - second) * finalGap,
+        at: wave === 1 ? [10, 24, 36][i] : wave === 2 ? middleAt + (i - first) * middleGap : finalAt + (i - first - second) * finalGap,
         row: rows[(i + Math.floor(i / rows.length)) % rows.length],
         type: wave === 1 ? (i === 2 ? (desert ? "barrel" : "roller") : "sleepy") : stage.types[i % stage.types.length],
         wave,
@@ -145,10 +149,10 @@ export function scheduleFor(stageNumber, pacingVersion = 6) {
   }
   if (pacingVersion >= 4) {
     const first = stageNumber === 1 ? 1 : 2;
-    const second = Math.ceil(stage.count * .25);
+    const second = Math.ceil(count * .25);
     const middleGap = Math.max(3, stage.gap * .9);
     const finalAt = Math.max(90, 55 + (second - 1) * middleGap + (pacingVersion >= 6 ? REGROUP_DURATION : 12));
-    return Array.from({ length: stage.count }, (_, i) => {
+    return Array.from({ length: count }, (_, i) => {
       const wave = i < first ? 1 : i < first + second ? 2 : 3;
       const at = wave === 1 ? (i === 0 && pacingVersion >= 5 ? 10 : 25 + i * 14)
         : wave === 2 ? 55 + (i - first) * middleGap
@@ -159,7 +163,7 @@ export function scheduleFor(stageNumber, pacingVersion = 6) {
   const first = Math.ceil(stage.legacyCount * .2);
   const second = Math.ceil(stage.legacyCount * .3);
   let at = 18;
-  return Array.from({ length: stage.count }, (_, i) => {
+  return Array.from({ length: count }, (_, i) => {
     const wave = i < first ? 1 : i < first + second ? 2 : 3;
     if (i > 0) at += stage.gap * [1.2, .75, .3][wave - 1] + (i === first || i === first + second ? 7 : 0);
     return { at, row: rows[i % rows.length], type: stage.types[i % stage.types.length], wave };
@@ -197,7 +201,7 @@ export function createGame(stageNumber, loadout) {
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   if (loadout !== undefined && !validLoadout(loadout, stageNumber)) throw new RangeError(`함께할 식물을 1~${loadoutLimit(stageNumber)}종 골라 주세요.`);
   return {
-    version: 1, rulesVersion: 6, pacingVersion: 6, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
+    version: 1, rulesVersion: 6, pacingVersion: 7, columns: COLS, stage: stageNumber, status: "playing", time: 0, sun: stage.startSun,
     ...(loadout === undefined ? {} : { loadout: [...loadout] }),
     lives: 3, nextId: 1, nextSpawn: 0, skyTimer: 4, wave: 0,
     plants: [], enemies: [], shots: [], suns: [], effects: [],
@@ -276,8 +280,12 @@ export function sunsAlongPath(game, from, to, radius) {
   }).map(sun => sun.id);
 }
 
-export function equipmentThreshold(type) {
-  return type === "umbrella" ? ENEMIES.umbrella.hp - 65 : ENEMIES[type].hp * .5;
+export function enemyHealth(type, stageNumber, pacingVersion = 7) {
+  return Math.round(ENEMIES[type].hp * (pacingVersion >= 7 ? STAGES[stageNumber - 1].hpMultiplier : 1));
+}
+export const enemyMaxHp = enemy => enemy.maxHp ?? ENEMIES[enemy.type].hp;
+export function equipmentThreshold(type, maxHp = ENEMIES[type].hp) {
+  return type === "umbrella" ? maxHp - 65 : maxHp * .5;
 }
 function damageEnemy(game, enemy, damage, frost = false, impact = true) {
   if (enemy.hp <= 0) return;
@@ -286,7 +294,7 @@ function damageEnemy(game, enemy, damage, frost = false, impact = true) {
   if (impact) enemy.hurtAt = game.time;
   if (frost) enemy.slow = 3;
   if (impact) game.effects.push({ id: id(game), kind: frost ? "ice" : "hit", type: enemy.type, x: enemy.x, y: cellY(enemy.row), age: 0 });
-  if (!enemy.equipmentDropped && enemy.hp <= equipmentThreshold(enemy.type)) {
+  if (!enemy.equipmentDropped && enemy.hp <= equipmentThreshold(enemy.type, enemyMaxHp(enemy))) {
     enemy.equipmentDropped = true;
     game.effects.push({ id: id(game), kind: "gear", type: enemy.type, x: enemy.x, y: cellY(enemy.row), age: 0 });
   }
@@ -322,8 +330,9 @@ export function tick(game, dt) {
   const schedule = scheduleFor(game.stage, game.pacingVersion ?? 1);
   while (game.nextSpawn < schedule.length && game.time >= schedule[game.nextSpawn].at) {
     const spawn = schedule[game.nextSpawn++];
-    const info = ENEMIES[spawn.type];
-    game.enemies.push({ id: id(game), type: spawn.type, row: spawn.row, x: width + 36, hp: info.hp, slow: 0, age: 0, eating: false, motionAt: game.time });
+    const hp = enemyHealth(spawn.type, game.stage, game.pacingVersion ?? 1);
+    game.enemies.push({ id: id(game), type: spawn.type, row: spawn.row, x: width + 36, hp,
+      ...((game.pacingVersion ?? 1) >= 7 ? { maxHp: hp } : {}), slow: 0, age: 0, eating: false, motionAt: game.time });
     game.wave = spawn.wave;
   }
   game.skyTimer -= dt;
@@ -478,10 +487,11 @@ export function validSnapshot(g) {
   if (g.columns !== undefined && ![9, COLS].includes(g.columns)) return false;
   const columns = boardColumns(g), width = boardWidth(g);
   if (g.rulesVersion !== undefined && ![2, 3, 4, 5, 6].includes(g.rulesVersion)) return false;
-  if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5, 6].includes(g.pacingVersion)) return false;
+  if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5, 6, 7].includes(g.pacingVersion)) return false;
+  const schedule = scheduleFor(g.stage, g.pacingVersion ?? 1);
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;
   if (!finite(g.time, 0, 100000) || !integer(g.sun, 0, 1000000) || !integer(g.lives, 1, 3) || !integer(g.nextId, 1, 10000000)) return false;
-  if (!integer(g.nextSpawn, 0, scheduleFor(g.stage, g.pacingVersion ?? 1).length) || !finite(g.skyTimer, -1, (g.rulesVersion ?? 1) < 5 ? 6 : SKY_SUN_INTERVAL) || !integer(g.wave, 0, 3)) return false;
+  if (!integer(g.nextSpawn, 0, schedule.length) || !finite(g.skyTimer, -1, (g.rulesVersion ?? 1) < 5 ? 6 : SKY_SUN_INTERVAL) || !integer(g.wave, 0, 3)) return false;
   if (!object(g.cooldowns) || !Object.keys(PLANTS).every(t => finite(g.cooldowns[t], 0, (g.rulesVersion ?? 1) < 5 ? LEGACY_RECHARGES[t] ?? PLANTS[t].recharge : PLANTS[t].recharge)
     || ((g.rulesVersion ?? 1) < (["storm", "cactus"].includes(t) ? 6 : t === "ember" ? 4 : PLANTS[t].unlockStage >= 5 ? 3 : 1) && g.cooldowns[t] === undefined))) return false;
   if (!object(g.stats) || !["planted", "defeated", "collected"].every(k => integer(g.stats[k], 0, 1000000))) return false;
@@ -492,10 +502,12 @@ export function validSnapshot(g) {
   if (!g.plants.every(p => eventTime(p.shotAt) && eventTime(p.hurtAt) && eventTime(p.producedAt))) return false;
   if (!g.plants.every(p => p.pendingShotAt === undefined || (p.type === "twin" && finite(p.shotAt, 0, g.time)
     && finite(p.pendingShotAt, g.time, g.time + TWIN_GAP) && Math.abs(p.pendingShotAt - p.shotAt - TWIN_GAP) < 1e-8))) return false;
-  if (!list(g.enemies, STAGES[g.stage - 1].count, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4) && finite(e.x, -25, width + 100) && finite(e.hp, .000001, ENEMIES[e.type].hp) && finite(e.slow, 0, 3) && finite(e.age, 0, 100000) && typeof e.eating === "boolean")) return false;
+  if (!list(g.enemies, schedule.length, e => hasId(e) && Object.hasOwn(ENEMIES, e.type) && integer(e.row, 0, 4)
+    && (e.maxHp === undefined || ((g.pacingVersion ?? 1) >= 7 && e.maxHp === enemyHealth(e.type, g.stage, g.pacingVersion)))
+    && finite(e.x, -25, width + 100) && finite(e.hp, .000001, enemyMaxHp(e)) && finite(e.slow, 0, 3) && finite(e.age, 0, 100000) && typeof e.eating === "boolean")) return false;
   if (!g.enemies.every(e => eventTime(e.motionAt) && eventTime(e.hurtAt) && (e.burn === undefined || finite(e.burn, 0, BURN_DURATION))
     && (e.equipmentDropped === undefined || (typeof e.equipmentDropped === "boolean"
-      && (!e.equipmentDropped || e.hp <= equipmentThreshold(e.type)))))) return false;
+      && (!e.equipmentDropped || e.hp <= equipmentThreshold(e.type, enemyMaxHp(e))))))) return false;
   if (!list(g.shots, 500, s => {
     if (!hasId(s) || !integer(s.row, 0, 4) || !finite(s.x, s.kind === "storm" && s.hitIds ? -25 : 0, width + 100) || typeof s.frost !== "boolean") return false;
     // Already-fired projectiles retain their damage across balance updates.

@@ -273,18 +273,18 @@ test("v23 별20칸·팀빈칸·진행·발사체 보존, 마지막 클리어 때
   }
 });
 
-test("21~30은 더 큰 총 체력·모든 줄·세 무리, 기존 테마에 새 좀비를 섞지 않음", () => {
+test("21~30은 테마 시작 물량 리셋·36~90명·모든 줄·세 무리, 기존 테마에 새 좀비를 섞지 않음", () => {
   assert.deepEqual(engine.THEMES.map(theme => theme.id), ["garden", "moon", "desert"]);
   assert.equal(engine.STAGES.length, 30);
   assert.ok(engine.STAGES.slice(0, 10).every(stage => stage.theme === "garden"));
   assert.ok(engine.STAGES.slice(10, 20).every(stage => stage.theme === "moon"));
-  const hp = plan => plan.reduce((sum, e) => sum + ENEMIES[e.type].hp, 0);
+  assert.ok(engine.scheduleFor(21).length < engine.scheduleFor(20).length);
   assert.ok(engine.STAGES.slice(0, 20).every(stage => engine.scheduleFor(stage.id).every(e => !["barrel", "courier"].includes(e.type))));
   for (const stage of engine.STAGES.slice(20)) {
     const plan = engine.scheduleFor(stage.id);
     assert.equal(stage.theme, "desert");
-    assert.equal(plan.length, 126 + (stage.id - 21) * 6);
-    assert.ok(hp(plan) > hp(engine.scheduleFor(20)));
+    assert.equal(plan.length, 36 + (stage.id - 21) * 6);
+    assert.equal(stage.hpMultiplier, 1.6);
     assert.deepEqual(plan.slice(0, 3).map(e => e.at), [10, 24, 36]);
     assert.equal(new Set(plan.map(e => e.row)).size, 5);
     assert.ok(plan.filter(e => e.wave === 3).length > plan.length * .6);
@@ -308,6 +308,6 @@ test("모래 사막 전 단계를 실제 8종·비용·쿨다운·초당 1회 �
   }
   for (const attacker of ["pea", "twin", "storm", "pumpkin"]) {
     const result = playStrategy({ ...engine, createGame: n => createGame(n, ["sun", attacker]) }, 30, "pea", attacker);
-    assert.equal(result.game.status, ["storm", "pumpkin"].includes(attacker) ? "won" : "lost", `${attacker} v27 단일공격 비교`);
+    assert.equal(result.game.status, attacker === "pea" ? "lost" : "won", `${attacker} v30 단일공격 비교`);
   }
 });

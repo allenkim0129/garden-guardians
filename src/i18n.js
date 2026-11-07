@@ -3,6 +3,7 @@ export const getLanguage = () => language;
 export function setLanguage(value) { language = value === "en" ? "en" : "ko"; }
 
 const messages = {
+  "같은 테마에서는 좀비 체력이 같고 단계마다 마릿수가 늘어요. 새 테마에 들어가면 체력이 오르지만 마릿수와 등장 속도는 줄어들어요. 햇살 정원은 기존 체력, 달빛 온실은 1.3배·28~64마리, 모래 사막은 1.6배·36~90마리예요. 이미 저장된 판은 기존 체력과 시간표를 유지해요.": "Within each theme, zombie health stays fixed while their numbers grow each stage. A new theme raises health but resets the crowd size and spawn pace. Sunny Garden keeps its original health; Moonlit Greenhouse uses 1.3x health and 28–64 zombies; Sandy Desert uses 1.6x health and 36–90 zombies. Saved games keep their original health and schedules.",
   "즉사": "KO",
   "시작 전에 최대 6종, 10번째 정원부터는 8종을 골라요. 전투 카드는 그림·햇빛 비용·빨간 피해 숫자로 간단하게 표시해요. 두 열에 열 장까지 한눈에 보여요. 자세한 능력은 출전 선택과 도감에서 확인해요. 키보드에서는 Tab으로 이동해요.": "Choose up to 6 plants, or 8 from garden 10 onward. Compact battle cards show art, sunlight cost and red damage numbers, with up to ten cards in two columns at once. Find full abilities in team selection and the guide. Use Tab to move between cards.",
   "공격 없음": "No attack",
