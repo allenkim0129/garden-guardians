@@ -7,8 +7,8 @@ import { isolatedServer } from "../helpers/server.mjs";
 const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
 async function seed(page, extra = {}, url = "/") {
   const data = {
-    ...freshSave(), unlocked: 10, stars: Array(10).fill(3), tutorialSeen: true,
-    sound: true, volume: 65, current: createGame(10, ["sun", "pea", "ember"]), ...extra,
+    ...freshSave(), unlocked: 20, stars: freshSave().stars.fill(3), tutorialSeen: true,
+    sound: true, volume: 65, current: createGame(20, ["sun", "pea", "ember"]), ...extra,
   };
   await page.goto(`${url}manifest.webmanifest`);
   await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
@@ -42,7 +42,7 @@ test("작은 회전 화면의 설정 리셋: 취소·언어 전환·기록 초�
     expect(box.width).toBeGreaterThanOrEqual(44);
     expect(box.height).toBeGreaterThanOrEqual(44);
     await confirm.tap();
-    const expected = { ...before, language: "en", unlocked: 1, stars: Array(10).fill(0), current: null };
+    const expected = { ...before, language: "en", unlocked: 1, stars: freshSave().stars, current: null };
     expect(await stored(page)).toEqual(expected);
     await expect(page.locator("#home")).toBeVisible();
     await expect(page.locator("#resume-button")).toBeHidden();
@@ -54,7 +54,7 @@ test("작은 회전 화면의 설정 리셋: 취소·언어 전환·기록 초�
     expect(await stored(page)).toEqual(expected);
     await page.locator("#play-button").tap();
     await expect(page.locator(".stage-button:enabled")).toHaveCount(1);
-    await expect(page.locator(".stage-button:disabled")).toHaveCount(9);
+    await expect(page.locator(".stage-button:disabled")).toHaveCount(19);
     await page.locator(".stage-button").first().tap();
     await expect(page.locator(".loadout-choice:enabled")).toHaveCount(2);
     await expect(page.locator(".loadout-choice:disabled")).toHaveCount(9);
@@ -85,7 +85,7 @@ test("게임 중 리셋 취소는 정지 상태 보존, 확정 후 이전 판이
   expect((await stored(page)).current.time).toBeGreaterThan(before.current.time);
   await page.locator("#reset-progress").tap();
   await page.getByRole("button", { name: "Reset and start over", exact: true }).tap();
-  const expected = { ...before, unlocked: 1, stars: Array(10).fill(0), current: null };
+  const expected = { ...before, unlocked: 1, stars: freshSave().stars, current: null };
   expect(await stored(page)).toEqual(expected);
   await expect(page.locator("#game")).toBeHidden();
   await page.waitForTimeout(3200);
@@ -119,9 +119,9 @@ for (const inGame of [false, true]) {
     else await page.locator("#resume-button").tap();
     await page.locator("#pause-button").tap();
     const after = await stored(page);
-    expect(after.current.stage).toBe(10);
+    expect(after.current.stage).toBe(20);
     expect(after.current.loadout).toEqual(before.current.loadout);
-    expect(after.unlocked).toBe(10);
+    expect(after.unlocked).toBe(20);
     expect(after.stars).toEqual(before.stars);
     expect(after.volume).toBe(65);
   });

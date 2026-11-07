@@ -1,11 +1,11 @@
-import { validSnapshot, snapshot, PLANTS, SKY_SUN_INTERVAL } from "./engine.js";
+import { validSnapshot, snapshot, PLANTS, SKY_SUN_INTERVAL, STAGES } from "./engine.js";
 
 export const SAVE_KEY = "garden-guardians-save-v1";
-export const freshSave = () => ({ version: 1, unlocked: 1, stars: Array(10).fill(0), sound: false, volume: 45, tutorialSeen: false, language: "ko", current: null });
+export const freshSave = () => ({ version: 1, unlocked: 1, stars: Array(STAGES.length).fill(0), sound: false, volume: 45, tutorialSeen: false, language: "ko", current: null });
 export function validateSave(value) {
   return value !== null && typeof value === "object" && value.version === 1
-    && Number.isInteger(value.unlocked) && value.unlocked >= 1 && value.unlocked <= 10
-    && Array.isArray(value.stars) && value.stars.length === 10 && value.stars.every(n => Number.isInteger(n) && n >= 0 && n <= 3)
+    && Array.isArray(value.stars) && [10, STAGES.length].includes(value.stars.length) && value.stars.every(n => Number.isInteger(n) && n >= 0 && n <= 3)
+    && Number.isInteger(value.unlocked) && value.unlocked >= 1 && value.unlocked <= value.stars.length
     && typeof value.sound === "boolean" && typeof value.tutorialSeen === "boolean"
     && (value.volume === undefined || (Number.isInteger(value.volume) && value.volume >= 0 && value.volume <= 100))
     && (value.language === undefined || ["ko", "en"].includes(value.language))
@@ -17,6 +17,10 @@ export function readSave(storage) {
     if (raw === null) return { data: freshSave(), error: null };
     const data = JSON.parse(raw);
     if (!validateSave(data)) throw new Error("저장 형식이 맞지 않습니다.");
+    if (data.stars.length < STAGES.length) {
+      if (data.unlocked === 10 && data.stars[9] > 0) data.unlocked = 11;
+      data.stars.push(...Array(STAGES.length - data.stars.length).fill(0));
+    }
     data.language ??= "ko";
     data.volume ??= 45;
     let notice = null;
@@ -52,7 +56,7 @@ export function writeSave(storage, data) {
 export function updateProgress(data, game) {
   if (game.status === "won") {
     data.stars[game.stage - 1] = Math.max(data.stars[game.stage - 1], game.lives);
-    data.unlocked = Math.max(data.unlocked, Math.min(10, game.stage + 1));
+    data.unlocked = Math.max(data.unlocked, Math.min(STAGES.length, game.stage + 1));
     data.current = null;
   } else if (game.status === "lost") {
     data.current = null;

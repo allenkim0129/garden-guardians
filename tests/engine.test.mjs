@@ -14,10 +14,10 @@ function enemy(game, type, row, x) {
   return e;
 }
 
-test("식물 11종, 좀비 4종, 증가하는 10개의 유효한 스테이지", () => {
+test("식물 11종, 좀비 4종, 증가하는 20개의 유효한 스테이지", () => {
   assert.equal(Object.keys(PLANTS).length, 11);
   assert.equal(Object.keys(ENEMIES).length, 4);
-  assert.equal(STAGES.length, 10);
+  assert.equal(STAGES.length, 20);
   for (const stage of STAGES) {
     const plan = scheduleFor(stage.id);
     assert.equal(plan.length, stage.count);
@@ -25,6 +25,72 @@ test("식물 11종, 좀비 4종, 증가하는 10개의 유효한 스테이지", 
     assert.ok(plan.every((p, i) => p.row >= 0 && p.row < 5 && ENEMIES[p.type] && (i === 0 || p.at > plan[i - 1].at)));
   }
 });
+test("달빛 온실은 10개 단계·5줄·초반 3명·더 빠른 중후반과 더 큰 무리", () => {
+  const baseline = scheduleFor(10);
+  const health = plan => plan.reduce((sum, spawn) => sum + ENEMIES[spawn.type].hp, 0);
+  assert.ok(STAGES.slice(0, 10).every(stage => stage.theme === "garden"));
+  for (const stage of STAGES.slice(10)) {
+    const plan = scheduleFor(stage.id);
+    assert.equal(stage.theme, "moon");
+    assert.equal(plan.length, 70 + (stage.id - 11) * 6);
+    assert.deepEqual(plan.slice(0, 3).map(s => [s.at, s.type]), [[10, "sleepy"], [24, "sleepy"], [36, "roller"]]);
+    assert.equal(new Set(plan.map(s => s.row)).size, 5);
+    assert.ok(health(plan) > health(baseline) * 1.1, `${stage.id}단계의 무리 체력 합계`);
+    const regular = plan.slice(3);
+    assert.deepEqual(regular.map(s => s.type), regular.map((_, i) => stage.types[(i + 3) % stage.types.length]));
+    const middle = plan.filter(s => s.wave === 2), final = plan.filter(s => s.wave === 3);
+    assert.ok(middle[0].at < 55);
+    assert.ok(middle[1].at - middle[0].at < 3);
+    assert.ok(final[1].at - final[0].at < .75);
+    assert.ok(final.length > plan.length * .6);
+    assert.equal(stage.startSun, STAGES[9].startSun);
+    assert.equal(engine.loadoutLimit(stage.id), 8);
+    assert.deepEqual(engine.introducedPlants(stage.id), []);
+  }
+});
+
+test("달빛 온실 모든 단계의 실제 전투 저장·타이머·웨이브 바를 동일하게 복구", () => {
+  for (let stage = 11; stage <= 20; stage++) {
+    const game = createGame(stage, ["sun", "pea", "frost", "bomb", "twin", "pumpkin", "lantern", "iron"]);
+    plantAt(game, "sun", 0, 0); plantAt(game, "pea", 2, 1);
+    advance(game, 45);
+    assert.ok(validSnapshot(snapshot(game)), `${stage}`);
+    const restored = snapshot(game);
+    game.effects = [];
+    assert.deepEqual(engine.waveProgress(restored), engine.waveProgress(game));
+    advance(game, 2); advance(restored, 2);
+    assert.deepEqual(restored, game);
+    assert.ok(engine.waveProgress(game).markers[0].percent < engine.waveProgress(game).markers[1].percent);
+  }
+});
+
+test("실제 8종 팀으로 11~20단계 연속 통과하며 후반은 단일 공격 전략보다 어려움", t => {
+  const team = ["sun", "pea", "frost", "bomb", "twin", "pumpkin", "lantern", "iron"];
+  const progress = freshSave(); progress.unlocked = 11; progress.stars.fill(3, 0, 10);
+  const peaks = [];
+  for (let stage = 10; stage <= 20; stage++) {
+    let peak = 0;
+    const api = { ...engine, createGame: n => createGame(n, team), tick: (game, dt) => {
+      tick(game, dt);
+      peak = Math.max(peak, game.enemies.reduce((sum, e) => sum + e.hp, 0));
+    } };
+    const result = playStrategy(api, stage, "expanded");
+    assert.equal(result.game.status, "won", `${stage}단계`);
+    assert.ok(result.actions.every(action => team.includes(action.type)));
+    assert.ok(result.game.time < 240);
+    updateProgress(progress, result.game);
+    assert.ok(progress.unlocked >= Math.min(20, stage + 1));
+    peaks.push(peak);
+    t.diagnostic(`${stage}단계: ${result.game.time.toFixed(1)}초, 하트 ${result.game.lives}, 최대 생존 적 체력 ${Math.round(peak)}`);
+  }
+  assert.equal(progress.unlocked, 20);
+  assert.ok(progress.stars.every(stars => stars > 0));
+  assert.ok(peaks.at(-1) > peaks[0] * 3);
+  assert.equal(playStrategy(engine, 10, "pea").game.status, "won");
+  assert.equal(playStrategy(engine, 19, "pea").game.status, "lost");
+  assert.equal(playStrategy(engine, 20, "pea").game.status, "lost");
+});
+
 test("비용, 빈 칸, 대기 시간, 경계와 잘못된 입력을 검사", () => {
   const game = createGame(2);
   assert.equal(plantAt(game, "sun", 2, 0).ok, true);
@@ -192,7 +258,7 @@ test("하트가 0이면 패배, 모든 무리를 막으면 승리; 종료 후 �
   assert.equal(win.status, "won");
 });
 test("v11은 준비 18초·적은 첫 무리·점진 가속·증가한 마지막 무리를 제공", () => {
-  for (const stage of STAGES) {
+  for (const stage of STAGES.slice(0, 10)) {
     const plan = scheduleFor(stage.id, 2);
     const old = scheduleFor(stage.id, 1);
     const waves = [1, 2, 3].map(wave => plan.filter(p => p.wave === wave));
@@ -206,7 +272,7 @@ test("v11은 준비 18초·적은 첫 무리·점진 가속·증가한 마지막
   }
 });
 test("v15는 55초 전 1~2명만 천천히, 중반 증가, 최종 무리에 절반 이상 집중", () => {
-  for (const stage of STAGES) {
+  for (const stage of STAGES.slice(0, 10)) {
     const plan = scheduleFor(stage.id, 4);
     const waves = [1, 2, 3].map(wave => plan.filter(spawn => spawn.wave === wave));
     assert.equal(plan[0].at, 25);
@@ -252,7 +318,7 @@ test("진행 바는 저장 버전의 시간표를 따르고 마지막 등장 이
   }
 });
 test("v10 진행 중 판은 저장·재접속 후에도 기존 등장 시점·남은 수를 유지", () => {
-  for (const stage of STAGES) {
+  for (const stage of STAGES.slice(0, 10)) {
     const game = createGame(stage.id);
     delete game.pacingVersion;
     game.time = 60;
@@ -300,8 +366,9 @@ test("자원·대기 시간 보정 없이 해금된 식물의 혼합 전략으�
     updateProgress(progress, game);
     t.diagnostic(`${stage}단계: ${game.time.toFixed(1)}초, 하트 ${game.lives}, 식물 손실 ${lostPlants}, 좀비 ${game.stats.defeated}명`);
   }
-  assert.equal(progress.unlocked, 10);
-  assert.ok(progress.stars.every(stars => stars >= 2));
+  assert.equal(progress.unlocked, 11);
+  assert.ok(progress.stars.slice(0, 10).every(stars => stars >= 2));
+  assert.ok(progress.stars.slice(10).every(stars => stars === 0));
   assert.equal(progress.current, null);
 });
 
@@ -344,7 +411,7 @@ test("v14 등장 규칙에서 콩별이 밸런스 개정의 단일 공격 전략
 });
 
 test("v17은 첫 10초 한 명만 앞당기고 두 번째 39초·55초 중반·최종 무리는 보존", () => {
-  for (const stage of STAGES) {
+  for (const stage of STAGES.slice(0, 10)) {
     const plan = scheduleFor(stage.id);
     assert.equal(plan[0].at, 10);
     assert.equal(plan[0].type, "sleepy");

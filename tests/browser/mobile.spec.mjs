@@ -33,7 +33,7 @@ test("최대 6종 사전 선택·큰 카드·언어 전환·재접속·최소 �
   await page.setViewportSize({ width: 568, height: 320 });
   await seed(page, null);
   await page.locator("#play-button").tap();
-  await page.locator(".stage-button").last().tap();
+  await page.locator('.stage-button[data-stage="10"]').tap();
   await expect(page.locator('.loadout-choice[aria-pressed="true"]')).toHaveCount(8);
   await expect(page.locator('.loadout-choice[data-type="iron"]')).toBeDisabled();
   await page.locator('.loadout-choice[data-type="wall"]').tap();
@@ -80,7 +80,7 @@ for (const portrait of [false, true]) test(`10단계 8종 선택·큰 카드 목
   await page.setViewportSize(portrait ? { width: 320, height: 568 } : { width: 568, height: 320 });
   await seed(page, null, { language: "en" });
   await page.locator("#play-button").tap();
-  await page.locator(".stage-button").last().tap();
+  await page.locator('.stage-button[data-stage="10"]').tap();
   await expect(page.locator("#loadout-count")).toHaveText("Selected plants: 8 / 8");
   await expect(page.locator(".loadout-slot")).toHaveCount(8);
   await expect(page.locator('.loadout-choice[data-type="iron"]')).toBeDisabled();

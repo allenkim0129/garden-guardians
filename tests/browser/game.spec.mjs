@@ -105,14 +105,14 @@ test("승리·다음 정원·패배·재도전과 최고 별 저장", async ({ p
   await expect(page.locator("#stage-title")).toContainText("2. 아침 산책");
 });
 
-test("마지막 정원 완료 후 11단계 없이 재도전·정원 선택", async ({ page }) => {
+test("마지막 정원 완료 후 21단계 없이 재도전·정원 선택", async ({ page }) => {
   await homeReady(page);
-  const game = createGame(10); game.nextSpawn = STAGES[9].count; game.time = 150;
-  await loadFixture(page, game, { stars: [...Array(9).fill(3), 0] });
+  const game = createGame(STAGES.length); game.nextSpawn = STAGES.at(-1).count; game.time = 180;
+  await loadFixture(page, game, { stars: [...Array(STAGES.length - 1).fill(3), 0] });
   await expect(page.locator("#modal-title")).toHaveText("모든 정원을 지켰어요!");
-  expect((await readStored(page)).unlocked).toBe(10);
+  expect((await readStored(page)).unlocked).toBe(STAGES.length);
   await page.getByRole("button", { name: "정원 선택", exact: true }).tap();
-  await expect(page.locator(".stage-button")).toHaveCount(10);
+  await expect(page.locator(".stage-button")).toHaveCount(STAGES.length);
   await expect(page.locator(".stage-button:disabled")).toHaveCount(0);
 });
 

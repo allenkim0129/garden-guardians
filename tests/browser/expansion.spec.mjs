@@ -116,7 +116,7 @@ test("새 보상은 4~8단계 최초 클리어에만 표시하고 다음 정원�
     await page.getByRole("button", { name: "다음 정원", exact: true }).tap();
     await confirmTeam(page, type);
     await expect(page.locator(`.seed-card[data-type="${type}"]`)).toBeEnabled();
-    await fixture(page, game, { unlocked: stage + 1, stars: Array(10).fill(3) });
+    await fixture(page, game, { unlocked: stage + 1, stars: freshSave().stars.fill(3) });
     await expect(page.locator("#modal-title")).toHaveText("정원을 지켰어요!");
     await expect(page.locator(".unlock-card")).toHaveCount(0);
   }
@@ -127,7 +127,7 @@ test("이전 다섯 쿨다운 저장 복원 뒤 새 5종 캐시와 영어 오프
   try {
     const game = createGame(9); game.rulesVersion = 2;
     for (const type of types) delete game.cooldowns[type];
-    await fixture(page, game, { language: "en", stars: Array(10).fill(2) }, server.url);
+    await fixture(page, game, { language: "en", stars: freshSave().stars.fill(2) }, server.url);
     await page.locator('.seed-card[data-type="twin"]').tap();
     await page.locator('.plot[data-row="2"][data-col="0"]').tap();
     await page.locator("#pause-button").tap();

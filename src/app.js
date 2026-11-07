@@ -126,12 +126,21 @@ function showStages() {
   const replayHint = document.createElement("p");
   replayHint.textContent = "완료한 정원도 다시하기를 눌러 처음부터 도전할 수 있어요. 모은 별과 열린 정원은 지우지 않아요.";
   content.append(replayHint);
-  const grid = document.createElement("div");
-  grid.className = "stage-grid";
+  let grid;
   for (const stage of STAGES) {
+    if (!grid || grid.dataset.theme !== stage.theme) {
+      const heading = document.createElement("h3");
+      heading.className = "chapter-heading";
+      heading.textContent = stage.theme === "moon" ? "11~20 · 달빛 온실 · 도전" : "1~10 · 햇살 정원";
+      grid = document.createElement("div");
+      grid.className = "stage-grid";
+      grid.dataset.theme = stage.theme;
+      content.append(heading, grid);
+    }
     const button = document.createElement("button");
     const locked = stage.id > save.unlocked;
     button.className = "stage-button";
+    button.dataset.stage = stage.id;
     button.disabled = locked;
     button.setAttribute("aria-label", `${stage.id}. ${stage.name}${locked ? ", 잠김" : `, 별 ${save.stars[stage.id - 1]}개`}`);
     const number = document.createElement("span");
@@ -164,7 +173,6 @@ function showStages() {
     };
     grid.append(button);
   }
-  content.append(grid);
   openModal("어느 정원으로 갈까요?", content, [{ label: "돌아가기", action: () => {} }]);
 }
 function helpMarkup() {
@@ -174,7 +182,8 @@ function helpMarkup() {
     <div class="help-step"><b>3. 정원 지키기</b><span>좀비가 왼쪽 끝에 닿으면 하트가 하나 줄어요. 3번의 무리를 막아요!</span></div>
   </div><div class="plant-guide">${Object.entries(PLANTS).sort((a, b) => a[1].unlockStage - b[1].unlockStage).map(([type, plant]) => `<div><img src="${icons[type]}" alt=""><div><b>${plant.name} · ${plant.unlockStage === 1 ? "처음부터 사용 가능" : `${plant.unlockStage}번째 정원 해금`}</b><p>☀ ${plant.cost} · ${plant.description}</p></div></div>`).join("")}</div>
   <p>처음부터 콩별이와 햇살봉을 함께 쓸 수 있어요. 햇살봉과 하늘의 햇빛으로 자원을 모아요. 1~9번째 정원을 처음 지키면 다음 정원에서 쓸 새 식물을 얻어요. 아무 카드도 선택하지 않으면 땅을 눌러도 심지 않아요. 햇빛을 누르면 수집만 해요.</p>
-  <p>시작 전에 최대 6종, 10번째 정원에서는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.</p>
+  <p>시작 전에 최대 6종, 10번째 정원부터는 8종을 골라요. 전투 중에는 고른 식물만 크게 보여요. 카드가 많으면 목록을 밀어 보세요. 키보드에서는 Tab으로 이동해요.</p>
+  <p>10번째 정원을 지키면 달빛 온실이 열려요. 11~20단계를 차례로 지키며 더 큰 무리와 빠른 등장 간격에 도전해요. 밤에도 햇빛 생산은 같아요.</p>
   <p>삽은 식물을 뽑고 비용 절반을 돌려줘요. 다른 앱으로 이동하면 자동으로 멈춰요. 세로로 들고 있어도 게임은 가로형 화면으로 표시돼요.</p>
   <details><summary>좀비 친구 알아보기</summary><p>${Object.values(ENEMIES).map(e => `<b>${e.name}</b>: ${e.description}`).join("<br>")}</p></details>`;
 }
@@ -252,6 +261,7 @@ function startStage(stageNumber, resume = false, loadout) {
   selected = null; shovel = false; paused = false; sunGesture = false;
   lastWave = -1; lastSaveAt = game.time; accumulator = 0; lastFrame = performance.now();
   home.hidden = true; gameScreen.hidden = false;
+  gameScreen.dataset.theme = STAGES[stageNumber - 1].theme;
   document.body.classList.add("game-active");
   seedCards.classList.toggle("legacy", game.loadout === undefined);
   seedCards.classList.toggle("extended", (game.loadout?.length ?? 0) > 6);
@@ -307,10 +317,13 @@ function endGame(previouslyUnlocked) {
   const won = game.status === "won";
   audio.stopVoices();
   audio.play(won ? "win" : "lose");
-  const finalStage = game.stage === 10;
+  const finalStage = game.stage === STAGES.length;
+  const newChapter = won && game.stage === 10 && previouslyUnlocked <= 10;
   const title = won ? (finalStage ? "모든 정원을 지켰어요!" : "정원을 지켰어요!") : "괜찮아요, 한 번 더!";
   const message = won
-    ? (finalStage ? "열 개의 정원에 다시 평화가 찾아왔어요. 여러분이 진짜 정원 수비대예요!" : `${STAGES[game.stage].name} 정원이 열렸어요. 친구들과 다음 소풍을 떠나 볼까요?`)
+    ? (finalStage ? "스무 개의 정원에 다시 평화가 찾아왔어요. 여러분이 진짜 정원 수비대예요!"
+      : newChapter ? "달빛 온실이 열렸어요! 11~20단계에서 더 강한 무리에 도전해요."
+        : `${STAGES[game.stage].name} 정원이 열렸어요. 친구들과 다음 소풍을 떠나 볼까요?`)
     : STAGES[game.stage - 1].tip;
   const newPlants = won && !finalStage && game.stage + 1 > previouslyUnlocked ? introducedPlants(game.stage + 1) : [];
   const reward = newPlants.length ? `<section class="plant-unlocks" aria-label="새 식물 획득">

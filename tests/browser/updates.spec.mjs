@@ -76,7 +76,7 @@ async function releaseServer(legacy = false) {
 async function seed(page, url) {
   const game = createGame(2);
   plantAt(game, "pea", 2, 0);
-  const save = { ...freshSave(), unlocked: 4, stars: [3, 2, 1, 0, 0, 0, 0, 0, 0, 0], tutorialSeen: true, current: game };
+  const save = { ...freshSave(), unlocked: 4, stars: [3, 2, 1, ...freshSave().stars.slice(3)], tutorialSeen: true, current: game };
   await page.goto(`${url}manifest.webmanifest`);
   await page.evaluate(({ key, save }) => localStorage.setItem(key, JSON.stringify(save)), { key: SAVE_KEY, save });
   await page.goto(url);
@@ -134,7 +134,7 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     game.time = 20;
     game.plants.push({ id: game.nextId++, type: "sun", row: 0, col: 0, hp: 100, timer: 7.5, age: 12 });
     game.plants.push({ id: game.nextId++, type: "lantern", row: 0, col: 1, hp: 140, timer: 9.5, age: 12 });
-    const data = { ...freshSave(), unlocked: 10, stars: Array(10).fill(3), language: "en", volume: 65, tutorialSeen: true, current: game };
+    const data = { ...freshSave(), unlocked: 10, stars: freshSave().stars.fill(3), language: "en", volume: 65, tutorialSeen: true, current: game };
     const expected = structuredClone(data);
     expected.current.rulesVersion = 5;
     expected.current.cooldowns = { sun: 4, pea: 5, wall: 7, frost: 4, bomb: 14, twin: 8, thorn: 8, pumpkin: 9, lantern: 9, iron: 12, ember: 9 };
@@ -172,6 +172,28 @@ test("v17의 긴 배치·생산 대기를 보존 이관하고 업데이트·오�
     expect(after.current.plants.at(-1).timer).toBeLessThanOrEqual(5);
     expect(after.stars).toEqual(data.stars);
     expect(after.volume).toBe(65);
+  } finally { await server.stop(); }
+});
+
+test("10칸 별 저장은 명시적 업데이트 뒤 현재 판을 유지하며 11단계 해금", async ({ page }) => {
+  const server = await releaseServer();
+  try {
+    const game = createGame(10, ["sun", "pea", "ember"]);
+    plantAt(game, "pea", 2, 0); game.effects = [];
+    const data = { ...freshSave(), unlocked: 10, stars: Array(10).fill(3), current: game, language: "en", tutorialSeen: true, volume: 65 };
+    await page.goto(`${server.url}manifest.webmanifest`);
+    await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
+    await page.goto(server.url);
+    await expect(page.locator("#offline-status")).toContainText("Offline ready");
+    await installNext(page, server);
+    await page.locator("#update-button").tap();
+    await expect(page.locator("#app-version")).toHaveText(`Version ${server.next}`);
+    expect(await saved(page)).toEqual(data);
+    await server.stop();
+    await page.reload();
+    await page.locator("#resume-button").tap();
+    expect(await saved(page)).toEqual({ ...data, unlocked: 11, stars: [...data.stars, ...Array(10).fill(0)] });
+    await expect(page.locator("#game")).toHaveAttribute("data-theme", "garden");
   } finally { await server.stop(); }
 });
 

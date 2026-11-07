@@ -1,4 +1,4 @@
-import { PLANTS, ENEMIES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION } from "./engine.js";
+import { PLANTS, ENEMIES, STAGES, PUMPKIN_RADIUS, FIRE_RADIUS, GEAR_DURATION } from "./engine.js";
 import { drawSprite, plantFrame, enemyFrame, fallFrame, burstFrame, FALL_DURATION, BURST_DURATION } from "./sprites.js";
 
 const ink = "#304b3d";
@@ -179,21 +179,31 @@ function grass(c, x, y, color) {
 }
 export function drawBoard(c, game, selected, shovel) {
   c.clearRect(0, 0, 900, 500);
+  const moon = STAGES[game.stage - 1].theme === "moon";
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 9; col++) {
-      c.fillStyle = (row + col) % 2 ? "#bcd496" : "#c5dda0";
+      c.fillStyle = moon ? ((row + col) % 2 ? "#728b9b" : "#819eaa") : ((row + col) % 2 ? "#bcd496" : "#c5dda0");
       c.fillRect(col * 100, row * 100, 100, 100);
-      grass(c, col * 100 + 17 + (row * 7) % 15, row * 100 + 86, "#89ac6a70");
-      grass(c, col * 100 + 76, row * 100 + 19, "#97b77670");
+      grass(c, col * 100 + 17 + (row * 7) % 15, row * 100 + 86, moon ? "#b9c9e880" : "#89ac6a70");
+      grass(c, col * 100 + 76, row * 100 + 19, moon ? "#c7e4dc80" : "#97b77670");
+      if (moon) {
+        line(c, [[col * 100 + 2, row * 100 + 98], [col * 100 + 98, row * 100 + 98]], "#3e556a55", 2);
+        line(c, [[col * 100 + 5, row * 100 + 20], [col * 100 + 20, row * 100 + 5]], "#d8efff55", 3);
+        if ((row + col) % 3 === 0) {
+          c.save(); c.globalAlpha = .45 + Math.sin(game.time * 1.2 + col + row) * .15;
+          star(c, col * 100 + 85, row * 100 + 18, 4, 1.5, "#f7eeb5", 4);
+          c.restore();
+        }
+      }
       if ((row * 9 + col) % 11 === 0) {
-        ellipse(c, col * 100 + 82, row * 100 + 76, 3, 3, "#f7f1be");
-        ellipse(c, col * 100 + 86, row * 100 + 79, 3, 3, "#f7f1be");
-        ellipse(c, col * 100 + 82, row * 100 + 81, 3, 3, "#f7f1be");
+        ellipse(c, col * 100 + 82, row * 100 + 76, 3, 3, moon ? "#e1c5ff" : "#f7f1be");
+        ellipse(c, col * 100 + 86, row * 100 + 79, 3, 3, moon ? "#e1c5ff" : "#f7f1be");
+        ellipse(c, col * 100 + 82, row * 100 + 81, 3, 3, moon ? "#e1c5ff" : "#f7f1be");
         ellipse(c, col * 100 + 83, row * 100 + 79, 1.5, 1.5, "#e2bd5e");
       }
     }
   }
-  c.fillStyle = "#6f9d5a35"; c.fillRect(0, 0, 8, 500);
+  c.fillStyle = moon ? "#b4b1f555" : "#6f9d5a35"; c.fillRect(0, 0, 8, 500);
   for (let row = 0; row < 5; row++) {
     for (const plant of game.plants.filter(p => p.row === row)) {
       drawPlant(c, plant.type, plant.col * 100 + 50, row * 100 + 53, .9, game.time, plantFrame(plant, game));

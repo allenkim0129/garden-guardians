@@ -113,6 +113,22 @@ h1 i { position: absolute; font-style: normal; font-size: .5em; color: #dcaa44; 
 .wave-start::after { display: none; }
 .wave-summary { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; line-height: 12px; margin-top: 2px; }
 .stage-replay { font-size: 11px; color: #214f3b; background: #d7e5bb; padding: 3px 8px; border-radius: 8px; }
+.game[data-theme="moon"] { background: #202a42; color: #edf2ff; }
+.game[data-theme="moon"] .game-header { background: #29334e; border-color: #546380; }
+.game[data-theme="moon"] .game-layout {
+  background: radial-gradient(circle at 89% 12%, #f6e8ae 0 17px, #dfd6ae20 18px 32px, transparent 33px),
+    repeating-linear-gradient(120deg, transparent 0 119px, #8ca2cc15 120px 122px, transparent 123px 240px),
+    linear-gradient(#283450, #35455c);
+}
+.game[data-theme="moon"] :is(.icon-button, .language-button, .shovel, .seed-card) { color: #233e32; }
+.game[data-theme="moon"] .sun-counter { color: #694119; }
+.game[data-theme="moon"] :is(.stage-heading span, .seed-label, .seed-hint, .seed-scroll-hint, .garden-caption, .wave-marker) { color: #d2ddee; }
+.game[data-theme="moon"] .wave-marker.reached { color: #fff0b0; }
+.game[data-theme="moon"] .wave-fill { background: #8873b3; }
+.game[data-theme="moon"] .board { background: #728b9b; box-shadow: 0 5px 0 #465775; }
+.game[data-theme="moon"] .plot:focus-visible { outline-color: #fff1b7; }
+.chapter-heading { margin: 20px 0 8px; font-size: 16px; }
+.stage-grid[data-theme="moon"] .stage-button:not(:disabled) { background: #e5e3f6; border-color: #9c9fc4; }
 dialog { padding: 24px 28px; border: 1px solid #d9dfc6; border-radius: 24px; background: #fcfaee; color: #233e32; inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); margin: auto; max-width: min(600px, calc(var(--usable-width) * .9)); width: 560px; max-height: calc(var(--usable-height) * .9); overflow-y: auto; box-shadow: 0 20px 100px #12281f44; }
 dialog::backdrop { background: #173c3280; backdrop-filter: blur(5px); }
 .modal-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }

@@ -44,7 +44,20 @@ export const STAGES = [
   { name: "꼬불꼬불 덩굴", count: 30, gap: 3.1, types: ["roller", "jelly", "sleepy", "umbrella"], startSun: 325, tip: "새 친구 해등나무! 더 많은 햇빛을 만들지만 첫 수확까지 기다려야 해요." },
   { name: "노을빛 파티", count: 34, gap: 2.8, types: ["jelly", "umbrella", "roller", "sleepy"], startSun: 350, tip: "새 친구 철잎보루! 오래 버티지만 비용과 다시 심는 시간을 생각해요." },
   { name: "우리들의 정원", count: 40, gap: 2.5, types: ["jelly", "roller", "umbrella", "sleepy", "jelly"], startSun: 350, tip: "새 친구 불꽃봉오리! 모인 좀비에게 불씨를 쏴요. 함께할 여덟 친구를 골라 정원을 지켜요!" },
-].map((stage, i) => Object.freeze({ ...stage, legacyRows: i === 0 ? [2, 1, 3] : stage.rows, legacyCount: stage.count, count: Math.ceil(stage.count * 1.4), id: i + 1 }));
+].concat([
+  { name: "달빛 온실 입구", count: 70, gap: 2.4, types: ["sleepy", "jelly", "umbrella", "roller", "jelly", "umbrella"], tip: "달빛 온실에 오신 걸 환영해요! 햇빛은 그대로 모이고, 세 번째 손님은 빠른 롤러좀비예요." },
+  { name: "반딧불 오솔길", count: 76, gap: 2.3, types: ["roller", "sleepy", "umbrella", "jelly", "roller", "jelly"], tip: "빠른 손님이 여러 줄로 와요. 서리초와 앞줄의 방어 식물을 함께 준비해요." },
+  { name: "은빛 유리 지붕", count: 82, gap: 2.2, types: ["umbrella", "jelly", "umbrella", "roller", "sleepy", "jelly"], tip: "우산이 냉기를 막아요. 콩과 불씨로 우산을 먼저 떨어뜨려요." },
+  { name: "보랏빛 수련", count: 88, gap: 2.1, types: ["jelly", "roller", "jelly", "umbrella", "jelly", "sleepy"], tip: "젤리좀비가 오래 버텨요. 한 줄 공격과 주변을 맞히는 공격을 섞어 봐요." },
+  { name: "별빛 교차로", count: 94, gap: 2.0, types: ["roller", "umbrella", "jelly", "roller", "jelly", "umbrella"], tip: "다섯 줄을 골고루 지켜요. 빈 줄은 빠른 좀비가 먼저 찾아와요." },
+  { name: "이슬 맺힌 회랑", count: 100, gap: 1.9, types: ["umbrella", "jelly", "jelly", "roller", "umbrella", "roller"], tip: "중간 무리부터 간격이 좁아져요. 해등나무로 햇빛을 확보하고 방어선을 보강해요." },
+  { name: "푸른 덩굴 미로", count: 106, gap: 1.8, types: ["jelly", "umbrella", "roller", "jelly", "umbrella", "jelly"], tip: "튼튼한 손님 뒤에 빠른 손님이 따라와요. 가시풀로 뒤쪽 적까지 맞혀요." },
+  { name: "한밤의 분수", count: 112, gap: 1.75, types: ["roller", "jelly", "umbrella", "jelly", "roller", "umbrella"], tip: "몰려오는 무리를 철잎보루로 붙잡고 호박포와 불꽃봉오리로 함께 맞혀요." },
+  { name: "새벽 전의 그림자", count: 118, gap: 1.7, types: ["jelly", "umbrella", "jelly", "roller", "jelly", "umbrella"], tip: "마지막 무리가 아주 커요. 방울폭탄을 쓸 햇빛과 빈 칸을 남겨 두세요." },
+  { name: "온실의 마지막 밤", count: 124, gap: 1.65, types: ["jelly", "roller", "umbrella", "jelly", "umbrella", "roller", "jelly"], tip: "달빛 온실의 마지막 도전! 여덟 친구의 역할을 나누고 무너진 줄을 바로 보강해요." },
+].map(stage => ({ ...stage, theme: "moon", startSun: 350 })))
+  .map((stage, i) => Object.freeze({ ...stage, theme: stage.theme ?? "garden", legacyRows: i === 0 ? [2, 1, 3] : stage.rows,
+    legacyCount: stage.count, count: stage.theme === "moon" ? stage.count : Math.ceil(stage.count * 1.4), id: i + 1 }));
 
 export function isPlantUnlocked(type, stage) {
   return Object.hasOwn(PLANTS, type) && Number.isInteger(stage) && stage >= PLANTS[type].unlockStage && stage <= STAGES.length;
@@ -57,6 +70,22 @@ export function scheduleFor(stageNumber, pacingVersion = 5) {
   const stage = STAGES[stageNumber - 1];
   if (!stage) throw new RangeError("없는 스테이지입니다.");
   const rows = (pacingVersion < 3 ? stage.legacyRows : stage.rows) ?? [2, 0, 4, 1, 3];
+  if (stage.theme === "moon") {
+    const first = 3;
+    const second = Math.ceil(stage.count * .28);
+    const middleAt = 48 - (stageNumber - 11) * 2 / 3;
+    const finalAt = middleAt + (second - 1) * stage.gap + 10;
+    const finalGap = .65 - (stageNumber - 11) * .03;
+    return Array.from({ length: stage.count }, (_, i) => {
+      const wave = i < first ? 1 : i < first + second ? 2 : 3;
+      return {
+        at: wave === 1 ? [10, 24, 36][i] : wave === 2 ? middleAt + (i - first) * stage.gap : finalAt + (i - first - second) * finalGap,
+        row: rows[(i + Math.floor(i / rows.length)) % rows.length],
+        type: wave === 1 ? (i === 2 ? "roller" : "sleepy") : stage.types[i % stage.types.length],
+        wave,
+      };
+    });
+  }
   if (pacingVersion === 1) {
     return Array.from({ length: stage.legacyCount }, (_, i) => ({
       at: 12 + i * stage.gap + Math.floor(i / Math.ceil(stage.legacyCount / 3)) * 7,
@@ -348,7 +377,7 @@ const list = (value, max, check) => Array.isArray(value) && value.length <= max 
 const position = p => integer(p.row, 0, 4) && integer(p.col, 0, 8);
 const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
 export function validSnapshot(g) {
-  if (!object(g) || g.version !== 1 || !integer(g.stage, 1, 10) || g.status !== "playing") return false;
+  if (!object(g) || g.version !== 1 || !integer(g.stage, 1, STAGES.length) || g.status !== "playing") return false;
   if (g.rulesVersion !== undefined && ![2, 3, 4, 5].includes(g.rulesVersion)) return false;
   if (g.pacingVersion !== undefined && ![1, 2, 3, 4, 5].includes(g.pacingVersion)) return false;
   if (g.loadout !== undefined && !validLoadout(g.loadout, g.stage)) return false;

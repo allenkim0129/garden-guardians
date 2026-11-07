@@ -20,7 +20,7 @@ for (const profile of profiles) test(`상태 표시줄 여백·모달·44px·회
   }, profile);
   const game = createGame(10, ["sun", "pea", "wall", "frost", "bomb", "twin", "thorn", "iron"]);
   game.suns.push({ id: game.nextId++, x: 450, y: 250, value: 50, age: 0 });
-  const data = { ...freshSave(), current: game, unlocked: 10, stars: Array(10).fill(3), tutorialSeen: true, language: "en", volume: 65 };
+  const data = { ...freshSave(), current: game, unlocked: 10, stars: freshSave().stars.fill(3), tutorialSeen: true, language: "en", volume: 65 };
   await page.goto("/manifest.webmanifest");
   await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: SAVE_KEY, data });
   await page.goto("/");

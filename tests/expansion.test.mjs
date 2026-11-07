@@ -178,7 +178,7 @@ test("v9 이전의 다섯 쿨다운 저장은 별·언어·현재 판을 보존�
     const old = createGame(stage); old.rulesVersion = 2;
     for (const type of ["twin", "thorn", "pumpkin", "lantern", "iron"]) delete old.cooldowns[type];
     plantAt(old, "pea", 0, 0);
-    const save = { ...freshSave(), unlocked: 10, stars: Array(10).fill(3), language: "en", current: snapshot(old) };
+    const save = { ...freshSave(), unlocked: 10, stars: freshSave().stars.fill(3), language: "en", current: snapshot(old) };
     const result = readSave({ getItem: () => JSON.stringify(save) });
     assert.equal(result.error, null);
     assert.deepEqual(result.data.stars, save.stars);

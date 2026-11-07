@@ -59,7 +59,7 @@ test("등장 완료와 처치 완료를 구분하고 영어 진행 문구도 갱
 
 test("완료 정원 다시하기는 확인 후 판만 초기화하고 별·해금·설정을 보존", async ({ page }) => {
   const game = createGame(7, ["sun", "pea"]); game.time = 10; game.sun = 75;
-  const before = await seed(page, game, { stars: [3, 2, 1, 3, 3, 2, 0, 0, 0, 0], language: "en", sound: true });
+  const before = await seed(page, game, { stars: [3, 2, 1, 3, 3, 2, ...freshSave().stars.slice(6)], language: "en", sound: true });
   await expect(page.locator("#play-button")).toContainText("Choose / replay");
   await page.locator("#play-button").tap();
   await expect(page.locator(".stage-button").first().locator(".stage-replay")).toHaveText("Replay");
